@@ -896,3 +896,6 @@ CMakeFiles/plates_shells.dir/solver.cpp.o
  /usr/local/include/Eigen/src/plugins/IndexedViewMethods.h
  /usr/local/include/Eigen/src/plugins/MatrixCwiseBinaryOps.h
  /usr/local/include/Eigen/src/plugins/MatrixCwiseUnaryOps.h
+CMakeFiles/plates_shells.dir/stepdata.cpp.o
+ /Users/chenjingyu/git/plates-shells/stepdata.cpp
+ /Users/chenjingyu/git/plates-shells/stepdata.h

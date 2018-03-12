@@ -45,21 +45,22 @@ private:
 
 class Geometry {
 public:
-    Geometry(const unsigned int& nn, const unsigned int& nel)
-            : nn_(nn), nel_(nel) {}
+    Geometry(const unsigned int& nn, const unsigned int& nel, const int& dof, const int& nen)
+            : nn_(nn), nel_(nel), ndof_(dof), nen_(nen) {}
 
     void init_lst_nodes(Parameters& sims);
     void init_lst_elements(Parameters& sims);
-    void print_nodes();
+    void print_geo(Parameters& sims);
 
 private:
     unsigned int nn_;    // number of nodes
     unsigned int nel_;   // number of elements
-    int dof_;   // degree of freedom
-    int nen_;   // number of nodes per element
+    int ndof_;           // degree of freedom
+    int nen_;            // number of nodes per element
 
-    Eigen::MatrixXd lst_elements;
+    Eigen::MatrixXi lst_elements;
     Eigen::MatrixXd lst_nodes;
+    Eigen::MatrixXi map_nodes;
 };
 
 #endif //PLATES_SHELLS_GEOMETRY_H

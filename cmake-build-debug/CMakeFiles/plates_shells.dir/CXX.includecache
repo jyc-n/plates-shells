@@ -58,6 +58,12 @@ parameters.h
 geometry.h
 /Users/chenjingyu/git/plates-shells/geometry.h
 
+/Users/chenjingyu/git/plates-shells/stepdata.cpp
+stepdata.h
+/Users/chenjingyu/git/plates-shells/stepdata.h
+
+/Users/chenjingyu/git/plates-shells/stepdata.h
+
 /usr/local/include/Eigen/Cholesky
 Core
 /usr/local/include/Eigen/Core

@@ -25,6 +25,8 @@ public:
     double& rec_wid() { return rec_wid_; }
     unsigned int& num_node_len() { return num_nodes_len_; }
     unsigned int& num_node_wid() { return num_nodes_wid_; }
+    int& get_dof() { return dof_; }
+    int& get_nen() { return nen_; }
 
 private:
     int dof_, nen_;

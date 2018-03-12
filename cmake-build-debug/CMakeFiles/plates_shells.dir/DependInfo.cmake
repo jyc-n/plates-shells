@@ -9,6 +9,7 @@ set(CMAKE_DEPENDS_CHECK_CXX
   "/Users/chenjingyu/git/plates-shells/parameters.cpp" "/Users/chenjingyu/git/plates-shells/cmake-build-debug/CMakeFiles/plates_shells.dir/parameters.cpp.o"
   "/Users/chenjingyu/git/plates-shells/pre_processor.cpp" "/Users/chenjingyu/git/plates-shells/cmake-build-debug/CMakeFiles/plates_shells.dir/pre_processor.cpp.o"
   "/Users/chenjingyu/git/plates-shells/solver.cpp" "/Users/chenjingyu/git/plates-shells/cmake-build-debug/CMakeFiles/plates_shells.dir/solver.cpp.o"
+  "/Users/chenjingyu/git/plates-shells/stepdata.cpp" "/Users/chenjingyu/git/plates-shells/cmake-build-debug/CMakeFiles/plates_shells.dir/stepdata.cpp.o"
   )
 set(CMAKE_CXX_COMPILER_ID "AppleClang")
 

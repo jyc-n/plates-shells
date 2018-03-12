@@ -896,3 +896,6 @@ CMakeFiles/plates_shells.dir/solver.cpp.o: /usr/local/include/Eigen/src/plugins/
 CMakeFiles/plates_shells.dir/solver.cpp.o: /usr/local/include/Eigen/src/plugins/MatrixCwiseBinaryOps.h
 CMakeFiles/plates_shells.dir/solver.cpp.o: /usr/local/include/Eigen/src/plugins/MatrixCwiseUnaryOps.h
 
+CMakeFiles/plates_shells.dir/stepdata.cpp.o: ../stepdata.cpp
+CMakeFiles/plates_shells.dir/stepdata.cpp.o: ../stepdata.h
+

@@ -107,6 +107,12 @@
 		<Unit filename="/Users/chenjingyu/git/plates-shells/solver.h">
 			<Option target="plates_shells"/>
 		</Unit>
+		<Unit filename="/Users/chenjingyu/git/plates-shells/stepdata.cpp">
+			<Option target="plates_shells"/>
+		</Unit>
+		<Unit filename="/Users/chenjingyu/git/plates-shells/stepdata.h">
+			<Option target="plates_shells"/>
+		</Unit>
 		<Unit filename="/Users/chenjingyu/git/plates-shells/CMakeLists.txt">
 			<Option virtualFolder="CMake Files\"/>
 		</Unit>

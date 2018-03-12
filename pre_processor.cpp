@@ -71,9 +71,11 @@ void pre_processor() {
 
     unsigned int num_nodes = SimPar.num_node_len() * SimPar.num_node_wid();
     unsigned int num_elements = 2 * (SimPar.num_node_len()-1) * (SimPar.num_node_wid()-1);
+    int num_dof = SimPar.get_dof();
+    int num_nen = SimPar.get_nen();
 
-    Geometry SimGeo(num_nodes,num_elements);
+    Geometry SimGeo(num_nodes, num_elements, num_dof, num_nen);
     SimGeo.init_lst_nodes(SimPar);
     SimGeo.init_lst_elements(SimPar);
-    SimGeo.print_nodes();
+    SimGeo.print_geo(SimPar);
 }
