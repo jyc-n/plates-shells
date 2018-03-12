@@ -1,0 +1,7 @@
+rec_len = 4                 ! length of the rectangular domain
+rec_wid = 3                 ! width of the rectangular domain
+num_nodes_len = 5           ! number of nodes along the length
+num_nodes_wid = 4           ! number of nodes along the width
+
+dof = 3                     ! degree of freedom
+nen = 3                     ! number of nodes per element (triangular mesh)

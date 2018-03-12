@@ -1,0 +1,6 @@
+#ifndef PLATES_SHELLS_PRE_PROCESSOR_H
+#define PLATES_SHELLS_PRE_PROCESSOR_H
+
+void pre_processor();
+
+#endif //PLATES_SHELLS_PRE_PROCESSOR_H
