@@ -1,7 +1,11 @@
+#include <iostream>
+#include <fstream>
+#include <string>
 #include "pre_processor.h"
 #include "parameters.h"
 #include "geometry.h"
-
+#include "element.h"
+#include "node.h"
 
 // clear all unnecessary characters in the string
 std::string& trim(std::string& str) {
@@ -18,9 +22,12 @@ std::string& trim(std::string& str) {
     return str;
 }
 
-void read_input(Parameters& sims) {
+// read input file
+void read_input(Parameters& Params) {
+
     std::string filepath = "/Users/chenjingyu/git/plates-shells/";
     std::string fileid = "input.txt";
+
     std::ifstream input_file((filepath+fileid).c_str());
 
     if (!input_file.good()) {
@@ -38,44 +45,59 @@ void read_input(Parameters& sims) {
             std::string value_var = line.substr(line.find('=')+1);
 
             if (name_var == "rec_len") {
-                sims.set_domain_len(std::stod(value_var));
+                Params.set_rec_len(std::stod(value_var));             // length of the rectangular domain
             }
             else if (name_var == "rec_wid") {
-                sims.set_domain_wid(std::stod(value_var));
+                Params.set_rec_wid(std::stod(value_var));             // width of the rectangular domain
             }
             else if (name_var == "num_nodes_len") {
-                sims.set_num_nodes_len(std::stoul(value_var));
+                Params.set_num_nodes_len(std::stoul(value_var));      // number of nodes along the length
             }
             else if (name_var == "num_nodes_wid") {
-                sims.set_num_nodes_wid(std::stoul(value_var));
+                Params.set_num_nodes_wid(std::stoul(value_var));      // number of nodes along the width
             }
             else if (name_var == "dof") {
-                sims.set_dof(std::stoi(value_var));
+                Params.set_ndof(std::stoi(value_var));                // degree of freedom
             }
             else if (name_var == "nen") {
-                sims.set_nen(std::stoi(value_var));
+                Params.set_nen(stoi(value_var));                      // number of nodes per element
             }
         }
     }
 
-    std::cout << "Finish reading input file" << std::endl;
-    sims.print_parameters();
+    Params.set_nn(Params.num_nodes_len() * Params.num_nodes_wid());
+    Params.set_nel(2 * (Params.num_nodes_len()-1) * (Params.num_nodes_wid()-1));
+
+    input_file.close();
 }
 
 // main pre-processor function
-void pre_processor() {
+std::vector<Element> pre_processor(Geometry& Geo, Parameters& Params) {
     std::cout << "Pre-processor starts" << '\n';
 
-    Parameters SimPar;
-    read_input(SimPar);
+    read_input(Params);
+    std::cout << "Finish reading input file" << std::endl;
+    Params.print_parameters();
 
-    unsigned int num_nodes = SimPar.num_node_len() * SimPar.num_node_wid();
-    unsigned int num_elements = 2 * (SimPar.num_node_len()-1) * (SimPar.num_node_wid()-1);
-    int num_dof = SimPar.get_dof();
-    int num_nen = SimPar.get_nen();
+    Geo.init_lst_nodes(Params);
+    Geo.init_lst_elements(Params);
+    Geo.print_geo(Params);
 
-    Geometry SimGeo(num_nodes, num_elements, num_dof, num_nen);
-    SimGeo.init_lst_nodes(SimPar);
-    SimGeo.init_lst_elements(SimPar);
-    SimGeo.print_geo(SimPar);
+    std::vector<Node> init_node_list;
+    for (int i = 0; i < Params.nn(); i++) {
+        Node new_node(Geo.lst_coord()(i,0), Geo.lst_coord()(i,1), Geo.lst_coord()(i,2));
+        init_node_list.push_back(new_node);
+    }
+    std::vector<Element> init_element_list;
+    for (int i = 0; i < Params.nel(); i++) {
+        Element new_element(i, Geo.lst_conn()(i,0), Geo.lst_conn()(i,1), Geo.lst_conn()(i,2));
+        new_element.set_node(init_node_list);
+
+        new_element.calculate_dir();
+        new_element.calculate_angle();
+        new_element.calculate_normal();
+
+        init_element_list.push_back(new_element);
+    }
+    return init_element_list;
 }

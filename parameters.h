@@ -1,37 +1,42 @@
 #ifndef PLATES_SHELLS_PARAMETERS_H
 #define PLATES_SHELLS_PARAMETERS_H
 
-#include <iostream>
-#include <fstream>
-#include <string>
-
 class Parameters {
 public:
     Parameters();
 
-    // read input parameters
+    // accessor
+    int           ndof() const;
+    int           nen() const;
+    double        rec_len() const;
+    double        rec_wid() const;
+    unsigned long num_nodes_len() const;
+    unsigned long num_nodes_wid() const;
+    unsigned long nn() const;
+    unsigned long nel() const;
+
+    // modifier
+    void set_ndof(const int& var);
+    void set_nen(const int& var) ;
+    void set_rec_len(const double& var);
+    void set_rec_wid(const double& var);
+    void set_num_nodes_len(const unsigned long& var);
+    void set_num_nodes_wid(const unsigned long& var);
+    void set_nn(const unsigned long& var);
+    void set_nel(const unsigned long& var);
+
+    // other functions
     void print_parameters();
 
-    // modifiers
-    void set_domain_len(const double& len) { rec_len_ = len; };
-    void set_domain_wid(const double& wid) { rec_wid_ = wid; };
-    void set_num_nodes_len(const unsigned int& n_len) { num_nodes_len_ = n_len; };
-    void set_num_nodes_wid(const unsigned int& n_wid) { num_nodes_wid_ = n_wid; };
-    void set_dof(const int& dof) { dof_ = dof; }
-    void set_nen(const int& nen) { nen_ = nen; }
-
-    // accessors
-    double& rec_len() { return rec_len_; }
-    double& rec_wid() { return rec_wid_; }
-    unsigned int& num_node_len() { return num_nodes_len_; }
-    unsigned int& num_node_wid() { return num_nodes_wid_; }
-    int& get_dof() { return dof_; }
-    int& get_nen() { return nen_; }
-
 private:
-    int dof_, nen_;
-    double rec_len_, rec_wid_;
-    unsigned int num_nodes_len_, num_nodes_wid_;
+    int             ndof_;                       // degree of freedom
+    int             nen_;                        // number of nodes per element
+    double          rec_len_;                    // length of the rectangular domain
+    double          rec_wid_;                    // width of the rectangular domain
+    unsigned long   num_nodes_len_;              // number of nodes along the length
+    unsigned long   num_nodes_wid_;              // number of nodes along the width
+    unsigned long   nn_;                         // total number of nodes
+    unsigned long   nel_;                        // total number of elements
 };
 
 #endif //PLATES_SHELLS_PARAMETERS_H
