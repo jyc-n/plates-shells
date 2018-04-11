@@ -8,38 +8,38 @@
 		<Option virtualFolders="CMake Files\;"/>
 		<Build>
 			<Target title="all">
-				<Option working_dir="/Users/chenjingyu/git/plates-shells/cmake-build-debug"/>
+				<Option working_dir="/Users/ChenJingyu/git/plates-shells/cmake-build-debug"/>
 				<Option type="4"/>
 				<MakeCommands>
-					<Build command="/usr/bin/make -j8 -f &quot;/Users/chenjingyu/git/plates-shells/cmake-build-debug/Makefile&quot;  VERBOSE=1 all"/>
-					<CompileFile command="/usr/bin/make -j8 -f &quot;/Users/chenjingyu/git/plates-shells/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
-					<Clean command="/usr/bin/make -j8 -f &quot;/Users/chenjingyu/git/plates-shells/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
-					<DistClean command="/usr/bin/make -j8 -f &quot;/Users/chenjingyu/git/plates-shells/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<Build command="/usr/bin/make -j8 -f &quot;/Users/ChenJingyu/git/plates-shells/cmake-build-debug/Makefile&quot;  VERBOSE=1 all"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/Users/ChenJingyu/git/plates-shells/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/Users/ChenJingyu/git/plates-shells/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/Users/ChenJingyu/git/plates-shells/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
 				</MakeCommands>
 			</Target>
 			<Target title="rebuild_cache">
-				<Option working_dir="/Users/chenjingyu/git/plates-shells/cmake-build-debug"/>
+				<Option working_dir="/Users/ChenJingyu/git/plates-shells/cmake-build-debug"/>
 				<Option type="4"/>
 				<MakeCommands>
-					<Build command="/usr/bin/make -j8 -f &quot;/Users/chenjingyu/git/plates-shells/cmake-build-debug/Makefile&quot;  VERBOSE=1 rebuild_cache"/>
-					<CompileFile command="/usr/bin/make -j8 -f &quot;/Users/chenjingyu/git/plates-shells/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
-					<Clean command="/usr/bin/make -j8 -f &quot;/Users/chenjingyu/git/plates-shells/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
-					<DistClean command="/usr/bin/make -j8 -f &quot;/Users/chenjingyu/git/plates-shells/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<Build command="/usr/bin/make -j8 -f &quot;/Users/ChenJingyu/git/plates-shells/cmake-build-debug/Makefile&quot;  VERBOSE=1 rebuild_cache"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/Users/ChenJingyu/git/plates-shells/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/Users/ChenJingyu/git/plates-shells/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/Users/ChenJingyu/git/plates-shells/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
 				</MakeCommands>
 			</Target>
 			<Target title="edit_cache">
-				<Option working_dir="/Users/chenjingyu/git/plates-shells/cmake-build-debug"/>
+				<Option working_dir="/Users/ChenJingyu/git/plates-shells/cmake-build-debug"/>
 				<Option type="4"/>
 				<MakeCommands>
-					<Build command="/usr/bin/make -j8 -f &quot;/Users/chenjingyu/git/plates-shells/cmake-build-debug/Makefile&quot;  VERBOSE=1 edit_cache"/>
-					<CompileFile command="/usr/bin/make -j8 -f &quot;/Users/chenjingyu/git/plates-shells/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
-					<Clean command="/usr/bin/make -j8 -f &quot;/Users/chenjingyu/git/plates-shells/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
-					<DistClean command="/usr/bin/make -j8 -f &quot;/Users/chenjingyu/git/plates-shells/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<Build command="/usr/bin/make -j8 -f &quot;/Users/ChenJingyu/git/plates-shells/cmake-build-debug/Makefile&quot;  VERBOSE=1 edit_cache"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/Users/ChenJingyu/git/plates-shells/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/Users/ChenJingyu/git/plates-shells/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/Users/ChenJingyu/git/plates-shells/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
 				</MakeCommands>
 			</Target>
 			<Target title="plates_shells">
-				<Option output="/Users/chenjingyu/git/plates-shells/cmake-build-debug/plates_shells" prefix_auto="0" extension_auto="0"/>
-				<Option working_dir="/Users/chenjingyu/git/plates-shells/cmake-build-debug"/>
+				<Option output="/Users/ChenJingyu/git/plates-shells/cmake-build-debug/plates_shells" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/Users/ChenJingyu/git/plates-shells/cmake-build-debug"/>
 				<Option object_output="./"/>
 				<Option type="1"/>
 				<Option compiler="gcc"/>
@@ -52,15 +52,15 @@
 					<Add directory="/Library/Frameworks"/>
 				</Compiler>
 				<MakeCommands>
-					<Build command="/usr/bin/make -j8 -f &quot;/Users/chenjingyu/git/plates-shells/cmake-build-debug/Makefile&quot;  VERBOSE=1 plates_shells"/>
-					<CompileFile command="/usr/bin/make -j8 -f &quot;/Users/chenjingyu/git/plates-shells/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
-					<Clean command="/usr/bin/make -j8 -f &quot;/Users/chenjingyu/git/plates-shells/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
-					<DistClean command="/usr/bin/make -j8 -f &quot;/Users/chenjingyu/git/plates-shells/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<Build command="/usr/bin/make -j8 -f &quot;/Users/ChenJingyu/git/plates-shells/cmake-build-debug/Makefile&quot;  VERBOSE=1 plates_shells"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/Users/ChenJingyu/git/plates-shells/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/Users/ChenJingyu/git/plates-shells/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/Users/ChenJingyu/git/plates-shells/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
 				</MakeCommands>
 			</Target>
 			<Target title="plates_shells/fast">
-				<Option output="/Users/chenjingyu/git/plates-shells/cmake-build-debug/plates_shells" prefix_auto="0" extension_auto="0"/>
-				<Option working_dir="/Users/chenjingyu/git/plates-shells/cmake-build-debug"/>
+				<Option output="/Users/ChenJingyu/git/plates-shells/cmake-build-debug/plates_shells" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/Users/ChenJingyu/git/plates-shells/cmake-build-debug"/>
 				<Option object_output="./"/>
 				<Option type="1"/>
 				<Option compiler="gcc"/>
@@ -73,47 +73,59 @@
 					<Add directory="/Library/Frameworks"/>
 				</Compiler>
 				<MakeCommands>
-					<Build command="/usr/bin/make -j8 -f &quot;/Users/chenjingyu/git/plates-shells/cmake-build-debug/Makefile&quot;  VERBOSE=1 plates_shells/fast"/>
-					<CompileFile command="/usr/bin/make -j8 -f &quot;/Users/chenjingyu/git/plates-shells/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
-					<Clean command="/usr/bin/make -j8 -f &quot;/Users/chenjingyu/git/plates-shells/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
-					<DistClean command="/usr/bin/make -j8 -f &quot;/Users/chenjingyu/git/plates-shells/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<Build command="/usr/bin/make -j8 -f &quot;/Users/ChenJingyu/git/plates-shells/cmake-build-debug/Makefile&quot;  VERBOSE=1 plates_shells/fast"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/Users/ChenJingyu/git/plates-shells/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/Users/ChenJingyu/git/plates-shells/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/Users/ChenJingyu/git/plates-shells/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
 				</MakeCommands>
 			</Target>
 		</Build>
-		<Unit filename="/Users/chenjingyu/git/plates-shells/geometry.cpp">
+		<Unit filename="/Users/ChenJingyu/git/plates-shells/element.cpp">
 			<Option target="plates_shells"/>
 		</Unit>
-		<Unit filename="/Users/chenjingyu/git/plates-shells/geometry.h">
+		<Unit filename="/Users/ChenJingyu/git/plates-shells/element.h">
 			<Option target="plates_shells"/>
 		</Unit>
-		<Unit filename="/Users/chenjingyu/git/plates-shells/main.cpp">
+		<Unit filename="/Users/ChenJingyu/git/plates-shells/geometry.cpp">
 			<Option target="plates_shells"/>
 		</Unit>
-		<Unit filename="/Users/chenjingyu/git/plates-shells/parameters.cpp">
+		<Unit filename="/Users/ChenJingyu/git/plates-shells/geometry.h">
 			<Option target="plates_shells"/>
 		</Unit>
-		<Unit filename="/Users/chenjingyu/git/plates-shells/parameters.h">
+		<Unit filename="/Users/ChenJingyu/git/plates-shells/main.cpp">
 			<Option target="plates_shells"/>
 		</Unit>
-		<Unit filename="/Users/chenjingyu/git/plates-shells/pre_processor.cpp">
+		<Unit filename="/Users/ChenJingyu/git/plates-shells/node.cpp">
 			<Option target="plates_shells"/>
 		</Unit>
-		<Unit filename="/Users/chenjingyu/git/plates-shells/pre_processor.h">
+		<Unit filename="/Users/ChenJingyu/git/plates-shells/node.h">
 			<Option target="plates_shells"/>
 		</Unit>
-		<Unit filename="/Users/chenjingyu/git/plates-shells/solver.cpp">
+		<Unit filename="/Users/ChenJingyu/git/plates-shells/parameters.cpp">
 			<Option target="plates_shells"/>
 		</Unit>
-		<Unit filename="/Users/chenjingyu/git/plates-shells/solver.h">
+		<Unit filename="/Users/ChenJingyu/git/plates-shells/parameters.h">
 			<Option target="plates_shells"/>
 		</Unit>
-		<Unit filename="/Users/chenjingyu/git/plates-shells/stepdata.cpp">
+		<Unit filename="/Users/ChenJingyu/git/plates-shells/pre_processor.cpp">
 			<Option target="plates_shells"/>
 		</Unit>
-		<Unit filename="/Users/chenjingyu/git/plates-shells/stepdata.h">
+		<Unit filename="/Users/ChenJingyu/git/plates-shells/pre_processor.h">
 			<Option target="plates_shells"/>
 		</Unit>
-		<Unit filename="/Users/chenjingyu/git/plates-shells/CMakeLists.txt">
+		<Unit filename="/Users/ChenJingyu/git/plates-shells/solver.cpp">
+			<Option target="plates_shells"/>
+		</Unit>
+		<Unit filename="/Users/ChenJingyu/git/plates-shells/solver.h">
+			<Option target="plates_shells"/>
+		</Unit>
+		<Unit filename="/Users/ChenJingyu/git/plates-shells/stepdata.cpp">
+			<Option target="plates_shells"/>
+		</Unit>
+		<Unit filename="/Users/ChenJingyu/git/plates-shells/stepdata.h">
+			<Option target="plates_shells"/>
+		</Unit>
+		<Unit filename="/Users/ChenJingyu/git/plates-shells/CMakeLists.txt">
 			<Option virtualFolder="CMake Files\"/>
 		</Unit>
 	</Project>

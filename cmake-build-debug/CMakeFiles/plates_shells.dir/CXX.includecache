@@ -6,63 +6,113 @@
 
 #IncludeRegexTransform: 
 
-/Users/chenjingyu/git/plates-shells/geometry.cpp
-geometry.h
-/Users/chenjingyu/git/plates-shells/geometry.h
-
-/Users/chenjingyu/git/plates-shells/geometry.h
-iomanip
+/Users/ChenJingyu/git/plates-shells/element.cpp
+cmath
 -
+element.h
+/Users/ChenJingyu/git/plates-shells/element.h
+
+/Users/ChenJingyu/git/plates-shells/element.h
 vector
 -
 Eigen/Dense
 -
-parameters.h
-/Users/chenjingyu/git/plates-shells/parameters.h
+node.h
+/Users/ChenJingyu/git/plates-shells/node.h
 
-/Users/chenjingyu/git/plates-shells/main.cpp
+/Users/ChenJingyu/git/plates-shells/geometry.cpp
+iostream
+-
+iomanip
+-
+geometry.h
+/Users/ChenJingyu/git/plates-shells/geometry.h
+
+/Users/ChenJingyu/git/plates-shells/geometry.h
+Eigen/Dense
+-
+parameters.h
+/Users/ChenJingyu/git/plates-shells/parameters.h
+
+/Users/ChenJingyu/git/plates-shells/main.cpp
+iostream
+-
+vector
+-
 pre_processor.h
-/Users/chenjingyu/git/plates-shells/pre_processor.h
+/Users/ChenJingyu/git/plates-shells/pre_processor.h
 solver.h
-/Users/chenjingyu/git/plates-shells/solver.h
+/Users/ChenJingyu/git/plates-shells/solver.h
+element.h
+/Users/ChenJingyu/git/plates-shells/element.h
 
-/Users/chenjingyu/git/plates-shells/parameters.cpp
+/Users/ChenJingyu/git/plates-shells/node.cpp
+node.h
+/Users/ChenJingyu/git/plates-shells/node.h
+
+/Users/ChenJingyu/git/plates-shells/node.h
+Eigen/Dense
+-
+
+/Users/ChenJingyu/git/plates-shells/parameters.cpp
+iostream
+-
 parameters.h
-/Users/chenjingyu/git/plates-shells/parameters.h
+/Users/ChenJingyu/git/plates-shells/parameters.h
 
-/Users/chenjingyu/git/plates-shells/parameters.h
+/Users/ChenJingyu/git/plates-shells/parameters.h
+
+/Users/ChenJingyu/git/plates-shells/pre_processor.cpp
 iostream
 -
 fstream
 -
 string
 -
-
-/Users/chenjingyu/git/plates-shells/pre_processor.cpp
 pre_processor.h
-/Users/chenjingyu/git/plates-shells/pre_processor.h
+/Users/ChenJingyu/git/plates-shells/pre_processor.h
 parameters.h
-/Users/chenjingyu/git/plates-shells/parameters.h
+/Users/ChenJingyu/git/plates-shells/parameters.h
 geometry.h
-/Users/chenjingyu/git/plates-shells/geometry.h
+/Users/ChenJingyu/git/plates-shells/geometry.h
+element.h
+/Users/ChenJingyu/git/plates-shells/element.h
+node.h
+/Users/ChenJingyu/git/plates-shells/node.h
 
-/Users/chenjingyu/git/plates-shells/pre_processor.h
+/Users/ChenJingyu/git/plates-shells/pre_processor.h
 
-/Users/chenjingyu/git/plates-shells/solver.cpp
+/Users/ChenJingyu/git/plates-shells/solver.cpp
+iostream
+-
+iomanip
+-
+fstream
+-
+string
+-
+cmath
+-
+Eigen/Dense
+-
 solver.h
-/Users/chenjingyu/git/plates-shells/solver.h
+/Users/ChenJingyu/git/plates-shells/solver.h
+element.h
+/Users/ChenJingyu/git/plates-shells/element.h
 
-/Users/chenjingyu/git/plates-shells/solver.h
+/Users/ChenJingyu/git/plates-shells/solver.h
+fstream
+-
 parameters.h
-/Users/chenjingyu/git/plates-shells/parameters.h
+/Users/ChenJingyu/git/plates-shells/parameters.h
 geometry.h
-/Users/chenjingyu/git/plates-shells/geometry.h
+/Users/ChenJingyu/git/plates-shells/geometry.h
 
-/Users/chenjingyu/git/plates-shells/stepdata.cpp
+/Users/ChenJingyu/git/plates-shells/stepdata.cpp
 stepdata.h
-/Users/chenjingyu/git/plates-shells/stepdata.h
+/Users/ChenJingyu/git/plates-shells/stepdata.h
 
-/Users/chenjingyu/git/plates-shells/stepdata.h
+/Users/ChenJingyu/git/plates-shells/stepdata.h
 
 /usr/local/include/Eigen/Cholesky
 Core
@@ -674,8 +724,6 @@ src/Core/util/ReenableStupidWarnings.h
 
 /usr/local/include/Eigen/src/Cholesky/LLT_LAPACKE.h
 
-/usr/local/include/Eigen/src/Core/ArithmeticSequence.h
-
 /usr/local/include/Eigen/src/Core/Array.h
 
 /usr/local/include/Eigen/src/Core/ArrayBase.h
@@ -753,8 +801,6 @@ src/Core/util/ReenableStupidWarnings.h
 /usr/local/include/Eigen/src/Core/GlobalFunctions.h
 
 /usr/local/include/Eigen/src/Core/IO.h
-
-/usr/local/include/Eigen/src/Core/IndexedView.h
 
 /usr/local/include/Eigen/src/Core/Inverse.h
 
@@ -862,8 +908,6 @@ src/Core/util/ReenableStupidWarnings.h
 
 /usr/local/include/Eigen/src/Core/arch/CUDA/TypeCasting.h
 
-/usr/local/include/Eigen/src/Core/arch/Default/ConjHelper.h
-
 /usr/local/include/Eigen/src/Core/arch/Default/Settings.h
 
 /usr/local/include/Eigen/src/Core/arch/NEON/Complex.h
@@ -950,10 +994,6 @@ stdint.h
 
 /usr/local/include/Eigen/src/Core/util/ForwardDeclarations.h
 
-/usr/local/include/Eigen/src/Core/util/IndexedViewHelper.h
-
-/usr/local/include/Eigen/src/Core/util/IntegralConstant.h
-
 /usr/local/include/Eigen/src/Core/util/MKL_support.h
 mkl.h
 -
@@ -979,8 +1019,6 @@ cstdint
 /usr/local/include/Eigen/src/Core/util/ReenableStupidWarnings.h
 
 /usr/local/include/Eigen/src/Core/util/StaticAssert.h
-
-/usr/local/include/Eigen/src/Core/util/SymbolicIndex.h
 
 /usr/local/include/Eigen/src/Core/util/XprHelper.h
 
@@ -1143,10 +1181,6 @@ lapacke_mangling.h
 /usr/local/include/Eigen/src/plugins/CommonCwiseBinaryOps.h
 
 /usr/local/include/Eigen/src/plugins/CommonCwiseUnaryOps.h
-
-/usr/local/include/Eigen/src/plugins/IndexedViewMethods.h
-IndexedViewMethods.h
-/usr/local/include/Eigen/src/plugins/IndexedViewMethods.h
 
 /usr/local/include/Eigen/src/plugins/MatrixCwiseBinaryOps.h
 

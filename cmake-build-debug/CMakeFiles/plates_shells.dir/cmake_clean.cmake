@@ -5,6 +5,8 @@ file(REMOVE_RECURSE
   "CMakeFiles/plates_shells.dir/parameters.cpp.o"
   "CMakeFiles/plates_shells.dir/solver.cpp.o"
   "CMakeFiles/plates_shells.dir/stepdata.cpp.o"
+  "CMakeFiles/plates_shells.dir/element.cpp.o"
+  "CMakeFiles/plates_shells.dir/node.cpp.o"
   "plates_shells.pdb"
   "plates_shells"
 )
