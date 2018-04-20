@@ -1,0 +1,8 @@
+//
+// Created by RLA on 2018/4/20.
+//
+
+#ifndef PLATES_SHELLS_GLOBAL_H
+#define PLATES_SHELLS_GLOBAL_H
+
+#endif //PLATES_SHELLS_GLOBAL_H
