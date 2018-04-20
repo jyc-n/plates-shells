@@ -13,7 +13,7 @@ public:
     Eigen::Vector3d get_xyz() const;
 
 private:
-    double x_, y_, z_;
+    double m_x, m_y, m_z;
 };
 
 #endif //PLATES_SHELLS_NODE_H

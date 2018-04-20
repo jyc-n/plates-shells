@@ -3,12 +3,11 @@
 
 #include <fstream>
 #include "parameters.h"
-#include "geometry.h"
 
 class Element;
 
-void fake_solver(Geometry& InitGeo, Parameters& SimPar);
+void fake_solver(Parameters& SimPar);
 void time_solver();
 
-void write_output(std::string& filename, Eigen::MatrixXd& mat);
+//void write_output(std::string& filename, Eigen::MatrixXd& mat);
 #endif //PLATES_SHELLS_SOLVER_H

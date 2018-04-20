@@ -1,10 +1,9 @@
 file(REMOVE_RECURSE
   "CMakeFiles/plates_shells.dir/main.cpp.o"
-  "CMakeFiles/plates_shells.dir/geometry.cpp.o"
   "CMakeFiles/plates_shells.dir/pre_processor.cpp.o"
   "CMakeFiles/plates_shells.dir/parameters.cpp.o"
+  "CMakeFiles/plates_shells.dir/geometry.cpp.o"
   "CMakeFiles/plates_shells.dir/solver.cpp.o"
-  "CMakeFiles/plates_shells.dir/stepdata.cpp.o"
   "CMakeFiles/plates_shells.dir/element.cpp.o"
   "CMakeFiles/plates_shells.dir/node.cpp.o"
   "plates_shells.pdb"

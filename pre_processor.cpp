@@ -1,11 +1,15 @@
 #include <iostream>
+#include <iomanip>
 #include <fstream>
 #include <string>
 #include "pre_processor.h"
 #include "parameters.h"
-#include "geometry.h"
-#include "element.h"
-#include "node.h"
+#include "global.h"
+
+
+// ============================ //
+//      Helper functions        //
+// ============================ //
 
 // clear all unnecessary characters in the string
 std::string& trim(std::string& str) {
@@ -21,6 +25,10 @@ std::string& trim(std::string& str) {
     }
     return str;
 }
+
+// ============================ //
+//          Subroutines         //
+// ============================ //
 
 // read input file
 void read_input(Parameters& Params) {
@@ -71,33 +79,104 @@ void read_input(Parameters& Params) {
     input_file.close();
 }
 
+// initialize coordinates (seeding)
+void init_coord(Parameters& Params) {
+    m_coord = Eigen::MatrixXd::Zero(Params.nn(), Params.ndof());
+    m_dof = Eigen::VectorXd::Zero(Params.nn() * Params.ndof());
+    map_nodes = Eigen::MatrixXi::Zero(Params.num_nodes_wid(), Params.num_nodes_len());
+
+    double delta_len, delta_wid;
+    delta_len = Params.rec_len() / (double) (Params.num_nodes_len() - 1);
+    delta_wid = Params.rec_wid() / (double) (Params.num_nodes_wid() - 1);
+
+    unsigned int node_count = 0;
+    for (int i = 0; i < Params.num_nodes_wid(); i++) {
+        for (int j = 0; j < Params.num_nodes_len(); j++) {
+            if (node_count == Params.nn()) {
+                break;
+            }
+            m_coord(node_count, 0) = (double) j * delta_len;
+            m_coord(node_count, 1) = (double) i * delta_wid;
+            m_coord(node_count, 2) = 0.0;
+
+            m_dof(node_count * 3) = m_coord(node_count, 0);
+            m_dof(node_count * 3 + 1) = m_coord(node_count, 1);
+            m_dof(node_count * 3 + 2) = m_coord(node_count, 2);
+
+            map_nodes(i,j) = node_count + 1;
+            node_count++;
+        }
+    }
+}
+
+// initialize connectivity (meshing)
+void init_conn(Parameters& Params) {
+    m_conn = Eigen::MatrixXi::Zero(Params.nel(), Params.nen());
+
+    unsigned int element_count = 0;
+    int local_n1, local_n2, local_n3;
+    int xpos, ypos;
+    for (int i = 0; i < (Params.num_nodes_wid() - 1) * 2; i++) {
+        for (int j = 0; j < (Params.num_nodes_len() - 1); j++) {
+            if (i%2 == 0) {         // odd row
+                ypos = j;
+                xpos = (i+1)/2 + (i+1)%2 - 1;
+                local_n1 = map_nodes(xpos,ypos);
+                local_n2 = local_n1 + 1;
+                local_n3 = local_n2 + Params.num_nodes_len();
+            }
+            else {                  // even row
+                ypos = j + 1;
+                xpos = (i+1)/2 + (i+1)%2;
+                local_n1 = map_nodes(xpos,ypos);
+                local_n2 = local_n1 - 1;
+                local_n3 = local_n2 - Params.num_nodes_len();
+            }
+            m_conn(element_count, 0) = local_n1;
+            m_conn(element_count, 1) = local_n2;
+            m_conn(element_count, 2) = local_n3;
+            element_count++;
+        }
+    }
+}
+
+// print geometric information
+void print_geo(Parameters& Params) {
+    std::cout << "----List of Nodes----" << '\n';
+    for (int i = 0; i < Params.nn(); i++) {
+        std::cout << i+1 << '\t';
+        for (int j = 0; j < Params.ndof(); j++) {
+            std::cout << std::setprecision(6) << std::fixed << m_coord(i,j) << '\t';
+        }
+        std::cout << std::endl;
+    }
+    std::cout << "----DOF Vector----" << '\n';
+    std::cout << m_dof << std::endl;
+    std::cout << "----Map of Nodes----" << '\n';
+    std::cout << map_nodes << std::endl;
+    std::cout << "----List of Elements----" << '\n';
+    for (int i = 0; i < Params.nel(); i++) {
+        std::cout << i+1 << '\t';
+        for (int j = 0; j < Params.nen(); j++) {
+            std::cout << m_conn(i,j) << '\t';
+        }
+        std::cout << std::endl;
+    }
+}
+
+// ============================ //
+//        Main functions        //
+// ============================ //
+
 // main pre-processor function
-std::vector<Element> pre_processor(Geometry& Geo, Parameters& Params) {
+void pre_processor(Parameters& Params) {
     std::cout << "Pre-processor starts" << '\n';
 
     read_input(Params);
     std::cout << "Finish reading input file" << std::endl;
     Params.print_parameters();
 
-    Geo.init_lst_nodes(Params);
-    Geo.init_lst_elements(Params);
-    Geo.print_geo(Params);
-
-    std::vector<Node> init_node_list;
-    for (int i = 0; i < Params.nn(); i++) {
-        Node new_node(Geo.lst_coord()(i,0), Geo.lst_coord()(i,1), Geo.lst_coord()(i,2));
-        init_node_list.push_back(new_node);
-    }
-    std::vector<Element> init_element_list;
-    for (int i = 0; i < Params.nel(); i++) {
-        Element new_element(i, Geo.lst_conn()(i,0), Geo.lst_conn()(i,1), Geo.lst_conn()(i,2));
-        new_element.set_node(init_node_list);
-
-        new_element.calculate_dir();
-        new_element.calculate_angle();
-        new_element.calculate_normal();
-
-        init_element_list.push_back(new_element);
-    }
-    return init_element_list;
+    init_coord(Params);
+    init_conn(Params);
+    print_geo(Params);
 }

@@ -81,33 +81,9 @@ CMakeFiles/plates_shells.dir/main.cpp.o.provides: CMakeFiles/plates_shells.dir/m
 CMakeFiles/plates_shells.dir/main.cpp.o.provides.build: CMakeFiles/plates_shells.dir/main.cpp.o
 
 
-CMakeFiles/plates_shells.dir/geometry.cpp.o: CMakeFiles/plates_shells.dir/flags.make
-CMakeFiles/plates_shells.dir/geometry.cpp.o: ../geometry.cpp
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/Users/chenjingyu/git/plates-shells/cmake-build-debug/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Building CXX object CMakeFiles/plates_shells.dir/geometry.cpp.o"
-	/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/plates_shells.dir/geometry.cpp.o -c /Users/chenjingyu/git/plates-shells/geometry.cpp
-
-CMakeFiles/plates_shells.dir/geometry.cpp.i: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/plates_shells.dir/geometry.cpp.i"
-	/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /Users/chenjingyu/git/plates-shells/geometry.cpp > CMakeFiles/plates_shells.dir/geometry.cpp.i
-
-CMakeFiles/plates_shells.dir/geometry.cpp.s: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/plates_shells.dir/geometry.cpp.s"
-	/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /Users/chenjingyu/git/plates-shells/geometry.cpp -o CMakeFiles/plates_shells.dir/geometry.cpp.s
-
-CMakeFiles/plates_shells.dir/geometry.cpp.o.requires:
-
-.PHONY : CMakeFiles/plates_shells.dir/geometry.cpp.o.requires
-
-CMakeFiles/plates_shells.dir/geometry.cpp.o.provides: CMakeFiles/plates_shells.dir/geometry.cpp.o.requires
-	$(MAKE) -f CMakeFiles/plates_shells.dir/build.make CMakeFiles/plates_shells.dir/geometry.cpp.o.provides.build
-.PHONY : CMakeFiles/plates_shells.dir/geometry.cpp.o.provides
-
-CMakeFiles/plates_shells.dir/geometry.cpp.o.provides.build: CMakeFiles/plates_shells.dir/geometry.cpp.o
-
-
 CMakeFiles/plates_shells.dir/pre_processor.cpp.o: CMakeFiles/plates_shells.dir/flags.make
 CMakeFiles/plates_shells.dir/pre_processor.cpp.o: ../pre_processor.cpp
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/Users/chenjingyu/git/plates-shells/cmake-build-debug/CMakeFiles --progress-num=$(CMAKE_PROGRESS_3) "Building CXX object CMakeFiles/plates_shells.dir/pre_processor.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/Users/chenjingyu/git/plates-shells/cmake-build-debug/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Building CXX object CMakeFiles/plates_shells.dir/pre_processor.cpp.o"
 	/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/plates_shells.dir/pre_processor.cpp.o -c /Users/chenjingyu/git/plates-shells/pre_processor.cpp
 
 CMakeFiles/plates_shells.dir/pre_processor.cpp.i: cmake_force
@@ -131,7 +107,7 @@ CMakeFiles/plates_shells.dir/pre_processor.cpp.o.provides.build: CMakeFiles/plat
 
 CMakeFiles/plates_shells.dir/parameters.cpp.o: CMakeFiles/plates_shells.dir/flags.make
 CMakeFiles/plates_shells.dir/parameters.cpp.o: ../parameters.cpp
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/Users/chenjingyu/git/plates-shells/cmake-build-debug/CMakeFiles --progress-num=$(CMAKE_PROGRESS_4) "Building CXX object CMakeFiles/plates_shells.dir/parameters.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/Users/chenjingyu/git/plates-shells/cmake-build-debug/CMakeFiles --progress-num=$(CMAKE_PROGRESS_3) "Building CXX object CMakeFiles/plates_shells.dir/parameters.cpp.o"
 	/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/plates_shells.dir/parameters.cpp.o -c /Users/chenjingyu/git/plates-shells/parameters.cpp
 
 CMakeFiles/plates_shells.dir/parameters.cpp.i: cmake_force
@@ -151,6 +127,30 @@ CMakeFiles/plates_shells.dir/parameters.cpp.o.provides: CMakeFiles/plates_shells
 .PHONY : CMakeFiles/plates_shells.dir/parameters.cpp.o.provides
 
 CMakeFiles/plates_shells.dir/parameters.cpp.o.provides.build: CMakeFiles/plates_shells.dir/parameters.cpp.o
+
+
+CMakeFiles/plates_shells.dir/geometry.cpp.o: CMakeFiles/plates_shells.dir/flags.make
+CMakeFiles/plates_shells.dir/geometry.cpp.o: ../geometry.cpp
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/Users/chenjingyu/git/plates-shells/cmake-build-debug/CMakeFiles --progress-num=$(CMAKE_PROGRESS_4) "Building CXX object CMakeFiles/plates_shells.dir/geometry.cpp.o"
+	/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/plates_shells.dir/geometry.cpp.o -c /Users/chenjingyu/git/plates-shells/geometry.cpp
+
+CMakeFiles/plates_shells.dir/geometry.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/plates_shells.dir/geometry.cpp.i"
+	/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /Users/chenjingyu/git/plates-shells/geometry.cpp > CMakeFiles/plates_shells.dir/geometry.cpp.i
+
+CMakeFiles/plates_shells.dir/geometry.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/plates_shells.dir/geometry.cpp.s"
+	/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /Users/chenjingyu/git/plates-shells/geometry.cpp -o CMakeFiles/plates_shells.dir/geometry.cpp.s
+
+CMakeFiles/plates_shells.dir/geometry.cpp.o.requires:
+
+.PHONY : CMakeFiles/plates_shells.dir/geometry.cpp.o.requires
+
+CMakeFiles/plates_shells.dir/geometry.cpp.o.provides: CMakeFiles/plates_shells.dir/geometry.cpp.o.requires
+	$(MAKE) -f CMakeFiles/plates_shells.dir/build.make CMakeFiles/plates_shells.dir/geometry.cpp.o.provides.build
+.PHONY : CMakeFiles/plates_shells.dir/geometry.cpp.o.provides
+
+CMakeFiles/plates_shells.dir/geometry.cpp.o.provides.build: CMakeFiles/plates_shells.dir/geometry.cpp.o
 
 
 CMakeFiles/plates_shells.dir/solver.cpp.o: CMakeFiles/plates_shells.dir/flags.make
@@ -177,33 +177,9 @@ CMakeFiles/plates_shells.dir/solver.cpp.o.provides: CMakeFiles/plates_shells.dir
 CMakeFiles/plates_shells.dir/solver.cpp.o.provides.build: CMakeFiles/plates_shells.dir/solver.cpp.o
 
 
-CMakeFiles/plates_shells.dir/stepdata.cpp.o: CMakeFiles/plates_shells.dir/flags.make
-CMakeFiles/plates_shells.dir/stepdata.cpp.o: ../stepdata.cpp
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/Users/chenjingyu/git/plates-shells/cmake-build-debug/CMakeFiles --progress-num=$(CMAKE_PROGRESS_6) "Building CXX object CMakeFiles/plates_shells.dir/stepdata.cpp.o"
-	/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/plates_shells.dir/stepdata.cpp.o -c /Users/chenjingyu/git/plates-shells/stepdata.cpp
-
-CMakeFiles/plates_shells.dir/stepdata.cpp.i: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/plates_shells.dir/stepdata.cpp.i"
-	/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /Users/chenjingyu/git/plates-shells/stepdata.cpp > CMakeFiles/plates_shells.dir/stepdata.cpp.i
-
-CMakeFiles/plates_shells.dir/stepdata.cpp.s: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/plates_shells.dir/stepdata.cpp.s"
-	/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /Users/chenjingyu/git/plates-shells/stepdata.cpp -o CMakeFiles/plates_shells.dir/stepdata.cpp.s
-
-CMakeFiles/plates_shells.dir/stepdata.cpp.o.requires:
-
-.PHONY : CMakeFiles/plates_shells.dir/stepdata.cpp.o.requires
-
-CMakeFiles/plates_shells.dir/stepdata.cpp.o.provides: CMakeFiles/plates_shells.dir/stepdata.cpp.o.requires
-	$(MAKE) -f CMakeFiles/plates_shells.dir/build.make CMakeFiles/plates_shells.dir/stepdata.cpp.o.provides.build
-.PHONY : CMakeFiles/plates_shells.dir/stepdata.cpp.o.provides
-
-CMakeFiles/plates_shells.dir/stepdata.cpp.o.provides.build: CMakeFiles/plates_shells.dir/stepdata.cpp.o
-
-
 CMakeFiles/plates_shells.dir/element.cpp.o: CMakeFiles/plates_shells.dir/flags.make
 CMakeFiles/plates_shells.dir/element.cpp.o: ../element.cpp
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/Users/chenjingyu/git/plates-shells/cmake-build-debug/CMakeFiles --progress-num=$(CMAKE_PROGRESS_7) "Building CXX object CMakeFiles/plates_shells.dir/element.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/Users/chenjingyu/git/plates-shells/cmake-build-debug/CMakeFiles --progress-num=$(CMAKE_PROGRESS_6) "Building CXX object CMakeFiles/plates_shells.dir/element.cpp.o"
 	/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/plates_shells.dir/element.cpp.o -c /Users/chenjingyu/git/plates-shells/element.cpp
 
 CMakeFiles/plates_shells.dir/element.cpp.i: cmake_force
@@ -227,7 +203,7 @@ CMakeFiles/plates_shells.dir/element.cpp.o.provides.build: CMakeFiles/plates_she
 
 CMakeFiles/plates_shells.dir/node.cpp.o: CMakeFiles/plates_shells.dir/flags.make
 CMakeFiles/plates_shells.dir/node.cpp.o: ../node.cpp
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/Users/chenjingyu/git/plates-shells/cmake-build-debug/CMakeFiles --progress-num=$(CMAKE_PROGRESS_8) "Building CXX object CMakeFiles/plates_shells.dir/node.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/Users/chenjingyu/git/plates-shells/cmake-build-debug/CMakeFiles --progress-num=$(CMAKE_PROGRESS_7) "Building CXX object CMakeFiles/plates_shells.dir/node.cpp.o"
 	/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/plates_shells.dir/node.cpp.o -c /Users/chenjingyu/git/plates-shells/node.cpp
 
 CMakeFiles/plates_shells.dir/node.cpp.i: cmake_force
@@ -252,11 +228,10 @@ CMakeFiles/plates_shells.dir/node.cpp.o.provides.build: CMakeFiles/plates_shells
 # Object files for target plates_shells
 plates_shells_OBJECTS = \
 "CMakeFiles/plates_shells.dir/main.cpp.o" \
-"CMakeFiles/plates_shells.dir/geometry.cpp.o" \
 "CMakeFiles/plates_shells.dir/pre_processor.cpp.o" \
 "CMakeFiles/plates_shells.dir/parameters.cpp.o" \
+"CMakeFiles/plates_shells.dir/geometry.cpp.o" \
 "CMakeFiles/plates_shells.dir/solver.cpp.o" \
-"CMakeFiles/plates_shells.dir/stepdata.cpp.o" \
 "CMakeFiles/plates_shells.dir/element.cpp.o" \
 "CMakeFiles/plates_shells.dir/node.cpp.o"
 
@@ -264,16 +239,15 @@ plates_shells_OBJECTS = \
 plates_shells_EXTERNAL_OBJECTS =
 
 plates_shells: CMakeFiles/plates_shells.dir/main.cpp.o
-plates_shells: CMakeFiles/plates_shells.dir/geometry.cpp.o
 plates_shells: CMakeFiles/plates_shells.dir/pre_processor.cpp.o
 plates_shells: CMakeFiles/plates_shells.dir/parameters.cpp.o
+plates_shells: CMakeFiles/plates_shells.dir/geometry.cpp.o
 plates_shells: CMakeFiles/plates_shells.dir/solver.cpp.o
-plates_shells: CMakeFiles/plates_shells.dir/stepdata.cpp.o
 plates_shells: CMakeFiles/plates_shells.dir/element.cpp.o
 plates_shells: CMakeFiles/plates_shells.dir/node.cpp.o
 plates_shells: CMakeFiles/plates_shells.dir/build.make
 plates_shells: CMakeFiles/plates_shells.dir/link.txt
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir=/Users/chenjingyu/git/plates-shells/cmake-build-debug/CMakeFiles --progress-num=$(CMAKE_PROGRESS_9) "Linking CXX executable plates_shells"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir=/Users/chenjingyu/git/plates-shells/cmake-build-debug/CMakeFiles --progress-num=$(CMAKE_PROGRESS_8) "Linking CXX executable plates_shells"
 	$(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/plates_shells.dir/link.txt --verbose=$(VERBOSE)
 
 # Rule to build all files generated by this target.
@@ -282,11 +256,10 @@ CMakeFiles/plates_shells.dir/build: plates_shells
 .PHONY : CMakeFiles/plates_shells.dir/build
 
 CMakeFiles/plates_shells.dir/requires: CMakeFiles/plates_shells.dir/main.cpp.o.requires
-CMakeFiles/plates_shells.dir/requires: CMakeFiles/plates_shells.dir/geometry.cpp.o.requires
 CMakeFiles/plates_shells.dir/requires: CMakeFiles/plates_shells.dir/pre_processor.cpp.o.requires
 CMakeFiles/plates_shells.dir/requires: CMakeFiles/plates_shells.dir/parameters.cpp.o.requires
+CMakeFiles/plates_shells.dir/requires: CMakeFiles/plates_shells.dir/geometry.cpp.o.requires
 CMakeFiles/plates_shells.dir/requires: CMakeFiles/plates_shells.dir/solver.cpp.o.requires
-CMakeFiles/plates_shells.dir/requires: CMakeFiles/plates_shells.dir/stepdata.cpp.o.requires
 CMakeFiles/plates_shells.dir/requires: CMakeFiles/plates_shells.dir/element.cpp.o.requires
 CMakeFiles/plates_shells.dir/requires: CMakeFiles/plates_shells.dir/node.cpp.o.requires
 

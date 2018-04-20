@@ -1,22 +1,22 @@
 #include "node.h"
 
 Node::Node() {
-    x_ = 0.0;
-    y_ = 0.0;
-    z_ = 0.0;
+    m_x = 0.0;
+    m_y = 0.0;
+    m_z = 0.0;
 }
 
 Node::Node(const double& xpos,
            const double& ypos,
            const double& zpos)
-        : x_(xpos), y_(ypos), z_(zpos)
+        : m_x(xpos), m_y(ypos), m_z(zpos)
 {}
 
 Eigen::Vector3d Node::get_xyz() const {
     Eigen::Vector3d result;
-    result[0] = x_;
-    result[1] = y_;
-    result[2] = z_;
+    result[0] = m_x;
+    result[1] = m_y;
+    result[2] = m_z;
     return result;
 }
 

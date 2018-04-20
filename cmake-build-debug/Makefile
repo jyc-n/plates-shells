@@ -312,33 +312,6 @@ solver.cpp.s:
 	$(MAKE) -f CMakeFiles/plates_shells.dir/build.make CMakeFiles/plates_shells.dir/solver.cpp.s
 .PHONY : solver.cpp.s
 
-stepdata.o: stepdata.cpp.o
-
-.PHONY : stepdata.o
-
-# target to build an object file
-stepdata.cpp.o:
-	$(MAKE) -f CMakeFiles/plates_shells.dir/build.make CMakeFiles/plates_shells.dir/stepdata.cpp.o
-.PHONY : stepdata.cpp.o
-
-stepdata.i: stepdata.cpp.i
-
-.PHONY : stepdata.i
-
-# target to preprocess a source file
-stepdata.cpp.i:
-	$(MAKE) -f CMakeFiles/plates_shells.dir/build.make CMakeFiles/plates_shells.dir/stepdata.cpp.i
-.PHONY : stepdata.cpp.i
-
-stepdata.s: stepdata.cpp.s
-
-.PHONY : stepdata.s
-
-# target to generate assembly for a file
-stepdata.cpp.s:
-	$(MAKE) -f CMakeFiles/plates_shells.dir/build.make CMakeFiles/plates_shells.dir/stepdata.cpp.s
-.PHONY : stepdata.cpp.s
-
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -369,9 +342,6 @@ help:
 	@echo "... solver.o"
 	@echo "... solver.i"
 	@echo "... solver.s"
-	@echo "... stepdata.o"
-	@echo "... stepdata.i"
-	@echo "... stepdata.s"
 .PHONY : help
 
 

@@ -4,6 +4,7 @@
 #include <vector>
 #include <Eigen/Dense>
 #include "node.h"
+#include "parameters.h"
 
 class Element {
 public:
@@ -19,6 +20,7 @@ public:
     void calculate_dir();
     void calculate_angle();
     void calculate_normal();
+    void find_nearby_element(const Parameters& Params);
 
     // accessor
     Node& get_node(const unsigned int& num);
@@ -29,6 +31,9 @@ private:
     unsigned int m_num_el;
     unsigned int m_num_n1, m_num_n2, m_num_n3;
     double m_angle1, m_angle2, m_angle3;
+
+    int m_adj_element[3];
+
     Eigen::Vector3d m_normal, m_dir12, m_dir23, m_dir13;
 
     Node node1;

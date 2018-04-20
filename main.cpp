@@ -2,14 +2,12 @@
 #include <vector>
 #include "pre_processor.h"
 #include "solver.h"
-#include "element.h"
 
 int main() {
     try {
         Parameters SimParams;
-        Geometry SimGeo;
-        std::vector<Element> initialGeo = pre_processor(SimGeo, SimParams);
-        fake_solver(SimGeo, SimParams);
+        pre_processor(SimParams);
+        //fake_solver(S SimParams);
     }
     catch (const char* msg) {
         std::cerr << msg << std::endl;

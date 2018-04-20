@@ -1,28 +1,27 @@
 #ifndef PLATES_SHELLS_GEOMETRY_H
 #define PLATES_SHELLS_GEOMETRY_H
 
-#include <Eigen/Dense>
-
 #include "parameters.h"
 
+class Node;
+class Element;
+
 class Geometry {
+
 public:
+    Geometry();
 
     // modifier
-    void init_lst_nodes(Parameters& sims);
-    void init_lst_elements(Parameters& sims);
+    void init_node_lst();
+    void init_element_lst();
 
     // accessor
-    Eigen::MatrixXd lst_coord() const;            // return coordinates table
-    Eigen::MatrixXi lst_conn() const;             // return connectivity table
-
-    void print_geo(Parameters& sims);
+    Node& get_node_lst() const;
+    Element& get_element_lst() const;
 
 private:
-
-    Eigen::MatrixXi lst_elements;           // connectivity table
-    Eigen::MatrixXd lst_nodes;              // coordinates table
-    Eigen::MatrixXi map_nodes;              // map of nodes, for verification purpose
+    Node* m_node_lst;
+    Element* m_element_lst;
 };
 
 #endif //PLATES_SHELLS_GEOMETRY_H

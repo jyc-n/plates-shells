@@ -92,6 +92,9 @@
 		<Unit filename="/Users/chenjingyu/git/plates-shells/geometry.h">
 			<Option target="plates_shells"/>
 		</Unit>
+		<Unit filename="/Users/chenjingyu/git/plates-shells/global.h">
+			<Option target="plates_shells"/>
+		</Unit>
 		<Unit filename="/Users/chenjingyu/git/plates-shells/main.cpp">
 			<Option target="plates_shells"/>
 		</Unit>
@@ -117,12 +120,6 @@
 			<Option target="plates_shells"/>
 		</Unit>
 		<Unit filename="/Users/chenjingyu/git/plates-shells/solver.h">
-			<Option target="plates_shells"/>
-		</Unit>
-		<Unit filename="/Users/chenjingyu/git/plates-shells/stepdata.cpp">
-			<Option target="plates_shells"/>
-		</Unit>
-		<Unit filename="/Users/chenjingyu/git/plates-shells/stepdata.h">
 			<Option target="plates_shells"/>
 		</Unit>
 		<Unit filename="/Users/chenjingyu/git/plates-shells/CMakeLists.txt">

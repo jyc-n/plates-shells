@@ -1,4 +1,5 @@
 #include <cmath>
+#include "global.h"
 #include "element.h"
 
 Element::Element(const unsigned int& num_el,
@@ -37,3 +38,36 @@ void Element::calculate_normal() {
     m_normal = m_dir12.cross(m_dir23);
 }
 
+void Element::find_nearby_element(const Parameters& Params) {
+    for (int i = 0; i < Params.nel(); i++) {
+        if (m_num_el == i+1) {
+            continue;
+        }
+
+        if (m_num_n1 == m_conn(i,0) || m_conn(i,1) || m_conn(i,2) ) {
+            if (m_num_n2 == m_conn(i,0) || m_conn(i,1) || m_conn(i,2)) {
+                m_adj_element[0] = i;
+            }
+            else if (m_num_n3 == m_conn(i,0) || m_conn(i,1) || m_conn(i,2)) {
+                m_adj_element[2] = i;
+            }
+
+        }
+        else if (m_num_n2 == m_conn(i,0) || m_conn(i,1) || m_conn(i,2) ) {
+            if (m_num_n1 == m_conn(i,0) || m_conn(i,1) || m_conn(i,2)) {
+                m_adj_element[0] = i;
+            }
+            else if (m_num_n3 == m_conn(i,0) || m_conn(i,1) || m_conn(i,2)) {
+                m_adj_element[1] = i;
+            }
+        }
+        else if (m_num_n3 == m_conn(i,0) || m_conn(i,1) || m_conn(i,2) ) {
+            if (m_num_n1 == m_conn(i,0) || m_conn(i,1) || m_conn(i,2)) {
+                m_adj_element[2] = i;
+            }
+            else if (m_num_n2 == m_conn(i,0) || m_conn(i,1) || m_conn(i,2)) {
+                m_adj_element[1] = i;
+            }
+        }
+    }
+}

@@ -21,18 +21,16 @@ node.h
 /Users/chenjingyu/git/plates-shells/node.h
 
 /Users/chenjingyu/git/plates-shells/geometry.cpp
-iostream
--
-iomanip
--
 geometry.h
 /Users/chenjingyu/git/plates-shells/geometry.h
 
 /Users/chenjingyu/git/plates-shells/geometry.h
-Eigen/Dense
--
 parameters.h
 /Users/chenjingyu/git/plates-shells/parameters.h
+
+/Users/chenjingyu/git/plates-shells/global.h
+Eigen/Dense
+-
 
 /Users/chenjingyu/git/plates-shells/main.cpp
 iostream
@@ -43,8 +41,6 @@ pre_processor.h
 /Users/chenjingyu/git/plates-shells/pre_processor.h
 solver.h
 /Users/chenjingyu/git/plates-shells/solver.h
-element.h
-/Users/chenjingyu/git/plates-shells/element.h
 
 /Users/chenjingyu/git/plates-shells/node.cpp
 node.h
@@ -65,6 +61,8 @@ parameters.h
 /Users/chenjingyu/git/plates-shells/pre_processor.cpp
 iostream
 -
+iomanip
+-
 fstream
 -
 string
@@ -73,12 +71,8 @@ pre_processor.h
 /Users/chenjingyu/git/plates-shells/pre_processor.h
 parameters.h
 /Users/chenjingyu/git/plates-shells/parameters.h
-geometry.h
-/Users/chenjingyu/git/plates-shells/geometry.h
-element.h
-/Users/chenjingyu/git/plates-shells/element.h
-node.h
-/Users/chenjingyu/git/plates-shells/node.h
+global.h
+/Users/chenjingyu/git/plates-shells/global.h
 
 /Users/chenjingyu/git/plates-shells/pre_processor.h
 
@@ -105,14 +99,6 @@ fstream
 -
 parameters.h
 /Users/chenjingyu/git/plates-shells/parameters.h
-geometry.h
-/Users/chenjingyu/git/plates-shells/geometry.h
-
-/Users/chenjingyu/git/plates-shells/stepdata.cpp
-stepdata.h
-/Users/chenjingyu/git/plates-shells/stepdata.h
-
-/Users/chenjingyu/git/plates-shells/stepdata.h
 
 /usr/local/include/Eigen/Cholesky
 Core

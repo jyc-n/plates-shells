@@ -7,7 +7,8 @@
 #include "solver.h"
 #include "element.h"
 
-void fake_solver(Geometry& InitGeo, Parameters& SimPar) {
+void fake_solver(Parameters& SimPar) {
+    /*
     double ti = 0.0;
     double tf = 2.0;
     double dt = 0.1;
@@ -38,7 +39,7 @@ void fake_solver(Geometry& InitGeo, Parameters& SimPar) {
         coord += fake_motion;
         counter++;
         //std::cout << '\n';
-    }
+    }*/
 }
 
 void time_solver() {
