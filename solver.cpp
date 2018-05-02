@@ -6,6 +6,7 @@
 #include <Eigen/Dense>
 #include "solver.h"
 #include "element.h"
+#include "geometry.h"
 
 void fake_solver(Parameters& SimPar) {
     /*
@@ -42,8 +43,36 @@ void fake_solver(Parameters& SimPar) {
     }*/
 }
 
-void time_solver() {
-    //Geometry InitGeo;
-    //Parameters SimPar;
-    //init_solver(InitGeo, SimPar);
+void time_solver(Parameters& SimPar) {
+    //m_node_lst = new Node[SimPar.nn()];
+    Node m_node_lst[SimPar.nn()];
+    Element m_element_lst[SimPar.nel()];
+
+    prepare_solver(SimPar, m_node_lst, m_element_lst);
+    // solver codes goes here
+
+}
+
+// initialize a list for
+void prepare_solver(Parameters& SimPar, Node* l_node, Element* l_element) {
+    for (int i = 0; i < SimPar.nn(); i++) {
+        Node temp(m_coord(i,0), m_coord(i,1), m_coord(i,2));
+        l_node[i] = temp;
+    }
+
+    for (int i = 0; i < SimPar.nel(); i++) {
+        Element temp(i+1, m_conn(i,0), m_conn(i,1), m_conn(i,2));
+
+        // pointers to 3 node object
+        Node* pn1 = &l_node[m_conn(i,0)-1];
+        Node* pn2 = &l_node[m_conn(i,1)-1];
+        Node* pn3 = &l_node[m_conn(i,2)-1];
+        temp.set_node(pn1, pn2, pn3);
+
+        temp.calculate_dir();
+        temp.calculate_normal();
+        temp.calculate_angle();
+        temp.find_nearby_element(SimPar);
+        l_element[i] = temp;
+    }
 }

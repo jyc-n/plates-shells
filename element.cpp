@@ -1,6 +1,13 @@
 #include <cmath>
-#include "global.h"
+#include "geometry.h"
 #include "element.h"
+
+Element::Element()
+        : m_num_el(0),
+          m_num_n1(0),
+          m_num_n2(0),
+          m_num_n3(0)
+{}
 
 Element::Element(const unsigned int& num_el,
                  const unsigned int& num_n1,
@@ -12,16 +19,16 @@ Element::Element(const unsigned int& num_el,
           m_num_n3(num_n3)
 {}
 
-void Element::set_node(std::vector<Node> &vec) {
-    node1 = vec[m_num_n1];
-    node2 = vec[m_num_n2];
-    node3 = vec[m_num_n3];
+void Element::set_node(Node* n1, Node* n2, Node* n3) {
+    node1 = n1;
+    node2 = n2;
+    node3 = n3;
 }
 
 void Element::calculate_dir() {
-    m_dir12 = node2.get_xyz() - node1.get_xyz();
-    m_dir23 = node3.get_xyz() - node2.get_xyz();
-    m_dir13 = node3.get_xyz() - node1.get_xyz();
+    m_dir12 = (*node2).get_xyz() - (*node1).get_xyz();
+    m_dir23 = (*node3).get_xyz() - (*node2).get_xyz();
+    m_dir13 = (*node3).get_xyz() - (*node1).get_xyz();
 
     m_dir12 = m_dir12 / m_dir12.norm();
     m_dir23 = m_dir23 / m_dir23.norm();

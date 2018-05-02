@@ -92,9 +92,6 @@
 		<Unit filename="/Users/chenjingyu/git/plates-shells/geometry.h">
 			<Option target="plates_shells"/>
 		</Unit>
-		<Unit filename="/Users/chenjingyu/git/plates-shells/global.h">
-			<Option target="plates_shells"/>
-		</Unit>
 		<Unit filename="/Users/chenjingyu/git/plates-shells/main.cpp">
 			<Option target="plates_shells"/>
 		</Unit>

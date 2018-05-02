@@ -7,7 +7,8 @@ int main() {
     try {
         Parameters SimParams;
         pre_processor(SimParams);
-        //fake_solver(S SimParams);
+        //fake_solver(SimParams);
+        time_solver(SimParams);
     }
     catch (const char* msg) {
         std::cerr << msg << std::endl;

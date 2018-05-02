@@ -10,20 +10,20 @@ class Element {
 public:
 
     // constructor
+    Element();
     Element(const unsigned int& num_el,
             const unsigned int& num_n1,
             const unsigned int& num_n2,
             const unsigned int& num_n3);
 
     // modifier
-    void set_node(std::vector<Node>& vec);
+    void set_node(Node* n1, Node* n2, Node* n3);
     void calculate_dir();
     void calculate_angle();
     void calculate_normal();
     void find_nearby_element(const Parameters& Params);
 
     // accessor
-    Node& get_node(const unsigned int& num);
     double get_angle(const unsigned int& num);
     double get_normal(const unsigned int& num);
 
@@ -36,9 +36,9 @@ private:
 
     Eigen::Vector3d m_normal, m_dir12, m_dir23, m_dir13;
 
-    Node node1;
-    Node node2;
-    Node node3;
+    Node* node1;
+    Node* node2;
+    Node* node3;
 };
 
 #endif //PLATES_SHELLS_ELEMENT_H

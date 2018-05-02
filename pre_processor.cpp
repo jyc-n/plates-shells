@@ -4,7 +4,7 @@
 #include <string>
 #include "pre_processor.h"
 #include "parameters.h"
-#include "global.h"
+#include "geometry.h"
 
 
 // ============================ //
@@ -24,6 +24,30 @@ std::string& trim(std::string& str) {
         pos = str.find(' ');
     }
     return str;
+}
+
+// print geometric information
+void print_geo(Parameters& Params) {
+    std::cout << "----List of Nodes----" << '\n';
+    for (int i = 0; i < Params.nn(); i++) {
+        std::cout << i+1 << '\t';
+        for (int j = 0; j < Params.ndof(); j++) {
+            std::cout << std::setprecision(6) << std::fixed << m_coord(i,j) << '\t';
+        }
+        std::cout << std::endl;
+    }
+    //std::cout << "----DOF Vector----" << '\n';
+    //std::cout << m_dof << std::endl;
+    //std::cout << "----Map of Nodes----" << '\n';
+    //std::cout << map_nodes << std::endl;
+    std::cout << "----List of Elements----" << '\n';
+    for (int i = 0; i < Params.nel(); i++) {
+        std::cout << i+1 << '\t';
+        for (int j = 0; j < Params.nen(); j++) {
+            std::cout << m_conn(i,j) << '\t';
+        }
+        std::cout << std::endl;
+    }
 }
 
 // ============================ //
@@ -137,30 +161,6 @@ void init_conn(Parameters& Params) {
             m_conn(element_count, 2) = local_n3;
             element_count++;
         }
-    }
-}
-
-// print geometric information
-void print_geo(Parameters& Params) {
-    std::cout << "----List of Nodes----" << '\n';
-    for (int i = 0; i < Params.nn(); i++) {
-        std::cout << i+1 << '\t';
-        for (int j = 0; j < Params.ndof(); j++) {
-            std::cout << std::setprecision(6) << std::fixed << m_coord(i,j) << '\t';
-        }
-        std::cout << std::endl;
-    }
-    std::cout << "----DOF Vector----" << '\n';
-    std::cout << m_dof << std::endl;
-    std::cout << "----Map of Nodes----" << '\n';
-    std::cout << map_nodes << std::endl;
-    std::cout << "----List of Elements----" << '\n';
-    for (int i = 0; i < Params.nel(); i++) {
-        std::cout << i+1 << '\t';
-        for (int j = 0; j < Params.nen(); j++) {
-            std::cout << m_conn(i,j) << '\t';
-        }
-        std::cout << std::endl;
     }
 }
 
