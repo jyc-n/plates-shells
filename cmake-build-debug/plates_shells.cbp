@@ -80,6 +80,12 @@
 				</MakeCommands>
 			</Target>
 		</Build>
+		<Unit filename="/Users/chenjingyu/git/plates-shells/derivatives.cpp">
+			<Option target="plates_shells"/>
+		</Unit>
+		<Unit filename="/Users/chenjingyu/git/plates-shells/derivatives.h">
+			<Option target="plates_shells"/>
+		</Unit>
 		<Unit filename="/Users/chenjingyu/git/plates-shells/element.cpp">
 			<Option target="plates_shells"/>
 		</Unit>

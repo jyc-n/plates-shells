@@ -76,24 +76,24 @@ void read_input(Parameters& Params) {
             std::string name_var = line.substr(0,line.find('='));
             std::string value_var = line.substr(line.find('=')+1);
 
-            if (name_var == "rec_len") {
+            if (name_var == "rec_len")
                 Params.set_rec_len(std::stod(value_var));             // length of the rectangular domain
-            }
-            else if (name_var == "rec_wid") {
+            else if (name_var == "rec_wid")
                 Params.set_rec_wid(std::stod(value_var));             // width of the rectangular domain
-            }
-            else if (name_var == "num_nodes_len") {
+            else if (name_var == "num_nodes_len")
                 Params.set_num_nodes_len(std::stoul(value_var));      // number of nodes along the length
-            }
-            else if (name_var == "num_nodes_wid") {
+            else if (name_var == "num_nodes_wid")
                 Params.set_num_nodes_wid(std::stoul(value_var));      // number of nodes along the width
-            }
-            else if (name_var == "dof") {
+            else if (name_var == "dof")
                 Params.set_ndof(std::stoi(value_var));                // degree of freedom
-            }
-            else if (name_var == "nen") {
-                Params.set_nen(stoi(value_var));                      // number of nodes per element
-            }
+            else if (name_var == "nen")
+                Params.set_nen(std::stoi(value_var));                 // number of nodes per element
+            else if (name_var == "dt")
+                Params.set_dt(std::stod(value_var));                  // step size
+            else if (name_var == "nst")
+                Params.set_nst(std::stoi(value_var));                 // total number of steps
+            else if (name_var == "iter_lim")
+                Params.set_iter_lim(std::stoi(value_var));            // maximum number of iterations allowed per time step
         }
     }
 
@@ -170,10 +170,10 @@ void init_conn(Parameters& Params) {
 
 // main pre-processor function
 void pre_processor(Parameters& Params) {
-    std::cout << "Pre-processor starts" << '\n';
+    //std::cout << "Pre-processor starts" << '\n';
 
     read_input(Params);
-    std::cout << "Finish reading input file" << std::endl;
+    //std::cout << "Finish reading input file" << std::endl;
     Params.print_parameters();
 
     init_coord(Params);

@@ -6,6 +6,16 @@
 
 #IncludeRegexTransform: 
 
+/Users/chenjingyu/git/plates-shells/derivatives.cpp
+cmath
+-
+derivatives.h
+/Users/chenjingyu/git/plates-shells/derivatives.h
+
+/Users/chenjingyu/git/plates-shells/derivatives.h
+Eigen/Dense
+-
+
 /Users/chenjingyu/git/plates-shells/element.cpp
 cmath
 -
@@ -86,8 +96,6 @@ iomanip
 fstream
 -
 string
--
-cmath
 -
 Eigen/Dense
 -

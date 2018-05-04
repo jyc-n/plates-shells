@@ -5,3 +5,6 @@ num_nodes_wid = 4           ! number of nodes along the width
 
 dof = 3                     ! degree of freedom
 nen = 3                     ! number of nodes per element (triangular mesh)
+dt = 0.01                   ! step size
+nst = 100                   ! total number of steps
+iter_lim = 10               ! maximum number of iterations allowed per time step

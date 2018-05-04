@@ -123,6 +123,33 @@ plates_shells/fast:
 	$(MAKE) -f CMakeFiles/plates_shells.dir/build.make CMakeFiles/plates_shells.dir/build
 .PHONY : plates_shells/fast
 
+derivatives.o: derivatives.cpp.o
+
+.PHONY : derivatives.o
+
+# target to build an object file
+derivatives.cpp.o:
+	$(MAKE) -f CMakeFiles/plates_shells.dir/build.make CMakeFiles/plates_shells.dir/derivatives.cpp.o
+.PHONY : derivatives.cpp.o
+
+derivatives.i: derivatives.cpp.i
+
+.PHONY : derivatives.i
+
+# target to preprocess a source file
+derivatives.cpp.i:
+	$(MAKE) -f CMakeFiles/plates_shells.dir/build.make CMakeFiles/plates_shells.dir/derivatives.cpp.i
+.PHONY : derivatives.cpp.i
+
+derivatives.s: derivatives.cpp.s
+
+.PHONY : derivatives.s
+
+# target to generate assembly for a file
+derivatives.cpp.s:
+	$(MAKE) -f CMakeFiles/plates_shells.dir/build.make CMakeFiles/plates_shells.dir/derivatives.cpp.s
+.PHONY : derivatives.cpp.s
+
 element.o: element.cpp.o
 
 .PHONY : element.o
@@ -321,6 +348,9 @@ help:
 	@echo "... rebuild_cache"
 	@echo "... edit_cache"
 	@echo "... plates_shells"
+	@echo "... derivatives.o"
+	@echo "... derivatives.i"
+	@echo "... derivatives.s"
 	@echo "... element.o"
 	@echo "... element.i"
 	@echo "... element.s"

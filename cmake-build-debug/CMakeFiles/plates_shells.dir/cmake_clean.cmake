@@ -6,6 +6,7 @@ file(REMOVE_RECURSE
   "CMakeFiles/plates_shells.dir/solver.cpp.o"
   "CMakeFiles/plates_shells.dir/element.cpp.o"
   "CMakeFiles/plates_shells.dir/node.cpp.o"
+  "CMakeFiles/plates_shells.dir/derivatives.cpp.o"
   "plates_shells.pdb"
   "plates_shells"
 )

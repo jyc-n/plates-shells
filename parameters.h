@@ -8,6 +8,9 @@ public:
     // accessor
     int           ndof() const;
     int           nen() const;
+    int           nst() const;
+    int           iter_lim() const;
+    double        dt() const;
     double        rec_len() const;
     double        rec_wid() const;
     unsigned long num_nodes_len() const;
@@ -17,7 +20,10 @@ public:
 
     // modifier
     void set_ndof(const int& var);
-    void set_nen(const int& var) ;
+    void set_nen(const int& var);
+    void set_nst(const int& var);
+    void set_iter_lim(const int& var);
+    void set_dt(const double& var);
     void set_rec_len(const double& var);
     void set_rec_wid(const double& var);
     void set_num_nodes_len(const unsigned long& var);
@@ -31,6 +37,9 @@ public:
 private:
     int             ndof_;                       // degree of freedom
     int             nen_;                        // number of nodes per element
+    int             nst_;                        // total number of steps
+    int             iter_lim_;                   // maximum number of iterations allowed per time step
+    double          dt_;                         // step size
     double          rec_len_;                    // length of the rectangular domain
     double          rec_wid_;                    // width of the rectangular domain
     unsigned long   num_nodes_len_;              // number of nodes along the length
