@@ -22,6 +22,7 @@ public:
     void calculate_angle();
     void calculate_normal();
     void find_nearby_element(const Parameters& Params);
+    void update_element();
 
     // accessor
     double get_angle(const unsigned int& num);

@@ -7,7 +7,10 @@ Element::Element()
           m_num_n1(0),
           m_num_n2(0),
           m_num_n3(0)
-{}
+{
+    for (int &i : m_adj_element)
+        i = 0;
+}
 
 Element::Element(const unsigned int& num_el,
                  const unsigned int& num_n1,
@@ -17,7 +20,10 @@ Element::Element(const unsigned int& num_el,
           m_num_n1(num_n1),
           m_num_n2(num_n2),
           m_num_n3(num_n3)
-{}
+{
+    for (int &i : m_adj_element)
+        i = 0;
+}
 
 void Element::set_node(Node* n1, Node* n2, Node* n3) {
     node1 = n1;
@@ -46,35 +52,35 @@ void Element::calculate_normal() {
 }
 
 void Element::find_nearby_element(const Parameters& Params) {
-    for (int i = 0; i < Params.nel(); i++) {
+    for (int i = 0; i < Params.nel(); i++) {    // looking at itself in the element list
         if (m_num_el == i+1) {
             continue;
         }
 
-        if (m_num_n1 == m_conn(i,0) || m_conn(i,1) || m_conn(i,2) ) {
-            if (m_num_n2 == m_conn(i,0) || m_conn(i,1) || m_conn(i,2)) {
-                m_adj_element[0] = i;
-            }
-            else if (m_num_n3 == m_conn(i,0) || m_conn(i,1) || m_conn(i,2)) {
-                m_adj_element[2] = i;
-            }
+        bool N1_OVERLAP = false;
+        bool N2_OVERLAP = false;
+        bool N3_OVERLAP = false;
 
+        for (int j = 0; j < Params.ndof(); j++) {
+            if (m_num_n1 == m_conn(i,0) || m_num_n1 == m_conn(i,1) || m_num_n1 == m_conn(i,2))
+                N1_OVERLAP = true;
+            if (m_num_n2 == m_conn(i,0) || m_num_n2 == m_conn(i,1) || m_num_n2 == m_conn(i,2))
+                N2_OVERLAP = true;
+            if (m_num_n3 == m_conn(i,0) || m_num_n3 == m_conn(i,1) || m_num_n3 == m_conn(i,2))
+                N3_OVERLAP = true;
         }
-        else if (m_num_n2 == m_conn(i,0) || m_conn(i,1) || m_conn(i,2) ) {
-            if (m_num_n1 == m_conn(i,0) || m_conn(i,1) || m_conn(i,2)) {
-                m_adj_element[0] = i;
-            }
-            else if (m_num_n3 == m_conn(i,0) || m_conn(i,1) || m_conn(i,2)) {
-                m_adj_element[1] = i;
-            }
-        }
-        else if (m_num_n3 == m_conn(i,0) || m_conn(i,1) || m_conn(i,2) ) {
-            if (m_num_n1 == m_conn(i,0) || m_conn(i,1) || m_conn(i,2)) {
-                m_adj_element[2] = i;
-            }
-            else if (m_num_n2 == m_conn(i,0) || m_conn(i,1) || m_conn(i,2)) {
-                m_adj_element[1] = i;
-            }
-        }
+
+        if (N1_OVERLAP && N2_OVERLAP)
+            m_adj_element[0] = i+1;         // element number is the position in the array +1
+        if (N2_OVERLAP && N3_OVERLAP)
+            m_adj_element[1] = i+1;
+        if (N1_OVERLAP && N3_OVERLAP)
+            m_adj_element[2] = i+1;
     }
+}
+
+void Element::update_element() {
+    this->calculate_dir();
+    this->calculate_angle();
+    this->calculate_normal();
 }

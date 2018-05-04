@@ -3,9 +3,6 @@
 
 #include <Eigen/Dense>
 
-class Node;
-class Element;
-
 // global geometry variables
 extern Eigen::MatrixXi m_conn;               // connectivity matrix     (nel x nen)
 extern Eigen::MatrixXd m_coord;              // coordinates matrix      (nn  x nsd)
