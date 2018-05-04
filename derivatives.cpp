@@ -1,10 +1,3 @@
-<<<<<<< HEAD
-//
-// Created by RLA on 2018/5/2.
-//
-
-#include "derivatives.h"
-=======
 #include <cmath>
 #include "derivatives.h"
 
@@ -325,4 +318,3 @@ double ddEs_dz2dz2(const Eigen::Vector3d& v1, const Eigen::Vector3d& v2, const d
  *      Bending Energy, 2nd derivatives
  *  ==========================================
  */
->>>>>>> 760a66da6dd407a9409908295fcce13f5c25e423
