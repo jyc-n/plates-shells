@@ -1303,8 +1303,10 @@ CMakeFiles/plates_shells.dir/solver.cpp.o: ../element.h
 CMakeFiles/plates_shells.dir/solver.cpp.o: ../geometry.h
 CMakeFiles/plates_shells.dir/solver.cpp.o: ../node.h
 CMakeFiles/plates_shells.dir/solver.cpp.o: ../parameters.h
+CMakeFiles/plates_shells.dir/solver.cpp.o: ../shear_derivatives.h
 CMakeFiles/plates_shells.dir/solver.cpp.o: ../solver.cpp
 CMakeFiles/plates_shells.dir/solver.cpp.o: ../solver.h
+CMakeFiles/plates_shells.dir/solver.cpp.o: ../stretch_derivatives.h
 CMakeFiles/plates_shells.dir/solver.cpp.o: /usr/local/include/Eigen/Cholesky
 CMakeFiles/plates_shells.dir/solver.cpp.o: /usr/local/include/Eigen/Core
 CMakeFiles/plates_shells.dir/solver.cpp.o: /usr/local/include/Eigen/Dense

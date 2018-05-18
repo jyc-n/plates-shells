@@ -23,10 +23,12 @@ public:
     void find_nearby_element(const Parameters& Params);
 
     // accessor
-    double get_area();
-    double get_len_edge();
-    Eigen::Vector3d get_vec_edge();
-    Eigen::Vector3d get_normal();
+    unsigned int get_node_num(const int& num) const;
+    double get_area() const;
+    double get_len_edge(const int& num) const;
+    Node* get_node(const int& num) const;
+    Eigen::Vector3d get_vec_edge(const int& num) const;
+    Eigen::Vector3d get_normal() const;
 
 private:
     unsigned int m_num_el;

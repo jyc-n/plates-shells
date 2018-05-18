@@ -1,3 +1,4 @@
+#include <iostream>
 #include <cmath>
 #include "geometry.h"
 #include "element.h"
@@ -79,12 +80,55 @@ void Element::find_nearby_element(const Parameters& Params) {
     }
 }
 
-double Element::get_area() {
+unsigned int Element::get_node_num(const int& num) const {
+    if (!(num == 1 || num == 2 || num == 3))
+        std::cerr << "Local number of node can only be 1, 2, 3" << std::endl;
+    switch (num) {
+        case 1:
+            return m_num_n1;
+        case 2:
+            return m_num_n2;
+        case 3:
+            return m_num_n3;
+    }
+}
+
+double Element::get_area() const {
     return m_area;
 }
 
-double Element::get_len_edge() {}
+double Element::get_len_edge(const int& num) const {
+    if (!(num == 1 || num == 2 || num == 3))
+        std::cerr << "Local number of edge can only be 1, 2, 3" << std::endl;
+    return m_len_edge[num-1];
+}
 
-Eigen::Vector3d Element::get_vec_edge() {}
+Node* Element::get_node(const int& num) const {
+    if (!(num == 1 || num == 2 || num == 3))
+        std::cerr << "Local number of node can only be 1, 2, 3" << std::endl;
+    switch (num) {
+        case 1:
+            return node1;
+        case 2:
+            return node2;
+        case 3:
+            return node3;
+    }
+}
 
-Eigen::Vector3d Element::get_normal() {}
+Eigen::Vector3d Element::get_vec_edge(const int& num) const {
+    if (!(num == 1 || num == 2 || num == 3))
+        std::cerr << "Local number of edge can only be 1, 2, 3" << std::endl;
+    switch (num) {
+        case 1:
+            return m_dir12;
+        case 2:
+            return m_dir23;
+        case 3:
+            return m_dir13;
+    }
+}
+
+Eigen::Vector3d Element::get_normal() const {
+    return m_normal;
+}

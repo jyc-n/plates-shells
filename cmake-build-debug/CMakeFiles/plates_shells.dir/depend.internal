@@ -1304,8 +1304,10 @@ CMakeFiles/plates_shells.dir/solver.cpp.o
  /Users/chenjingyu/git/plates-shells/geometry.h
  /Users/chenjingyu/git/plates-shells/node.h
  /Users/chenjingyu/git/plates-shells/parameters.h
+ /Users/chenjingyu/git/plates-shells/shear_derivatives.h
  /Users/chenjingyu/git/plates-shells/solver.cpp
  /Users/chenjingyu/git/plates-shells/solver.h
+ /Users/chenjingyu/git/plates-shells/stretch_derivatives.h
  /usr/local/include/Eigen/Cholesky
  /usr/local/include/Eigen/Core
  /usr/local/include/Eigen/Dense

@@ -8,3 +8,9 @@ nen = 3                     ! number of nodes per element (triangular mesh)
 dt = 0.01                   ! step size
 nst = 100                   ! total number of steps
 iter_lim = 10               ! maximum number of iterations allowed per time step
+
+E_modulus = 10000           ! Young's modulus
+nu = 0.3                    ! Poisson's ratio
+rho = 1000                  ! density
+thk = 0.001                 ! thickness
+vis = 1                     ! viscosity

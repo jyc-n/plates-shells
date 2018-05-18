@@ -94,8 +94,21 @@ void read_input(Parameters& Params) {
                 Params.set_nst(std::stoi(value_var));                 // total number of steps
             else if (name_var == "iter_lim")
                 Params.set_iter_lim(std::stoi(value_var));            // maximum number of iterations allowed per time step
+            else if (name_var == "E_modulus")
+                Params.set_E_modulus(std::stod(value_var));           // Young's modulus
+            else if (name_var == "nu")
+                Params.set_nu(std::stod(value_var));                  // Poisson's ratio
+            else if (name_var == "rho")
+                Params.set_rho(std::stod(value_var));                 // density
+            else if (name_var == "thk")
+                Params.set_thk(std::stod(value_var));                 // thickness
+            else if (name_var == "vis")
+                Params.set_vis(std::stod(value_var));                 // viscosity
         }
     }
+    Params.set_kstretch();
+    Params.set_kshear();
+    Params.set_kbend();
 
     Params.set_nn(Params.num_nodes_len() * Params.num_nodes_wid());
     Params.set_nel(2 * (Params.num_nodes_len()-1) * (Params.num_nodes_wid()-1));

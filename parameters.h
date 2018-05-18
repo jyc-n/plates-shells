@@ -17,6 +17,14 @@ public:
     unsigned long num_nodes_wid() const;
     unsigned long nn() const;
     unsigned long nel() const;
+    double        E_modulus() const;
+    double        nu() const;
+    double        rho() const;
+    double        thk() const;
+    double        vis() const;
+    double        kstretch() const;
+    double        kshear() const;
+    double        kbend() const;
 
     // modifier
     void set_ndof(const int& var);
@@ -30,6 +38,14 @@ public:
     void set_num_nodes_wid(const unsigned long& var);
     void set_nn(const unsigned long& var);
     void set_nel(const unsigned long& var);
+    void set_E_modulus(const double& var);
+    void set_nu(const double& var);
+    void set_rho(const double& var);
+    void set_thk(const double& var);
+    void set_vis(const double& var);
+    void set_kstretch();
+    void set_kshear();
+    void set_kbend();
 
     // other functions
     void print_parameters();
@@ -46,6 +62,14 @@ private:
     unsigned long   num_nodes_wid_;              // number of nodes along the width
     unsigned long   nn_;                         // total number of nodes
     unsigned long   nel_;                        // total number of elements
+    double          E_modulus_;                  // Young's modulus
+    double          nu_;                         // Poisson's ratio
+    double          rho_;                        // density
+    double          thk_;                        // thickness
+    double          vis_;                        // viscosity
+    double          ks_;                         // stretch stiffness
+    double          ksh_;                        // shearing stiffness
+    double          kb_;                         // bending stiffness
 };
 
 #endif //PLATES_SHELLS_PARAMETERS_H
