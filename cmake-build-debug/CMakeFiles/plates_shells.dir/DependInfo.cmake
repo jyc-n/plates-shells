@@ -4,14 +4,16 @@ set(CMAKE_DEPENDS_LANGUAGES
   )
 # The set of files for implicit dependencies of each language:
 set(CMAKE_DEPENDS_CHECK_CXX
-  "/Users/chenjingyu/git/plates-shells/derivatives.cpp" "/Users/chenjingyu/git/plates-shells/cmake-build-debug/CMakeFiles/plates_shells.dir/derivatives.cpp.o"
+  "/Users/chenjingyu/git/plates-shells/bending_derivatives.cpp" "/Users/chenjingyu/git/plates-shells/cmake-build-debug/CMakeFiles/plates_shells.dir/bending_derivatives.cpp.o"
   "/Users/chenjingyu/git/plates-shells/element.cpp" "/Users/chenjingyu/git/plates-shells/cmake-build-debug/CMakeFiles/plates_shells.dir/element.cpp.o"
   "/Users/chenjingyu/git/plates-shells/geometry.cpp" "/Users/chenjingyu/git/plates-shells/cmake-build-debug/CMakeFiles/plates_shells.dir/geometry.cpp.o"
   "/Users/chenjingyu/git/plates-shells/main.cpp" "/Users/chenjingyu/git/plates-shells/cmake-build-debug/CMakeFiles/plates_shells.dir/main.cpp.o"
   "/Users/chenjingyu/git/plates-shells/node.cpp" "/Users/chenjingyu/git/plates-shells/cmake-build-debug/CMakeFiles/plates_shells.dir/node.cpp.o"
   "/Users/chenjingyu/git/plates-shells/parameters.cpp" "/Users/chenjingyu/git/plates-shells/cmake-build-debug/CMakeFiles/plates_shells.dir/parameters.cpp.o"
   "/Users/chenjingyu/git/plates-shells/pre_processor.cpp" "/Users/chenjingyu/git/plates-shells/cmake-build-debug/CMakeFiles/plates_shells.dir/pre_processor.cpp.o"
+  "/Users/chenjingyu/git/plates-shells/shear_derivatives.cpp" "/Users/chenjingyu/git/plates-shells/cmake-build-debug/CMakeFiles/plates_shells.dir/shear_derivatives.cpp.o"
   "/Users/chenjingyu/git/plates-shells/solver.cpp" "/Users/chenjingyu/git/plates-shells/cmake-build-debug/CMakeFiles/plates_shells.dir/solver.cpp.o"
+  "/Users/chenjingyu/git/plates-shells/stretch_derivatives.cpp" "/Users/chenjingyu/git/plates-shells/cmake-build-debug/CMakeFiles/plates_shells.dir/stretch_derivatives.cpp.o"
   )
 set(CMAKE_CXX_COMPILER_ID "AppleClang")
 

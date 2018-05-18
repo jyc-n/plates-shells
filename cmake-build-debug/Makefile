@@ -123,32 +123,32 @@ plates_shells/fast:
 	$(MAKE) -f CMakeFiles/plates_shells.dir/build.make CMakeFiles/plates_shells.dir/build
 .PHONY : plates_shells/fast
 
-derivatives.o: derivatives.cpp.o
+bending_derivatives.o: bending_derivatives.cpp.o
 
-.PHONY : derivatives.o
+.PHONY : bending_derivatives.o
 
 # target to build an object file
-derivatives.cpp.o:
-	$(MAKE) -f CMakeFiles/plates_shells.dir/build.make CMakeFiles/plates_shells.dir/derivatives.cpp.o
-.PHONY : derivatives.cpp.o
+bending_derivatives.cpp.o:
+	$(MAKE) -f CMakeFiles/plates_shells.dir/build.make CMakeFiles/plates_shells.dir/bending_derivatives.cpp.o
+.PHONY : bending_derivatives.cpp.o
 
-derivatives.i: derivatives.cpp.i
+bending_derivatives.i: bending_derivatives.cpp.i
 
-.PHONY : derivatives.i
+.PHONY : bending_derivatives.i
 
 # target to preprocess a source file
-derivatives.cpp.i:
-	$(MAKE) -f CMakeFiles/plates_shells.dir/build.make CMakeFiles/plates_shells.dir/derivatives.cpp.i
-.PHONY : derivatives.cpp.i
+bending_derivatives.cpp.i:
+	$(MAKE) -f CMakeFiles/plates_shells.dir/build.make CMakeFiles/plates_shells.dir/bending_derivatives.cpp.i
+.PHONY : bending_derivatives.cpp.i
 
-derivatives.s: derivatives.cpp.s
+bending_derivatives.s: bending_derivatives.cpp.s
 
-.PHONY : derivatives.s
+.PHONY : bending_derivatives.s
 
 # target to generate assembly for a file
-derivatives.cpp.s:
-	$(MAKE) -f CMakeFiles/plates_shells.dir/build.make CMakeFiles/plates_shells.dir/derivatives.cpp.s
-.PHONY : derivatives.cpp.s
+bending_derivatives.cpp.s:
+	$(MAKE) -f CMakeFiles/plates_shells.dir/build.make CMakeFiles/plates_shells.dir/bending_derivatives.cpp.s
+.PHONY : bending_derivatives.cpp.s
 
 element.o: element.cpp.o
 
@@ -312,6 +312,33 @@ pre_processor.cpp.s:
 	$(MAKE) -f CMakeFiles/plates_shells.dir/build.make CMakeFiles/plates_shells.dir/pre_processor.cpp.s
 .PHONY : pre_processor.cpp.s
 
+shear_derivatives.o: shear_derivatives.cpp.o
+
+.PHONY : shear_derivatives.o
+
+# target to build an object file
+shear_derivatives.cpp.o:
+	$(MAKE) -f CMakeFiles/plates_shells.dir/build.make CMakeFiles/plates_shells.dir/shear_derivatives.cpp.o
+.PHONY : shear_derivatives.cpp.o
+
+shear_derivatives.i: shear_derivatives.cpp.i
+
+.PHONY : shear_derivatives.i
+
+# target to preprocess a source file
+shear_derivatives.cpp.i:
+	$(MAKE) -f CMakeFiles/plates_shells.dir/build.make CMakeFiles/plates_shells.dir/shear_derivatives.cpp.i
+.PHONY : shear_derivatives.cpp.i
+
+shear_derivatives.s: shear_derivatives.cpp.s
+
+.PHONY : shear_derivatives.s
+
+# target to generate assembly for a file
+shear_derivatives.cpp.s:
+	$(MAKE) -f CMakeFiles/plates_shells.dir/build.make CMakeFiles/plates_shells.dir/shear_derivatives.cpp.s
+.PHONY : shear_derivatives.cpp.s
+
 solver.o: solver.cpp.o
 
 .PHONY : solver.o
@@ -339,6 +366,33 @@ solver.cpp.s:
 	$(MAKE) -f CMakeFiles/plates_shells.dir/build.make CMakeFiles/plates_shells.dir/solver.cpp.s
 .PHONY : solver.cpp.s
 
+stretch_derivatives.o: stretch_derivatives.cpp.o
+
+.PHONY : stretch_derivatives.o
+
+# target to build an object file
+stretch_derivatives.cpp.o:
+	$(MAKE) -f CMakeFiles/plates_shells.dir/build.make CMakeFiles/plates_shells.dir/stretch_derivatives.cpp.o
+.PHONY : stretch_derivatives.cpp.o
+
+stretch_derivatives.i: stretch_derivatives.cpp.i
+
+.PHONY : stretch_derivatives.i
+
+# target to preprocess a source file
+stretch_derivatives.cpp.i:
+	$(MAKE) -f CMakeFiles/plates_shells.dir/build.make CMakeFiles/plates_shells.dir/stretch_derivatives.cpp.i
+.PHONY : stretch_derivatives.cpp.i
+
+stretch_derivatives.s: stretch_derivatives.cpp.s
+
+.PHONY : stretch_derivatives.s
+
+# target to generate assembly for a file
+stretch_derivatives.cpp.s:
+	$(MAKE) -f CMakeFiles/plates_shells.dir/build.make CMakeFiles/plates_shells.dir/stretch_derivatives.cpp.s
+.PHONY : stretch_derivatives.cpp.s
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -348,9 +402,9 @@ help:
 	@echo "... rebuild_cache"
 	@echo "... edit_cache"
 	@echo "... plates_shells"
-	@echo "... derivatives.o"
-	@echo "... derivatives.i"
-	@echo "... derivatives.s"
+	@echo "... bending_derivatives.o"
+	@echo "... bending_derivatives.i"
+	@echo "... bending_derivatives.s"
 	@echo "... element.o"
 	@echo "... element.i"
 	@echo "... element.s"
@@ -369,9 +423,15 @@ help:
 	@echo "... pre_processor.o"
 	@echo "... pre_processor.i"
 	@echo "... pre_processor.s"
+	@echo "... shear_derivatives.o"
+	@echo "... shear_derivatives.i"
+	@echo "... shear_derivatives.s"
 	@echo "... solver.o"
 	@echo "... solver.i"
 	@echo "... solver.s"
+	@echo "... stretch_derivatives.o"
+	@echo "... stretch_derivatives.i"
+	@echo "... stretch_derivatives.s"
 .PHONY : help
 
 

@@ -12,39 +12,39 @@ Element::Element()
         i = 0;
 }
 
-Element::Element(const unsigned int& num_el,
-                 const unsigned int& num_n1,
-                 const unsigned int& num_n2,
-                 const unsigned int& num_n3)
+Element::Element(const unsigned int& num_el, Node* n1, Node* n2, Node* n3)
         : m_num_el(num_el),
-          m_num_n1(num_n1),
-          m_num_n2(num_n2),
-          m_num_n3(num_n3)
+          node1(n1),
+          node2(n2),
+          node3(n3)
 {
+    m_num_n1 = (*node1).get_num();
+    m_num_n2 = (*node2).get_num();
+    m_num_n3 = (*node3).get_num();
+
+    calculate_vec_edge();
+    calculate_len_edge();
+    calculate_area();
+    calculate_normal();
+
     for (int &i : m_adj_element)
         i = 0;
 }
 
-void Element::set_node(Node* n1, Node* n2, Node* n3) {
-    node1 = n1;
-    node2 = n2;
-    node3 = n3;
-}
-
-void Element::calculate_dir() {
+void Element::calculate_vec_edge() {
     m_dir12 = (*node2).get_xyz() - (*node1).get_xyz();
     m_dir23 = (*node3).get_xyz() - (*node2).get_xyz();
     m_dir13 = (*node3).get_xyz() - (*node1).get_xyz();
-
-    m_dir12 = m_dir12 / m_dir12.norm();
-    m_dir23 = m_dir23 / m_dir23.norm();
-    m_dir13 = m_dir13 / m_dir13.norm();
 }
 
-void Element::calculate_angle() {
-    m_angle1 = acos(m_dir12.dot(m_dir13) / (m_dir12.norm() * m_dir13.norm()));
-    m_angle2 = acos(m_dir12.dot(m_dir23) / (m_dir12.norm() * m_dir23.norm()));
-    m_angle3 = acos(m_dir13.dot(m_dir23) / (m_dir13.norm() * m_dir23.norm()));
+void Element::calculate_len_edge() {
+    m_len_edge[0] = m_dir12.norm();
+    m_len_edge[1] = m_dir23.norm();
+    m_len_edge[2] = m_dir13.norm();
+}
+
+void Element::calculate_area() {
+    m_area = 0.5 * (m_dir12.cross(m_dir23)).norm();
 }
 
 void Element::calculate_normal() {
@@ -79,8 +79,12 @@ void Element::find_nearby_element(const Parameters& Params) {
     }
 }
 
-void Element::update_element() {
-    this->calculate_dir();
-    this->calculate_angle();
-    this->calculate_normal();
+double Element::get_area() {
+    return m_area;
 }
+
+double Element::get_len_edge() {}
+
+Eigen::Vector3d Element::get_vec_edge() {}
+
+Eigen::Vector3d Element::get_normal() {}

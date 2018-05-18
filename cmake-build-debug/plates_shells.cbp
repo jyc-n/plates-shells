@@ -80,10 +80,10 @@
 				</MakeCommands>
 			</Target>
 		</Build>
-		<Unit filename="/Users/chenjingyu/git/plates-shells/derivatives.cpp">
+		<Unit filename="/Users/chenjingyu/git/plates-shells/bending_derivatives.cpp">
 			<Option target="plates_shells"/>
 		</Unit>
-		<Unit filename="/Users/chenjingyu/git/plates-shells/derivatives.h">
+		<Unit filename="/Users/chenjingyu/git/plates-shells/bending_derivatives.h">
 			<Option target="plates_shells"/>
 		</Unit>
 		<Unit filename="/Users/chenjingyu/git/plates-shells/element.cpp">
@@ -119,10 +119,22 @@
 		<Unit filename="/Users/chenjingyu/git/plates-shells/pre_processor.h">
 			<Option target="plates_shells"/>
 		</Unit>
+		<Unit filename="/Users/chenjingyu/git/plates-shells/shear_derivatives.cpp">
+			<Option target="plates_shells"/>
+		</Unit>
+		<Unit filename="/Users/chenjingyu/git/plates-shells/shear_derivatives.h">
+			<Option target="plates_shells"/>
+		</Unit>
 		<Unit filename="/Users/chenjingyu/git/plates-shells/solver.cpp">
 			<Option target="plates_shells"/>
 		</Unit>
 		<Unit filename="/Users/chenjingyu/git/plates-shells/solver.h">
+			<Option target="plates_shells"/>
+		</Unit>
+		<Unit filename="/Users/chenjingyu/git/plates-shells/stretch_derivatives.cpp">
+			<Option target="plates_shells"/>
+		</Unit>
+		<Unit filename="/Users/chenjingyu/git/plates-shells/stretch_derivatives.h">
 			<Option target="plates_shells"/>
 		</Unit>
 		<Unit filename="/Users/chenjingyu/git/plates-shells/CMakeLists.txt">

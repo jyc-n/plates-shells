@@ -6,13 +6,11 @@
 
 #IncludeRegexTransform: 
 
-/Users/chenjingyu/git/plates-shells/derivatives.cpp
-cmath
--
-derivatives.h
-/Users/chenjingyu/git/plates-shells/derivatives.h
+/Users/chenjingyu/git/plates-shells/bending_derivatives.cpp
+bending_derivatives.h
+/Users/chenjingyu/git/plates-shells/bending_derivatives.h
 
-/Users/chenjingyu/git/plates-shells/derivatives.h
+/Users/chenjingyu/git/plates-shells/bending_derivatives.h
 Eigen/Dense
 -
 
@@ -88,6 +86,14 @@ geometry.h
 
 /Users/chenjingyu/git/plates-shells/pre_processor.h
 
+/Users/chenjingyu/git/plates-shells/shear_derivatives.cpp
+shear_derivatives.h
+/Users/chenjingyu/git/plates-shells/shear_derivatives.h
+
+/Users/chenjingyu/git/plates-shells/shear_derivatives.h
+Eigen/Dense
+-
+
 /Users/chenjingyu/git/plates-shells/solver.cpp
 iostream
 -
@@ -111,6 +117,16 @@ fstream
 -
 parameters.h
 /Users/chenjingyu/git/plates-shells/parameters.h
+
+/Users/chenjingyu/git/plates-shells/stretch_derivatives.cpp
+cmath
+-
+stretch_derivatives.h
+/Users/chenjingyu/git/plates-shells/stretch_derivatives.h
+
+/Users/chenjingyu/git/plates-shells/stretch_derivatives.h
+Eigen/Dense
+-
 
 /usr/local/include/Eigen/Cholesky
 Core

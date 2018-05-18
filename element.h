@@ -6,35 +6,34 @@
 #include "node.h"
 #include "parameters.h"
 
+class Node;
+
 class Element {
 public:
 
     // constructor
     Element();
-    Element(const unsigned int& num_el,
-            const unsigned int& num_n1,
-            const unsigned int& num_n2,
-            const unsigned int& num_n3);
+    Element(const unsigned int& num_el, Node* n1, Node* n2, Node* n3);
 
     // modifier
-    void set_node(Node* n1, Node* n2, Node* n3);
-    void calculate_dir();
-    void calculate_angle();
+    void calculate_vec_edge();
+    void calculate_len_edge();
+    void calculate_area();
     void calculate_normal();
     void find_nearby_element(const Parameters& Params);
-    void update_element();
 
     // accessor
-    double get_angle(const unsigned int& num);
-    double get_normal(const unsigned int& num);
+    double get_area();
+    double get_len_edge();
+    Eigen::Vector3d get_vec_edge();
+    Eigen::Vector3d get_normal();
 
 private:
     unsigned int m_num_el;
     unsigned int m_num_n1, m_num_n2, m_num_n3;
-    double m_angle1, m_angle2, m_angle3;
-
     int m_adj_element[3];
-
+    double m_len_edge[3];
+    double m_area;
     Eigen::Vector3d m_normal, m_dir12, m_dir23, m_dir13;
 
     Node* node1;

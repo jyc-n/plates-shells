@@ -7,12 +7,14 @@ class Node {
 public:
     //constructor
     Node();
-    Node(const double& xpos, const double& ypos, const double& zpos);
+    Node(const unsigned int& num, const double& xpos, const double& ypos, const double& zpos);
 
     // accessor
+    unsigned int get_num() const;
     Eigen::Vector3d get_xyz() const;
 
 private:
+    unsigned int m_num;
     double m_x, m_y, m_z;
 };
 

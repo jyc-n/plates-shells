@@ -2,7 +2,6 @@
 #include <iomanip>
 #include <fstream>
 #include <string>
-//#include <cmath>
 #include <Eigen/Dense>
 #include "solver.h"
 #include "element.h"
@@ -141,21 +140,19 @@ void time_solver(Parameters& SimPar) {
 
 // initialize element list
 void prepare_solver(const Parameters& SimPar, Node* l_node, Element* l_element) {
-    for (int i = 0; i < SimPar.nn(); i++) {
-        Node temp(m_coord(i,0), m_coord(i,1), m_coord(i,2));
+    for (unsigned int i = 0; i < SimPar.nn(); i++) {
+        Node temp(i+1, m_coord(i,0), m_coord(i,1), m_coord(i,2));
         l_node[i] = temp;
     }
 
-    for (int i = 0; i < SimPar.nel(); i++) {
-        Element temp(i+1, m_conn(i,0), m_conn(i,1), m_conn(i,2));
-
+    for (unsigned int i = 0; i < SimPar.nel(); i++) {
         // pointers to 3 node object
         Node* pn1 = &l_node[m_conn(i,0)-1];
         Node* pn2 = &l_node[m_conn(i,1)-1];
         Node* pn3 = &l_node[m_conn(i,2)-1];
-        temp.set_node(pn1, pn2, pn3);
 
-        temp.update_element();
+        Element temp(i+1, pn1, pn2, pn3);
+
         temp.find_nearby_element(SimPar);
         l_element[i] = temp;
     }
