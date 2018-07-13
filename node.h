@@ -7,7 +7,10 @@ class Node {
 public:
     //constructor
     Node();
-    Node(const unsigned int& num, const double& xpos, const double& ypos, const double& zpos);
+    Node(const unsigned int num, const double xpos, const double ypos, const double zpos);
+
+    // modifier
+    void set_xyz(double x, double y, double z);
 
     // accessor
     unsigned int get_num() const;

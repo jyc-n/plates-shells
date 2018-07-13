@@ -1,14 +1,11 @@
 #include <iostream>
-#include <vector>
-#include "pre_processor.h"
-#include "solver.h"
+#include "simulation.h"
 
 int main() {
     try {
-        Parameters SimParams;
-        pre_processor(SimParams);
-        //fake_solver(SimParams);
-        time_solver(SimParams);
+        Simulation SimCase;
+        SimCase.pre_process();
+        SimCase.solve();
     }
     catch (const char* msg) {
         std::cerr << msg << std::endl;

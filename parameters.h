@@ -1,22 +1,36 @@
 #ifndef PLATES_SHELLS_PARAMETERS_H
 #define PLATES_SHELLS_PARAMETERS_H
 
+#include <string>
+
+class Geometry;
+
 class Parameters {
 public:
     Parameters();
 
+    // modifier
+    void link_geo(Geometry* geo);
+    void set_outop(const bool var);
+    void set_nst(const int var);
+    void set_iter_lim(const int var);
+    void set_dt(const double var);
+    void set_E_modulus(const double var);
+    void set_nu(const double var);
+    void set_rho(const double var);
+    void set_thk(const double var);
+    void set_vis(const double var);
+    void set_kstretch();
+    void set_kshear();
+    void set_kbend();
+
     // accessor
-    int           ndof() const;
-    int           nen() const;
+    std::string   inputPath()  const;
+    std::string   outputPath() const;
+    bool          outop() const;
     int           nst() const;
     int           iter_lim() const;
     double        dt() const;
-    double        rec_len() const;
-    double        rec_wid() const;
-    unsigned long num_nodes_len() const;
-    unsigned long num_nodes_wid() const;
-    unsigned long nn() const;
-    unsigned long nel() const;
     double        E_modulus() const;
     double        nu() const;
     double        rho() const;
@@ -26,42 +40,19 @@ public:
     double        kshear() const;
     double        kbend() const;
 
-    // modifier
-    void set_ndof(const int& var);
-    void set_nen(const int& var);
-    void set_nst(const int& var);
-    void set_iter_lim(const int& var);
-    void set_dt(const double& var);
-    void set_rec_len(const double& var);
-    void set_rec_wid(const double& var);
-    void set_num_nodes_len(const unsigned long& var);
-    void set_num_nodes_wid(const unsigned long& var);
-    void set_nn(const unsigned long& var);
-    void set_nel(const unsigned long& var);
-    void set_E_modulus(const double& var);
-    void set_nu(const double& var);
-    void set_rho(const double& var);
-    void set_thk(const double& var);
-    void set_vis(const double& var);
-    void set_kstretch();
-    void set_kshear();
-    void set_kbend();
-
     // other functions
     void print_parameters();
 
 private:
-    int             ndof_;                       // degree of freedom
-    int             nen_;                        // number of nodes per element
+
+    // pointer to the geometry class
+    Geometry* m_SimGeo;
+
+    // parameters
+    bool            outop_;                      // output option
     int             nst_;                        // total number of steps
     int             iter_lim_;                   // maximum number of iterations allowed per time step
     double          dt_;                         // step size
-    double          rec_len_;                    // length of the rectangular domain
-    double          rec_wid_;                    // width of the rectangular domain
-    unsigned long   num_nodes_len_;              // number of nodes along the length
-    unsigned long   num_nodes_wid_;              // number of nodes along the width
-    unsigned long   nn_;                         // total number of nodes
-    unsigned long   nel_;                        // total number of elements
     double          E_modulus_;                  // Young's modulus
     double          nu_;                         // Poisson's ratio
     double          rho_;                        // density
@@ -70,6 +61,9 @@ private:
     double          ks_;                         // stretch stiffness
     double          ksh_;                        // shearing stiffness
     double          kb_;                         // bending stiffness
+
+    std::string m_inputPath;
+    std::string m_outputPath;
 };
 
 #endif //PLATES_SHELLS_PARAMETERS_H

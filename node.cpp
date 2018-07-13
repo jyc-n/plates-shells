@@ -7,9 +7,15 @@ Node::Node() {
     m_z = 0.0;
 }
 
-Node::Node(const unsigned int& num, const double& xpos, const double& ypos, const double& zpos)
+Node::Node(const unsigned int num, const double xpos, const double ypos, const double zpos)
         : m_num(num), m_x(xpos), m_y(ypos), m_z(zpos)
 {}
+
+void Node::set_xyz(double x, double y, double z) {
+    m_x = x;
+    m_y = y;
+    m_z = z;
+}
 
 unsigned int Node::get_num() const {
     return m_num;
