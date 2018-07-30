@@ -24,8 +24,15 @@ SolverImpl::SolverImpl(Parameters* SimPar, Geometry* SimGeo, Boundary* SimBC) {
     m_SimBC  = SimBC;
 }
 
+void SolverImpl::initSolver() {
+    m_dEdq = Eigen::VectorXd::Zero(m_SimGeo->nn() * m_SimGeo->ndof());
+    m_ddEddq = Eigen::MatrixXd::Zero(m_SimGeo->nn() * m_SimGeo->ndof(), m_SimGeo->nn() * m_SimGeo->ndof());
+    m_residual = Eigen::VectorXd::Zero(m_SimGeo->nn() * m_SimGeo->ndof());
+    m_jacobian = Eigen::MatrixXd::Zero(m_SimGeo->nn() * m_SimGeo->ndof(), m_SimGeo->nn() * m_SimGeo->ndof());
+}
+
 // ========================================= //
-//           Main solver function            //
+//            Main solver function           //
 // ========================================= //
 
 void SolverImpl::Solve() {
@@ -67,34 +74,26 @@ void SolverImpl::Solve() {
         // apply Newton-Raphson Method
         for (int niter = 0; niter < m_SimPar->iter_lim(); niter++) {
 
-            // residual vector
-            Eigen::VectorXd residual = Eigen::VectorXd::Zero(m_SimGeo->nn() * m_SimGeo->ndof());
-
-            // Jacobian matrix
-            Eigen::MatrixXd jacobian = Eigen::MatrixXd::Zero(m_SimGeo->nn() * m_SimGeo->ndof(), m_SimGeo->nn() * m_SimGeo->ndof());
+            initSolver();
 
             std::cout << niter+1 << '\t';
 
             t.start();
 
-            Eigen::VectorXd dof_free = unconsVec(dof);
-            Eigen::VectorXd dof_new_free = unconsVec(dof_new);
-            //std::cout << "dof_free" << std::endl;
-            //std::cout << dof_free << std::endl;
-            //std::cout << "dof_new_free" << std::endl;
-            //std::cout << dof_new_free << std::endl;
+            // calculate derivatives of energy functions
+            calcDEnergy(m_dEdq, m_ddEddq);
 
             // calculate residual vector
-            updateResidual(dof, dof_new, vel, residual);
+            updateResidual(dof, dof_new, vel, m_dEdq, m_residual);
             //std::cout << residual << std::endl;
 
             // calculate jacobian matrix
-            updateJacobian(jacobian);
+            updateJacobian(m_ddEddq, m_jacobian);
             //std::cout << jacobian << std::endl;
 
             // residual vector and jacobian matrix at dofs that are not specified
-            Eigen::VectorXd res_free = unconsVec(residual);
-            Eigen::MatrixXd jacobian_free = unconsMat(jacobian);
+            Eigen::VectorXd res_free = unconsVec(m_residual);
+            Eigen::MatrixXd jacobian_free = unconsMat(m_jacobian);
             //std::cout << res_free << std::endl;
 
             // solve for new dof vector
@@ -150,40 +149,53 @@ void SolverImpl::Solve() {
 //       Implementation of subroutines       //
 // ========================================= //
 
-/*
- *    f_i = m_i * (q_i(t_n+1) - q_i(t_n)) / dt^2 - m_i * v(t_n) / dt + dE/dq - F_ext
- */
-void SolverImpl::updateResidual(Eigen::VectorXd& qn, Eigen::VectorXd& qnew, Eigen::VectorXd& vel, Eigen::VectorXd& res_f) {
-
-    // 1st derivative of energy vector
-    Eigen::VectorXd dEdq = Eigen::VectorXd::Zero(m_SimGeo->nn() * m_SimGeo->ndof());
+void SolverImpl::calcDEnergy(Eigen::VectorXd& dEdq, Eigen::MatrixXd& ddEddq) {
 
     Eigen::VectorXd fstretch = Eigen::VectorXd::Zero(m_SimGeo->nn() * m_SimGeo->ndof());
     Eigen::VectorXd fshear   = Eigen::VectorXd::Zero(m_SimGeo->nn() * m_SimGeo->ndof());
     Eigen::VectorXd fbend    = Eigen::VectorXd::Zero(m_SimGeo->nn() * m_SimGeo->ndof());
 
+    Eigen::MatrixXd jstretch = Eigen::MatrixXd::Zero(m_SimGeo->nn() * m_SimGeo->ndof(), m_SimGeo->nn() * m_SimGeo->ndof());
+    Eigen::MatrixXd jshear   = Eigen::MatrixXd::Zero(m_SimGeo->nn() * m_SimGeo->ndof(), m_SimGeo->nn() * m_SimGeo->ndof());
+    Eigen::MatrixXd jbend    = Eigen::MatrixXd::Zero(m_SimGeo->nn() * m_SimGeo->ndof(), m_SimGeo->nn() * m_SimGeo->ndof());
+
+    Timer ts;
     // loop over each element
     for (unsigned int i = 0; i < m_SimGeo->nel(); i++) {
-        calculate_fstretch(m_SimGeo->m_elementList[i], fstretch);
-        calculate_fshear(m_SimGeo->m_elementList[i], fshear);
-        calculate_fbend(m_SimGeo->m_elementList[i], fbend);
+        calcStretch(m_SimGeo->m_elementList[i], fstretch, jstretch);
+        calcShear(m_SimGeo->m_elementList[i], fshear, jshear);
+        calcBend(m_SimGeo->m_elementList[i], fbend, jbend);
     }
+    std::cout << ts.elapsed() << " ms \t";
 
-/*
+    dEdq = fstretch + fshear + fbend;
+    ddEddq = jstretch + jshear + jbend;
+
+    /*
     std::cout << "stretch" << std::endl;
     std::cout << fstretch << std::endl;
-
     std::cout << "shear" << std::endl;
     std::cout << fshear << std::endl;
     std::cout << "bend" << std::endl;
     std::cout << fbend << std::endl;
      */
-
-    dEdq = fstretch + fshear + fbend;
-
+    /*
+    std::cout << "stretch" << std::endl;
+    std::cout << jstretch << std::endl;
+    std::cout << "shear" << std::endl;
+    std::cout << jshear << std::endl;
+    std::cout << "bend" << std::endl;
+    std::cout << jbend << std::endl;
+     */
 
     // reset all marks
     resetMarks();
+}
+
+/*
+ *    f_i = m_i * (q_i(t_n+1) - q_i(t_n)) / dt^2 - m_i * v(t_n) / dt + dE/dq - F_ext
+ */
+void SolverImpl::updateResidual(Eigen::VectorXd& qn, Eigen::VectorXd& qnew, Eigen::VectorXd& vel, Eigen::VectorXd& dEdq, Eigen::VectorXd& res_f) {
 
     double dt = m_SimPar->dt();
 
@@ -204,39 +216,10 @@ void SolverImpl::updateResidual(Eigen::VectorXd& qn, Eigen::VectorXd& qnew, Eige
      */
 }
 
-
-
 /*
  *    J_ij = m_i / dt^2 * delta_ij + d^2 E / dq_i dq_j
  */
-void SolverImpl::updateJacobian(Eigen::MatrixXd& mat_j) {
-
-    // 2nd derivative of energy vector
-    Eigen::MatrixXd ddEddq = Eigen::MatrixXd::Zero(m_SimGeo->nn() * m_SimGeo->ndof(), m_SimGeo->nn() * m_SimGeo->ndof());
-
-    Eigen::MatrixXd jstretch = Eigen::MatrixXd::Zero(m_SimGeo->nn() * m_SimGeo->ndof(), m_SimGeo->nn() * m_SimGeo->ndof());
-    Eigen::MatrixXd jshear   = Eigen::MatrixXd::Zero(m_SimGeo->nn() * m_SimGeo->ndof(), m_SimGeo->nn() * m_SimGeo->ndof());
-    Eigen::MatrixXd jbend    = Eigen::MatrixXd::Zero(m_SimGeo->nn() * m_SimGeo->ndof(), m_SimGeo->nn() * m_SimGeo->ndof());
-
-    for (unsigned int i = 0; i < m_SimGeo->nel(); i++) {
-        calculate_jstretch(m_SimGeo->m_elementList[i], jstretch);
-        calculate_jshear(m_SimGeo->m_elementList[i], jshear);
-        calculate_jbend(m_SimGeo->m_elementList[i], jbend);
-    }
-
-    ddEddq = jstretch + jshear + jbend;
-
-/*
-    std::cout << "stretch" << std::endl;
-    std::cout << jstretch << std::endl;
-    std::cout << "shear" << std::endl;
-    std::cout << jshear << std::endl;
-    std::cout << "bend" << std::endl;
-    std::cout << jbend << std::endl;
-     */
-
-    // reset all marks
-    resetMarks();
+void SolverImpl::updateJacobian(Eigen::MatrixXd& ddEddq, Eigen::MatrixXd& mat_j) {
 
     double dt = m_SimPar->dt();
 
@@ -360,16 +343,16 @@ void SolverImpl::resetMarks() {
 }
 
 // stretch energy for each element
-void SolverImpl::calculate_fstretch(Element& el, Eigen::VectorXd& dEdq) {
+void SolverImpl::calcStretch(Element& el, Eigen::VectorXd& dEdq, Eigen::MatrixXd& ddEddq){
 
     // loop over 3 edges
-    for (int i = 1; i <= 3; i++) {
+    for (int k = 1; k <= 3; k++) {
 
-        double l0 = el.get_len_edge(i);
+        double l0 = el.get_len_edge(k);
         int loc1 = 0, loc2 = 0;
 
         // switch over different edges
-        switch (i) {
+        switch (k) {
             case 1:
                 loc1 = 1;
                 loc2 = 2;
@@ -388,31 +371,37 @@ void SolverImpl::calculate_fstretch(Element& el, Eigen::VectorXd& dEdq) {
         Eigen::Vector3d loc_xyz1 = el.get_node(loc1)->get_xyz();
         Eigen::Vector3d loc_xyz2 = el.get_node(loc2)->get_xyz();
 
+        double ks = m_SimPar->kstretch();
+
         // local stretch force: fx1, fy1, fz1, fx2, fy2, fz2
         Eigen::VectorXd loc_f = Eigen::VectorXd::Zero(6);
+
+        // local jacobian matrix
+        Eigen::MatrixXd loc_j = Eigen::MatrixXd::Zero(6, 6);
+
+        locFstretch(loc_xyz1, loc_xyz2, l0, ks, loc_f);
+        locJstretch(loc_xyz1, loc_xyz2, l0, ks, loc_j);
+
+        // if an edge is shared by two elements, local jacobian will be double counted
+        if (el.get_nearby_element(k) != 0) {
+            loc_f = loc_f * 0.5;
+            loc_j = loc_j * 0.5;
+        }
+
+        // force and  needs to be divided by 2, because 1/2 wasn't included during derivation
+        loc_f = 0.5 * loc_f;
+        loc_j = 0.5 * loc_j;
+
+        for (int i = 0; i < 2 * m_SimGeo->ndof(); i++) {
+            for (int j = 0; j < 2 * m_SimGeo->ndof(); j++) {
+                if (i > j)
+                    loc_j(i,j) = loc_j(j,i);
+            }
+        }
 
         // local node number corresponds to global node number
         unsigned int n1 = el.get_node_num(loc1);
         unsigned int n2 = el.get_node_num(loc2);
-
-        double ks = m_SimPar->kstretch();
-
-        loc_f(0) = dEs_dx1(loc_xyz1, loc_xyz2, l0, ks);
-        loc_f(1) = dEs_dy1(loc_xyz1, loc_xyz2, l0, ks);
-        loc_f(2) = dEs_dz1(loc_xyz1, loc_xyz2, l0, ks);
-        loc_f(3) = dEs_dx2(loc_xyz1, loc_xyz2, l0, ks);
-        loc_f(4) = dEs_dy2(loc_xyz1, loc_xyz2, l0, ks);
-        loc_f(5) = dEs_dz2(loc_xyz1, loc_xyz2, l0, ks);
-
-        // force needs to be divided by 2, because 1/2 wasn't included during derivation
-        loc_f = loc_f * 0.5;
-
-        // if an edge is shared by two elements, local force will be double counted
-        if (el.get_nearby_element(i) != 0)
-            loc_f = loc_f * 0.5;
-
-        //std::cout << n1 << '\t' << n2 << std::endl;
-        //std::cout << loc_f << std::endl;
 
         // stretch force for local node1
         dEdq(3*(n1-1))   += loc_f(0);
@@ -423,11 +412,24 @@ void SolverImpl::calculate_fstretch(Element& el, Eigen::VectorXd& dEdq) {
         dEdq(3*(n2-1))   += loc_f(3);
         dEdq(3*(n2-1)+1) += loc_f(4);
         dEdq(3*(n2-1)+2) += loc_f(5);
+
+        // update jacobian
+        unsigned int nx1 = 3*(n1-1);
+        unsigned int nx2 = 3*(n2-1);
+
+        for (int i = 0; i < m_SimGeo->ndof(); i++) {
+            for (int j = 0; j < m_SimGeo->ndof(); j++) {
+                ddEddq(nx1+i, nx1+j) += loc_j(i, j);
+                ddEddq(nx1+i, nx2+j) += loc_j(i, j+m_SimGeo->ndof());
+                ddEddq(nx2+i, nx1+j) += loc_j(i+m_SimGeo->ndof(), j);
+                ddEddq(nx2+i, nx2+j) += loc_j(i+m_SimGeo->ndof(), j+m_SimGeo->ndof());
+            }
+        }
     }
 }
 
 // shear energy for each element
-void SolverImpl::calculate_fshear(Element& el, Eigen::VectorXd& dEdq) {
+void SolverImpl::calcShear(Element &el, Eigen::VectorXd &dEdq, Eigen::MatrixXd &ddEddq){
 
     // coordinates of local nodes
     Eigen::Vector3d loc_xyz1 = el.get_node(1)->get_xyz();
@@ -442,20 +444,23 @@ void SolverImpl::calculate_fshear(Element& el, Eigen::VectorXd& dEdq) {
     // area
     double a0 = el.get_area();
 
+    double ksh = m_SimPar->kshear();
+
     // local shearing force: fx1, fy1, fz1, fx2, fy2, fz2, fx3, fy3, fz3
     Eigen::VectorXd loc_f = Eigen::VectorXd::Zero(9);
 
-    double ksh = m_SimPar->kshear();
+    // local jacobian matrix
+    Eigen::MatrixXd loc_j = Eigen::MatrixXd::Zero(9, 9);
 
-    loc_f(0) = dEsh_dx1(loc_xyz1, loc_xyz2, loc_xyz3, a0, ksh);
-    loc_f(1) = dEsh_dy1(loc_xyz1, loc_xyz2, loc_xyz3, a0, ksh);
-    loc_f(2) = dEsh_dz1(loc_xyz1, loc_xyz2, loc_xyz3, a0, ksh);
-    loc_f(3) = dEsh_dx2(loc_xyz1, loc_xyz2, loc_xyz3, a0, ksh);
-    loc_f(4) = dEsh_dy2(loc_xyz1, loc_xyz2, loc_xyz3, a0, ksh);
-    loc_f(5) = dEsh_dz2(loc_xyz1, loc_xyz2, loc_xyz3, a0, ksh);
-    loc_f(6) = dEsh_dx3(loc_xyz1, loc_xyz2, loc_xyz3, a0, ksh);
-    loc_f(7) = dEsh_dy3(loc_xyz1, loc_xyz2, loc_xyz3, a0, ksh);
-    loc_f(8) = dEsh_dz3(loc_xyz1, loc_xyz2, loc_xyz3, a0, ksh);
+    locFshear(loc_xyz1, loc_xyz2, loc_xyz3, a0, ksh, loc_f);
+    locJshear(loc_xyz1, loc_xyz2, loc_xyz3, a0, ksh, loc_j);
+
+    for (int i = 0; i < 3 * m_SimGeo->ndof(); i++) {
+        for (int j = 0; j < 3 * m_SimGeo->ndof(); j++) {
+            if (i > j)
+                loc_j(i,j) = loc_j(j,i);
+        }
+    }
 
     // shearing force for local node1
     dEdq(3*(n1-1))   += loc_f(0);
@@ -472,9 +477,30 @@ void SolverImpl::calculate_fshear(Element& el, Eigen::VectorXd& dEdq) {
     dEdq(3*(n3-1)+1) += loc_f(7);
     dEdq(3*(n3-1)+2) += loc_f(8);
 
+    // update jacobian
+    unsigned int nx1 = 3*(n1-1);
+    unsigned int nx2 = 3*(n2-1);
+    unsigned int nx3 = 3*(n3-1);
+
+    for (int i = 0; i < m_SimGeo->ndof(); i++) {
+        for (int j = 0; j < m_SimGeo->ndof(); j++) {
+
+            ddEddq(nx1+i, nx1+j) += loc_j(i, j);
+            ddEddq(nx1+i, nx2+j) += loc_j(i, j+m_SimGeo->ndof());
+            ddEddq(nx1+i, nx3+j) += loc_j(i, j+m_SimGeo->ndof()*2);
+
+            ddEddq(nx2+i, nx1+j) += loc_j(i+m_SimGeo->ndof(), j);
+            ddEddq(nx2+i, nx2+j) += loc_j(i+m_SimGeo->ndof(), j+m_SimGeo->ndof());
+            ddEddq(nx2+i, nx3+j) += loc_j(i+m_SimGeo->ndof(), j+m_SimGeo->ndof()*2);
+
+            ddEddq(nx3+i, nx1+j) += loc_j(i+m_SimGeo->ndof()*2, j);
+            ddEddq(nx3+i, nx2+j) += loc_j(i+m_SimGeo->ndof()*2, j+m_SimGeo->ndof());
+            ddEddq(nx3+i, nx3+j) += loc_j(i+m_SimGeo->ndof()*2, j+m_SimGeo->ndof()*2);
+        }
+    }
 }
 
-void SolverImpl::calculate_fbend(Element& el, Eigen::VectorXd& dEdq) {
+void SolverImpl::calcBend(Element &el, Eigen::VectorXd &dEdq, Eigen::MatrixXd &ddEddq){
 
     // loop over 3 edges
     for (int i = 1; i <= 3; i++) {
@@ -520,24 +546,22 @@ void SolverImpl::calculate_fbend(Element& el, Eigen::VectorXd& dEdq) {
         // local bending force: fx0, fy0, fz0, fx1, fy1, fz1, fx2, fy2, fz2, fx3, fy3, fz3
         Eigen::VectorXd loc_f = Eigen::VectorXd::Zero(12);
 
-        loc_f(0) = dEb_dx0(loc_xyz0, loc_xyz1, loc_xyz2, loc_xyz3, kappa0, n1n20);
-        loc_f(1) = dEb_dy0(loc_xyz0, loc_xyz1, loc_xyz2, loc_xyz3, kappa0, n1n20);
-        loc_f(2) = dEb_dz0(loc_xyz0, loc_xyz1, loc_xyz2, loc_xyz3, kappa0, n1n20);
-        loc_f(3) = dEb_dx1(loc_xyz0, loc_xyz1, loc_xyz2, loc_xyz3, kappa0, n1n20);
-        loc_f(4) = dEb_dy1(loc_xyz0, loc_xyz1, loc_xyz2, loc_xyz3, kappa0, n1n20);
-        loc_f(5) = dEb_dz1(loc_xyz0, loc_xyz1, loc_xyz2, loc_xyz3, kappa0, n1n20);
-        loc_f(6) = dEb_dx2(loc_xyz0, loc_xyz1, loc_xyz2, loc_xyz3, kappa0, n1n20);
-        loc_f(7) = dEb_dy2(loc_xyz0, loc_xyz1, loc_xyz2, loc_xyz3, kappa0, n1n20);
-        loc_f(8) = dEb_dz2(loc_xyz0, loc_xyz1, loc_xyz2, loc_xyz3, kappa0, n1n20);
-        loc_f(9) = dEb_dx3(loc_xyz0, loc_xyz1, loc_xyz2, loc_xyz3, kappa0, n1n20);
-        loc_f(10) = dEb_dy3(loc_xyz0, loc_xyz1, loc_xyz2, loc_xyz3, kappa0, n1n20);
-        loc_f(11) = dEb_dz3(loc_xyz0, loc_xyz1, loc_xyz2, loc_xyz3, kappa0, n1n20);
+        // local jacobian matrix
+        Eigen::MatrixXd loc_j = Eigen::MatrixXd::Zero(12, 12);
 
-        // force needs to be multiplied by the coefficients
+        locFbend(loc_xyz0, loc_xyz1, loc_xyz2, loc_xyz3, kappa0, n1n20, loc_f);
+        locJbend(loc_xyz0, loc_xyz1, loc_xyz2, loc_xyz3, kappa0, n1n20, loc_j);
+
+        for (int k = 0; k < 4 * m_SimGeo->ndof(); k++) {
+            for (int j = 0; j < 4 * m_SimGeo->ndof(); j++) {
+                if (k > j)
+                    loc_j(k,j) = loc_j(j,k);
+            }
+        }
+
+        // force and jacobian needs to be multiplied by the coefficients
         loc_f = loc_f * 0.5 * m_SimPar->kbend() * 3 * pow(l0, 2) / a0;
-
-        //std::cout << "bending local force" << std::endl;
-        //std::cout << loc_f << std::endl;
+        loc_j = loc_j * 0.5 * m_SimPar->kbend() * 3 * pow(l0, 2) / a0;
 
         // bending force for local node1
         dEdq(3*(n0-1))   += loc_f(0);
@@ -559,361 +583,12 @@ void SolverImpl::calculate_fbend(Element& el, Eigen::VectorXd& dEdq) {
         dEdq(3*(n3-1)+1) += loc_f(10);
         dEdq(3*(n3-1)+2) += loc_f(11);
 
-    }
-}
-
-void SolverImpl::calculate_jstretch(Element& el, Eigen::MatrixXd& ddEddq) {
-
-    // loop over 3 edges
-    for (int k = 1; k <= 3; k++) {
-
-        double l0 = el.get_len_edge(k);
-        int loc1 = 0, loc2 = 0;
-
-        switch (k) {
-            case 1:
-                loc1 = 1;
-                loc2 = 2;
-                break;
-            case 2:
-                loc1 = 2;
-                loc2 = 3;
-                break;
-            case 3:
-                loc1 = 1;
-                loc2 = 3;
-                break;
-        }
-
-        // coordinates of local nodes
-        Eigen::Vector3d loc_xyz1 = el.get_node(loc1)->get_xyz();
-        Eigen::Vector3d loc_xyz2 = el.get_node(loc2)->get_xyz();
-
-        double ks = m_SimPar->kstretch();
-
-        // local jacobian matrix
-        Eigen::MatrixXd loc_j = Eigen::MatrixXd::Zero(6, 6);
-
-        loc_j(0, 0) = ddEs_dx1dx1(loc_xyz1, loc_xyz2, l0, ks);
-        loc_j(0, 1) = ddEs_dx1dy1(loc_xyz1, loc_xyz2, l0, ks);
-        loc_j(0, 2) = ddEs_dx1dz1(loc_xyz1, loc_xyz2, l0, ks);
-        loc_j(0, 3) = ddEs_dx1dx2(loc_xyz1, loc_xyz2, l0, ks);
-        loc_j(0, 4) = ddEs_dx1dy2(loc_xyz1, loc_xyz2, l0, ks);
-        loc_j(0, 5) = ddEs_dx1dz2(loc_xyz1, loc_xyz2, l0, ks);
-
-        loc_j(1, 1) = ddEs_dy1dy1(loc_xyz1, loc_xyz2, l0, ks);
-        loc_j(1, 2) = ddEs_dy1dz1(loc_xyz1, loc_xyz2, l0, ks);
-        loc_j(1, 3) = ddEs_dx2dy1(loc_xyz1, loc_xyz2, l0, ks); //
-        loc_j(1, 4) = ddEs_dy1dy2(loc_xyz1, loc_xyz2, l0, ks);
-        loc_j(1, 5) = ddEs_dy1dz2(loc_xyz1, loc_xyz2, l0, ks);
-
-        loc_j(2, 2) = ddEs_dz1dz1(loc_xyz1, loc_xyz2, l0, ks);
-        loc_j(2, 3) = ddEs_dx2dz1(loc_xyz1, loc_xyz2, l0, ks); //
-        loc_j(2, 4) = ddEs_dy2dz1(loc_xyz1, loc_xyz2, l0, ks); //
-        loc_j(2, 5) = ddEs_dz1dz2(loc_xyz1, loc_xyz2, l0, ks);
-
-        loc_j(3, 3) = ddEs_dx2dx2(loc_xyz1, loc_xyz2, l0, ks);
-        loc_j(3, 4) = ddEs_dx2dy2(loc_xyz1, loc_xyz2, l0, ks);
-        loc_j(3, 5) = ddEs_dx2dz2(loc_xyz1, loc_xyz2, l0, ks);
-
-        loc_j(4, 4) = ddEs_dy2dy2(loc_xyz1, loc_xyz2, l0, ks);
-        loc_j(4, 5) = ddEs_dy2dz2(loc_xyz1, loc_xyz2, l0, ks);
-        loc_j(5, 5) = ddEs_dz2dz2(loc_xyz1, loc_xyz2, l0, ks);
-
-        for (int i = 0; i < 2 * m_SimGeo->ndof(); i++) {
-            for (int j = 0; j < 2 * m_SimGeo->ndof(); j++) {
-                if (i > j)
-                    loc_j(i,j) = loc_j(j,i);
-            }
-        }
-
-        // jacobian needs to be divided by 2, because 1/2 wasn't included during derivation
-        loc_j = 0.5 * loc_j;
-
-        // if an edge is shared by two elements, local jacobian will be double counted
-        if (el.get_nearby_element(k) != 0)
-            loc_j = loc_j * 0.5;
-
-        // local node number corresponds to global node number
-        unsigned int n1 = el.get_node_num(loc1);
-        unsigned int n2 = el.get_node_num(loc2);
-
-        unsigned int nx1 = 3*(n1-1);
-        unsigned int nx2 = 3*(n2-1);
-
-        //std::cout << n1 << '\t' << n2 << '\t' << l0 << std::endl;
-        //std::cout << loc_j << std::endl;
-
         // update jacobian
-        for (int i = 0; i < m_SimGeo->ndof(); i++) {
-            for (int j = 0; j < m_SimGeo->ndof(); j++) {
-                ddEddq(nx1+i, nx1+j) += loc_j(i, j);
-                ddEddq(nx1+i, nx2+j) += loc_j(i, j+m_SimGeo->ndof());
-                ddEddq(nx2+i, nx1+j) += loc_j(i+m_SimGeo->ndof(), j);
-                ddEddq(nx2+i, nx2+j) += loc_j(i+m_SimGeo->ndof(), j+m_SimGeo->ndof());
-            }
-        }
-    }
-}
-
-void SolverImpl::calculate_jshear(Element& el, Eigen::MatrixXd& ddEddq) {
-
-    // coordinates of local nodes
-    Eigen::Vector3d loc_xyz1 = el.get_node(1)->get_xyz();
-    Eigen::Vector3d loc_xyz2 = el.get_node(2)->get_xyz();
-    Eigen::Vector3d loc_xyz3 = el.get_node(3)->get_xyz();
-
-    // area
-    double a0 = el.get_area();
-
-    double ksh = m_SimPar->kshear();
-
-    // local jacobian matrix
-    Eigen::MatrixXd loc_j = Eigen::MatrixXd::Zero(9, 9);
-
-    loc_j(0, 0) = ddEsh_dx1dx1(loc_xyz1, loc_xyz2, loc_xyz3, a0, ksh);
-    loc_j(0, 1) = ddEsh_dx1dy1(loc_xyz1, loc_xyz2, loc_xyz3, a0, ksh);
-    loc_j(0, 2) = ddEsh_dx1dz1(loc_xyz1, loc_xyz2, loc_xyz3, a0, ksh);
-    loc_j(0, 3) = ddEsh_dx1dx2(loc_xyz1, loc_xyz2, loc_xyz3, a0, ksh);
-    loc_j(0, 4) = ddEsh_dx1dy2(loc_xyz1, loc_xyz2, loc_xyz3, a0, ksh);
-    loc_j(0, 5) = ddEsh_dx1dz2(loc_xyz1, loc_xyz2, loc_xyz3, a0, ksh);
-    loc_j(0, 6) = ddEsh_dx1dx3(loc_xyz1, loc_xyz2, loc_xyz3, a0, ksh);
-    loc_j(0, 7) = ddEsh_dx1dy3(loc_xyz1, loc_xyz2, loc_xyz3, a0, ksh);
-    loc_j(0, 8) = ddEsh_dx1dz3(loc_xyz1, loc_xyz2, loc_xyz3, a0, ksh);
-
-    loc_j(1, 1) = ddEsh_dy1dy1(loc_xyz1, loc_xyz2, loc_xyz3, a0, ksh);
-    loc_j(1, 2) = ddEsh_dy1dz1(loc_xyz1, loc_xyz2, loc_xyz3, a0, ksh);
-    loc_j(1, 3) = ddEsh_dx2dy1(loc_xyz1, loc_xyz2, loc_xyz3, a0, ksh); //
-    loc_j(1, 4) = ddEsh_dy1dy2(loc_xyz1, loc_xyz2, loc_xyz3, a0, ksh);
-    loc_j(1, 5) = ddEsh_dy1dz2(loc_xyz1, loc_xyz2, loc_xyz3, a0, ksh);
-    loc_j(1, 6) = ddEsh_dx3dy1(loc_xyz1, loc_xyz2, loc_xyz3, a0, ksh); //
-    loc_j(1, 7) = ddEsh_dy1dy3(loc_xyz1, loc_xyz2, loc_xyz3, a0, ksh);
-    loc_j(1, 8) = ddEsh_dy1dz3(loc_xyz1, loc_xyz2, loc_xyz3, a0, ksh);
-
-    loc_j(2, 2) = ddEsh_dz1dz1(loc_xyz1, loc_xyz2, loc_xyz3, a0, ksh);
-    loc_j(2, 3) = ddEsh_dx2dz1(loc_xyz1, loc_xyz2, loc_xyz3, a0, ksh); //
-    loc_j(2, 4) = ddEsh_dy2dz1(loc_xyz1, loc_xyz2, loc_xyz3, a0, ksh); //
-    loc_j(2, 5) = ddEsh_dz1dz2(loc_xyz1, loc_xyz2, loc_xyz3, a0, ksh);
-    loc_j(2, 6) = ddEsh_dx3dz1(loc_xyz1, loc_xyz2, loc_xyz3, a0, ksh); //
-    loc_j(2, 7) = ddEsh_dy3dz1(loc_xyz1, loc_xyz2, loc_xyz3, a0, ksh); //
-    loc_j(2, 8) = ddEsh_dz1dz3(loc_xyz1, loc_xyz2, loc_xyz3, a0, ksh);
-
-    loc_j(3, 3) = ddEsh_dx2dx2(loc_xyz1, loc_xyz2, loc_xyz3, a0, ksh);
-    loc_j(3, 4) = ddEsh_dx2dy2(loc_xyz1, loc_xyz2, loc_xyz3, a0, ksh);
-    loc_j(3, 5) = ddEsh_dx2dz2(loc_xyz1, loc_xyz2, loc_xyz3, a0, ksh);
-    loc_j(3, 6) = ddEsh_dx2dx3(loc_xyz1, loc_xyz2, loc_xyz3, a0, ksh);
-    loc_j(3, 7) = ddEsh_dx2dy3(loc_xyz1, loc_xyz2, loc_xyz3, a0, ksh);
-    loc_j(3, 8) = ddEsh_dx2dz3(loc_xyz1, loc_xyz2, loc_xyz3, a0, ksh);
-
-    loc_j(4, 4) = ddEsh_dy2dy2(loc_xyz1, loc_xyz2, loc_xyz3, a0, ksh);
-    loc_j(4, 5) = ddEsh_dy2dz2(loc_xyz1, loc_xyz2, loc_xyz3, a0, ksh);
-    loc_j(4, 6) = ddEsh_dx2dx3(loc_xyz1, loc_xyz2, loc_xyz3, a0, ksh);
-    loc_j(4, 7) = ddEsh_dx2dy3(loc_xyz1, loc_xyz2, loc_xyz3, a0, ksh);
-    loc_j(4, 8) = ddEsh_dx2dz3(loc_xyz1, loc_xyz2, loc_xyz3, a0, ksh);
-
-    loc_j(5, 5) = ddEsh_dz2dz2(loc_xyz1, loc_xyz2, loc_xyz3, a0, ksh);
-    loc_j(5, 6) = ddEsh_dx3dz2(loc_xyz1, loc_xyz2, loc_xyz3, a0, ksh); //
-    loc_j(5, 7) = ddEsh_dy3dz2(loc_xyz1, loc_xyz2, loc_xyz3, a0, ksh); //
-    loc_j(5, 8) = ddEsh_dz2dz3(loc_xyz1, loc_xyz2, loc_xyz3, a0, ksh);
-
-    loc_j(6, 6) = ddEsh_dx3dx3(loc_xyz1, loc_xyz2, loc_xyz3, a0, ksh);
-    loc_j(6, 7) = ddEsh_dx3dy3(loc_xyz1, loc_xyz2, loc_xyz3, a0, ksh);
-    loc_j(6, 8) = ddEsh_dx3dz3(loc_xyz1, loc_xyz2, loc_xyz3, a0, ksh);
-
-    loc_j(7, 7) = ddEsh_dy3dy3(loc_xyz1, loc_xyz2, loc_xyz3, a0, ksh);
-    loc_j(7, 8) = ddEsh_dy3dz3(loc_xyz1, loc_xyz2, loc_xyz3, a0, ksh);
-    loc_j(8, 8) = ddEsh_dz3dz3(loc_xyz1, loc_xyz2, loc_xyz3, a0, ksh);
-
-    for (int i = 0; i < 3 * m_SimGeo->ndof(); i++) {
-        for (int j = 0; j < 3 * m_SimGeo->ndof(); j++) {
-            if (i > j)
-                loc_j(i,j) = loc_j(j,i);
-        }
-    }
-
-    // local node number corresponds to global node number
-    unsigned int n1 = el.get_node_num(1);
-    unsigned int n2 = el.get_node_num(2);
-    unsigned int n3 = el.get_node_num(3);
-
-    unsigned int nx1 = 3*(n1-1);
-    unsigned int nx2 = 3*(n2-1);
-    unsigned int nx3 = 3*(n3-1);
-
-    // update jacobian
-    for (int i = 0; i < m_SimGeo->ndof(); i++) {
-        for (int j = 0; j < m_SimGeo->ndof(); j++) {
-
-            ddEddq(nx1+i, nx1+j) += loc_j(i, j);
-            ddEddq(nx1+i, nx2+j) += loc_j(i, j+m_SimGeo->ndof());
-            ddEddq(nx1+i, nx3+j) += loc_j(i, j+m_SimGeo->ndof()*2);
-
-            ddEddq(nx2+i, nx1+j) += loc_j(i+m_SimGeo->ndof(), j);
-            ddEddq(nx2+i, nx2+j) += loc_j(i+m_SimGeo->ndof(), j+m_SimGeo->ndof());
-            ddEddq(nx2+i, nx3+j) += loc_j(i+m_SimGeo->ndof(), j+m_SimGeo->ndof()*2);
-
-            ddEddq(nx3+i, nx1+j) += loc_j(i+m_SimGeo->ndof()*2, j);
-            ddEddq(nx3+i, nx2+j) += loc_j(i+m_SimGeo->ndof()*2, j+m_SimGeo->ndof());
-            ddEddq(nx3+i, nx3+j) += loc_j(i+m_SimGeo->ndof()*2, j+m_SimGeo->ndof()*2);
-        }
-    }
-}
-
-void SolverImpl::calculate_jbend(Element& el, Eigen::MatrixXd& ddEddq) {
-
-    // loop over 3 edges
-    for (int i = 1; i <= 3; i++) {
-
-        // if the edge is a hinge
-        if ( !el.is_hinge(i) )
-            continue;
-
-        // get the pointer to that hinge
-        Hinge* temp_hinge = el.get_hinge(i);
-
-        // and has NOT been visited yet
-        if (temp_hinge->check_visited())
-            continue;
-
-        // mark the edge as visited
-        temp_hinge->mark_visited();
-
-        // coordinates of local nodes
-        Eigen::Vector3d loc_xyz0 = temp_hinge->get_node(0)->get_xyz();
-        Eigen::Vector3d loc_xyz1 = temp_hinge->get_node(1)->get_xyz();
-        Eigen::Vector3d loc_xyz2 = temp_hinge->get_node(2)->get_xyz();
-        Eigen::Vector3d loc_xyz3 = temp_hinge->get_node(3)->get_xyz();
-
-        // original hinge length
-        double l0 = el.get_len_edge(i);
-
-        // original sum of the area of two elements
-        double a0 = temp_hinge->get_area_sum();
-
-        // original norm(n1)*norm(n2)
-        double n1n20 = temp_hinge->get_n1n20();
-
-        // original kappa0
-        Eigen::Vector3d kappa0 = temp_hinge->get_kappa0();
-
-        // local jacobian matrix
-        Eigen::MatrixXd loc_j = Eigen::MatrixXd::Zero(12, 12);
-
-        loc_j(0, 0) = ddEb_dx0dx0(loc_xyz0, loc_xyz1, loc_xyz2, loc_xyz3, kappa0, n1n20);
-        loc_j(0, 1) = ddEb_dx0dy0(loc_xyz0, loc_xyz1, loc_xyz2, loc_xyz3, kappa0, n1n20);
-        loc_j(0, 2) = ddEb_dx0dz0(loc_xyz0, loc_xyz1, loc_xyz2, loc_xyz3, kappa0, n1n20);
-        loc_j(0, 3) = ddEb_dx0dx1(loc_xyz0, loc_xyz1, loc_xyz2, loc_xyz3, kappa0, n1n20);
-        loc_j(0, 4) = ddEb_dx0dy1(loc_xyz0, loc_xyz1, loc_xyz2, loc_xyz3, kappa0, n1n20);
-        loc_j(0, 5) = ddEb_dx0dz1(loc_xyz0, loc_xyz1, loc_xyz2, loc_xyz3, kappa0, n1n20);
-        loc_j(0, 6) = ddEb_dx0dx2(loc_xyz0, loc_xyz1, loc_xyz2, loc_xyz3, kappa0, n1n20);
-        loc_j(0, 7) = ddEb_dx0dy2(loc_xyz0, loc_xyz1, loc_xyz2, loc_xyz3, kappa0, n1n20);
-        loc_j(0, 8) = ddEb_dx0dz2(loc_xyz0, loc_xyz1, loc_xyz2, loc_xyz3, kappa0, n1n20);
-        loc_j(0, 9) = ddEb_dx0dx3(loc_xyz0, loc_xyz1, loc_xyz2, loc_xyz3, kappa0, n1n20);
-        loc_j(0, 10) = ddEb_dx0dy3(loc_xyz0, loc_xyz1, loc_xyz2, loc_xyz3, kappa0, n1n20);
-        loc_j(0, 11) = ddEb_dx0dz3(loc_xyz0, loc_xyz1, loc_xyz2, loc_xyz3, kappa0, n1n20);
-
-        loc_j(1, 1) = ddEb_dy0dy0(loc_xyz0, loc_xyz1, loc_xyz2, loc_xyz3, kappa0, n1n20);
-        loc_j(1, 2) = ddEb_dy0dz0(loc_xyz0, loc_xyz1, loc_xyz2, loc_xyz3, kappa0, n1n20);
-        loc_j(1, 3) = ddEb_dx1dy0(loc_xyz0, loc_xyz1, loc_xyz2, loc_xyz3, kappa0, n1n20); //
-        loc_j(1, 4) = ddEb_dy0dy1(loc_xyz0, loc_xyz1, loc_xyz2, loc_xyz3, kappa0, n1n20);
-        loc_j(1, 5) = ddEb_dy0dz1(loc_xyz0, loc_xyz1, loc_xyz2, loc_xyz3, kappa0, n1n20);
-        loc_j(1, 6) = ddEb_dx2dy0(loc_xyz0, loc_xyz1, loc_xyz2, loc_xyz3, kappa0, n1n20); //
-        loc_j(1, 7) = ddEb_dy0dy2(loc_xyz0, loc_xyz1, loc_xyz2, loc_xyz3, kappa0, n1n20);
-        loc_j(1, 8) = ddEb_dy0dz2(loc_xyz0, loc_xyz1, loc_xyz2, loc_xyz3, kappa0, n1n20);
-        loc_j(1, 9) = ddEb_dx3dy0(loc_xyz0, loc_xyz1, loc_xyz2, loc_xyz3, kappa0, n1n20); //
-        loc_j(1, 10) = ddEb_dy0dy3(loc_xyz0, loc_xyz1, loc_xyz2, loc_xyz3, kappa0, n1n20);
-        loc_j(1, 11) = ddEb_dy0dz3(loc_xyz0, loc_xyz1, loc_xyz2, loc_xyz3, kappa0, n1n20);
-
-        loc_j(2, 2) = ddEb_dz0dz0(loc_xyz0, loc_xyz1, loc_xyz2, loc_xyz3, kappa0, n1n20);
-        loc_j(2, 3) = ddEb_dx1dz0(loc_xyz0, loc_xyz1, loc_xyz2, loc_xyz3, kappa0, n1n20); //
-        loc_j(2, 4) = ddEb_dy1dz0(loc_xyz0, loc_xyz1, loc_xyz2, loc_xyz3, kappa0, n1n20); //
-        loc_j(2, 5) = ddEb_dz0dz1(loc_xyz0, loc_xyz1, loc_xyz2, loc_xyz3, kappa0, n1n20);
-        loc_j(2, 6) = ddEb_dx2dz0(loc_xyz0, loc_xyz1, loc_xyz2, loc_xyz3, kappa0, n1n20); //
-        loc_j(2, 7) = ddEb_dy2dz0(loc_xyz0, loc_xyz1, loc_xyz2, loc_xyz3, kappa0, n1n20); //
-        loc_j(2, 8) = ddEb_dz0dz2(loc_xyz0, loc_xyz1, loc_xyz2, loc_xyz3, kappa0, n1n20);
-        loc_j(2, 9) = ddEb_dx3dz0(loc_xyz0, loc_xyz1, loc_xyz2, loc_xyz3, kappa0, n1n20); //
-        loc_j(2, 10) = ddEb_dy3dz0(loc_xyz0, loc_xyz1, loc_xyz2, loc_xyz3, kappa0, n1n20);//
-        loc_j(2, 11) = ddEb_dz0dz3(loc_xyz0, loc_xyz1, loc_xyz2, loc_xyz3, kappa0, n1n20);
-
-        loc_j(3, 3) = ddEb_dx1dx1(loc_xyz0, loc_xyz1, loc_xyz2, loc_xyz3, kappa0, n1n20);
-        loc_j(3, 4) = ddEb_dx1dy1(loc_xyz0, loc_xyz1, loc_xyz2, loc_xyz3, kappa0, n1n20);
-        loc_j(3, 5) = ddEb_dx1dz1(loc_xyz0, loc_xyz1, loc_xyz2, loc_xyz3, kappa0, n1n20);
-        loc_j(3, 6) = ddEb_dx1dx2(loc_xyz0, loc_xyz1, loc_xyz2, loc_xyz3, kappa0, n1n20);
-        loc_j(3, 7) = ddEb_dx1dy2(loc_xyz0, loc_xyz1, loc_xyz2, loc_xyz3, kappa0, n1n20);
-        loc_j(3, 8) = ddEb_dx1dz2(loc_xyz0, loc_xyz1, loc_xyz2, loc_xyz3, kappa0, n1n20);
-        loc_j(3, 9) = ddEb_dx1dx3(loc_xyz0, loc_xyz1, loc_xyz2, loc_xyz3, kappa0, n1n20);
-        loc_j(3, 10) = ddEb_dx1dy3(loc_xyz0, loc_xyz1, loc_xyz2, loc_xyz3, kappa0, n1n20);
-        loc_j(3, 11) = ddEb_dx1dz3(loc_xyz0, loc_xyz1, loc_xyz2, loc_xyz3, kappa0, n1n20);
-
-        loc_j(4, 4) = ddEb_dy1dy1(loc_xyz0, loc_xyz1, loc_xyz2, loc_xyz3, kappa0, n1n20);
-        loc_j(4, 5) = ddEb_dy1dz1(loc_xyz0, loc_xyz1, loc_xyz2, loc_xyz3, kappa0, n1n20);
-        loc_j(4, 6) = ddEb_dx2dy1(loc_xyz0, loc_xyz1, loc_xyz2, loc_xyz3, kappa0, n1n20); //
-        loc_j(4, 7) = ddEb_dy1dy2(loc_xyz0, loc_xyz1, loc_xyz2, loc_xyz3, kappa0, n1n20);
-        loc_j(4, 8) = ddEb_dy1dz2(loc_xyz0, loc_xyz1, loc_xyz2, loc_xyz3, kappa0, n1n20);
-        loc_j(4, 9) = ddEb_dx3dy1(loc_xyz0, loc_xyz1, loc_xyz2, loc_xyz3, kappa0, n1n20); //
-        loc_j(4, 10) = ddEb_dy1dy3(loc_xyz0, loc_xyz1, loc_xyz2, loc_xyz3, kappa0, n1n20);
-        loc_j(4, 11) = ddEb_dy1dz3(loc_xyz0, loc_xyz1, loc_xyz2, loc_xyz3, kappa0, n1n20);
-
-        loc_j(5, 5) = ddEb_dz1dz1(loc_xyz0, loc_xyz1, loc_xyz2, loc_xyz3, kappa0, n1n20);
-        loc_j(5, 6) = ddEb_dx2dz1(loc_xyz0, loc_xyz1, loc_xyz2, loc_xyz3, kappa0, n1n20); //
-        loc_j(5, 7) = ddEb_dy2dz1(loc_xyz0, loc_xyz1, loc_xyz2, loc_xyz3, kappa0, n1n20); //
-        loc_j(5, 8) = ddEb_dz1dz2(loc_xyz0, loc_xyz1, loc_xyz2, loc_xyz3, kappa0, n1n20);
-        loc_j(5, 9) = ddEb_dx3dz1(loc_xyz0, loc_xyz1, loc_xyz2, loc_xyz3, kappa0, n1n20); //
-        loc_j(5, 10) = ddEb_dy3dz1(loc_xyz0, loc_xyz1, loc_xyz2, loc_xyz3, kappa0, n1n20);//
-        loc_j(5, 11) = ddEb_dz1dz3(loc_xyz0, loc_xyz1, loc_xyz2, loc_xyz3, kappa0, n1n20);
-
-        loc_j(6, 6) = ddEb_dx2dx2(loc_xyz0, loc_xyz1, loc_xyz2, loc_xyz3, kappa0, n1n20);
-        loc_j(6, 7) = ddEb_dx2dy2(loc_xyz0, loc_xyz1, loc_xyz2, loc_xyz3, kappa0, n1n20);
-        loc_j(6, 8) = ddEb_dx2dz2(loc_xyz0, loc_xyz1, loc_xyz2, loc_xyz3, kappa0, n1n20);
-        loc_j(6, 9) = ddEb_dx2dx3(loc_xyz0, loc_xyz1, loc_xyz2, loc_xyz3, kappa0, n1n20);
-        loc_j(6, 10) = ddEb_dx2dy3(loc_xyz0, loc_xyz1, loc_xyz2, loc_xyz3, kappa0, n1n20);
-        loc_j(6, 11) = ddEb_dx2dz3(loc_xyz0, loc_xyz1, loc_xyz2, loc_xyz3, kappa0, n1n20);
-
-        loc_j(7, 7) = ddEb_dy2dy2(loc_xyz0, loc_xyz1, loc_xyz2, loc_xyz3, kappa0, n1n20);
-        loc_j(7, 8) = ddEb_dy2dz2(loc_xyz0, loc_xyz1, loc_xyz2, loc_xyz3, kappa0, n1n20);
-        loc_j(7, 9) = ddEb_dx3dy2(loc_xyz0, loc_xyz1, loc_xyz2, loc_xyz3, kappa0, n1n20); //
-        loc_j(7, 10) = ddEb_dy2dy3(loc_xyz0, loc_xyz1, loc_xyz2, loc_xyz3, kappa0, n1n20);
-        loc_j(7, 11) = ddEb_dy2dz3(loc_xyz0, loc_xyz1, loc_xyz2, loc_xyz3, kappa0, n1n20);
-
-        loc_j(8, 8) = ddEb_dz2dz2(loc_xyz0, loc_xyz1, loc_xyz2, loc_xyz3, kappa0, n1n20);
-        loc_j(8, 9) = ddEb_dx3dz2(loc_xyz0, loc_xyz1, loc_xyz2, loc_xyz3, kappa0, n1n20); //
-        loc_j(8, 10) = ddEb_dy3dz2(loc_xyz0, loc_xyz1, loc_xyz2, loc_xyz3, kappa0, n1n20);//
-        loc_j(8, 11) = ddEb_dz2dz3(loc_xyz0, loc_xyz1, loc_xyz2, loc_xyz3, kappa0, n1n20);
-
-        loc_j(9, 9) = ddEb_dx3dx3(loc_xyz0, loc_xyz1, loc_xyz2, loc_xyz3, kappa0, n1n20);
-        loc_j(9, 10) = ddEb_dx3dy3(loc_xyz0, loc_xyz1, loc_xyz2, loc_xyz3, kappa0, n1n20);
-        loc_j(9, 11) = ddEb_dx3dz3(loc_xyz0, loc_xyz1, loc_xyz2, loc_xyz3, kappa0, n1n20);
-
-        loc_j(10, 10) = ddEb_dy3dy3(loc_xyz0, loc_xyz1, loc_xyz2, loc_xyz3, kappa0, n1n20);
-        loc_j(10, 11) = ddEb_dy3dz3(loc_xyz0, loc_xyz1, loc_xyz2, loc_xyz3, kappa0, n1n20); //
-        loc_j(11, 11) = ddEb_dz3dz3(loc_xyz0, loc_xyz1, loc_xyz2, loc_xyz3, kappa0, n1n20);
-
-        for (int k = 0; k < 4 * m_SimGeo->ndof(); k++) {
-            for (int j = 0; j < 4 * m_SimGeo->ndof(); j++) {
-                if (k > j)
-                    loc_j(k,j) = loc_j(j,k);
-            }
-        }
-
-        // force needs to be multiplied by the coefficients
-        loc_j = loc_j * 0.5 * m_SimPar->kbend() * 3 * pow(l0, 2) / a0;
-
-
-        //std::cout << "local bending jacobian" << std::endl;
-        //std::cout << loc_j << std::endl;
-
-        // local node number corresponds to global node number
-        unsigned int n0 = temp_hinge->get_node_num(0);
-        unsigned int n1 = temp_hinge->get_node_num(1);
-        unsigned int n2 = temp_hinge->get_node_num(2);
-        unsigned int n3 = temp_hinge->get_node_num(3);
-
         unsigned int nx0 = 3*(n0-1);
         unsigned int nx1 = 3*(n1-1);
         unsigned int nx2 = 3*(n2-1);
         unsigned int nx3 = 3*(n3-1);
 
-        // update jacobian
         for (int k = 0; k < m_SimGeo->ndof(); k++) {
             for (int j = 0; j < m_SimGeo->ndof(); j++) {
 
@@ -939,4 +614,221 @@ void SolverImpl::calculate_jbend(Element& el, Eigen::MatrixXd& ddEddq) {
             }
         }
     }
+}
+
+
+void locFstretch(const Eigen::Vector3d& v1, const Eigen::Vector3d& v2,
+                 const double& l0, const double& ks, Eigen::VectorXd& loc_f) {
+    loc_f(0) = dEs_dx1(v1, v2, l0, ks);
+    loc_f(1) = dEs_dy1(v1, v2, l0, ks);
+    loc_f(2) = dEs_dz1(v1, v2, l0, ks);
+    loc_f(3) = dEs_dx2(v1, v2, l0, ks);
+    loc_f(4) = dEs_dy2(v1, v2, l0, ks);
+    loc_f(5) = dEs_dz2(v1, v2, l0, ks);
+}
+
+void locJstretch(const Eigen::Vector3d& v1, const Eigen::Vector3d& v2,
+                 const double& l0, const double& ks, Eigen::MatrixXd& loc_j) {
+    loc_j(0, 0) = ddEs_dx1dx1(v1, v2, l0, ks);
+    loc_j(0, 1) = ddEs_dx1dy1(v1, v2, l0, ks);
+    loc_j(0, 2) = ddEs_dx1dz1(v1, v2, l0, ks);
+    loc_j(0, 3) = ddEs_dx1dx2(v1, v2, l0, ks);
+    loc_j(0, 4) = ddEs_dx1dy2(v1, v2, l0, ks);
+    loc_j(0, 5) = ddEs_dx1dz2(v1, v2, l0, ks);
+
+    loc_j(1, 1) = ddEs_dy1dy1(v1, v2, l0, ks);
+    loc_j(1, 2) = ddEs_dy1dz1(v1, v2, l0, ks);
+    loc_j(1, 3) = ddEs_dx2dy1(v1, v2, l0, ks); //
+    loc_j(1, 4) = ddEs_dy1dy2(v1, v2, l0, ks);
+    loc_j(1, 5) = ddEs_dy1dz2(v1, v2, l0, ks);
+
+    loc_j(2, 2) = ddEs_dz1dz1(v1, v2, l0, ks);
+    loc_j(2, 3) = ddEs_dx2dz1(v1, v2, l0, ks); //
+    loc_j(2, 4) = ddEs_dy2dz1(v1, v2, l0, ks); //
+    loc_j(2, 5) = ddEs_dz1dz2(v1, v2, l0, ks);
+
+    loc_j(3, 3) = ddEs_dx2dx2(v1, v2, l0, ks);
+    loc_j(3, 4) = ddEs_dx2dy2(v1, v2, l0, ks);
+    loc_j(3, 5) = ddEs_dx2dz2(v1, v2, l0, ks);
+
+    loc_j(4, 4) = ddEs_dy2dy2(v1, v2, l0, ks);
+    loc_j(4, 5) = ddEs_dy2dz2(v1, v2, l0, ks);
+    loc_j(5, 5) = ddEs_dz2dz2(v1, v2, l0, ks);
+}
+
+void locFshear(const Eigen::Vector3d& v1, const Eigen::Vector3d& v2, const Eigen::Vector3d& v3,
+               const double& a0, const double& ksh, Eigen::VectorXd& loc_f) {
+    loc_f(0) = dEsh_dx1(v1, v2, v3, a0, ksh);
+    loc_f(1) = dEsh_dy1(v1, v2, v3, a0, ksh);
+    loc_f(2) = dEsh_dz1(v1, v2, v3, a0, ksh);
+    loc_f(3) = dEsh_dx2(v1, v2, v3, a0, ksh);
+    loc_f(4) = dEsh_dy2(v1, v2, v3, a0, ksh);
+    loc_f(5) = dEsh_dz2(v1, v2, v3, a0, ksh);
+    loc_f(6) = dEsh_dx3(v1, v2, v3, a0, ksh);
+    loc_f(7) = dEsh_dy3(v1, v2, v3, a0, ksh);
+    loc_f(8) = dEsh_dz3(v1, v2, v3, a0, ksh);
+}
+
+void locJshear(const Eigen::Vector3d& v1, const Eigen::Vector3d& v2, const Eigen::Vector3d& v3,
+               const double& a0, const double& ksh, Eigen::MatrixXd& loc_j) {
+    loc_j(0, 0) = ddEsh_dx1dx1(v1, v2, v3, a0, ksh);
+    loc_j(0, 1) = ddEsh_dx1dy1(v1, v2, v3, a0, ksh);
+    loc_j(0, 2) = ddEsh_dx1dz1(v1, v2, v3, a0, ksh);
+    loc_j(0, 3) = ddEsh_dx1dx2(v1, v2, v3, a0, ksh);
+    loc_j(0, 4) = ddEsh_dx1dy2(v1, v2, v3, a0, ksh);
+    loc_j(0, 5) = ddEsh_dx1dz2(v1, v2, v3, a0, ksh);
+    loc_j(0, 6) = ddEsh_dx1dx3(v1, v2, v3, a0, ksh);
+    loc_j(0, 7) = ddEsh_dx1dy3(v1, v2, v3, a0, ksh);
+    loc_j(0, 8) = ddEsh_dx1dz3(v1, v2, v3, a0, ksh);
+
+    loc_j(1, 1) = ddEsh_dy1dy1(v1, v2, v3, a0, ksh);
+    loc_j(1, 2) = ddEsh_dy1dz1(v1, v2, v3, a0, ksh);
+    loc_j(1, 3) = ddEsh_dx2dy1(v1, v2, v3, a0, ksh); //
+    loc_j(1, 4) = ddEsh_dy1dy2(v1, v2, v3, a0, ksh);
+    loc_j(1, 5) = ddEsh_dy1dz2(v1, v2, v3, a0, ksh);
+    loc_j(1, 6) = ddEsh_dx3dy1(v1, v2, v3, a0, ksh); //
+    loc_j(1, 7) = ddEsh_dy1dy3(v1, v2, v3, a0, ksh);
+    loc_j(1, 8) = ddEsh_dy1dz3(v1, v2, v3, a0, ksh);
+
+    loc_j(2, 2) = ddEsh_dz1dz1(v1, v2, v3, a0, ksh);
+    loc_j(2, 3) = ddEsh_dx2dz1(v1, v2, v3, a0, ksh); //
+    loc_j(2, 4) = ddEsh_dy2dz1(v1, v2, v3, a0, ksh); //
+    loc_j(2, 5) = ddEsh_dz1dz2(v1, v2, v3, a0, ksh);
+    loc_j(2, 6) = ddEsh_dx3dz1(v1, v2, v3, a0, ksh); //
+    loc_j(2, 7) = ddEsh_dy3dz1(v1, v2, v3, a0, ksh); //
+    loc_j(2, 8) = ddEsh_dz1dz3(v1, v2, v3, a0, ksh);
+
+    loc_j(3, 3) = ddEsh_dx2dx2(v1, v2, v3, a0, ksh);
+    loc_j(3, 4) = ddEsh_dx2dy2(v1, v2, v3, a0, ksh);
+    loc_j(3, 5) = ddEsh_dx2dz2(v1, v2, v3, a0, ksh);
+    loc_j(3, 6) = ddEsh_dx2dx3(v1, v2, v3, a0, ksh);
+    loc_j(3, 7) = ddEsh_dx2dy3(v1, v2, v3, a0, ksh);
+    loc_j(3, 8) = ddEsh_dx2dz3(v1, v2, v3, a0, ksh);
+
+    loc_j(4, 4) = ddEsh_dy2dy2(v1, v2, v3, a0, ksh);
+    loc_j(4, 5) = ddEsh_dy2dz2(v1, v2, v3, a0, ksh);
+    loc_j(4, 6) = ddEsh_dx2dx3(v1, v2, v3, a0, ksh);
+    loc_j(4, 7) = ddEsh_dx2dy3(v1, v2, v3, a0, ksh);
+    loc_j(4, 8) = ddEsh_dx2dz3(v1, v2, v3, a0, ksh);
+
+    loc_j(5, 5) = ddEsh_dz2dz2(v1, v2, v3, a0, ksh);
+    loc_j(5, 6) = ddEsh_dx3dz2(v1, v2, v3, a0, ksh); //
+    loc_j(5, 7) = ddEsh_dy3dz2(v1, v2, v3, a0, ksh); //
+    loc_j(5, 8) = ddEsh_dz2dz3(v1, v2, v3, a0, ksh);
+
+    loc_j(6, 6) = ddEsh_dx3dx3(v1, v2, v3, a0, ksh);
+    loc_j(6, 7) = ddEsh_dx3dy3(v1, v2, v3, a0, ksh);
+    loc_j(6, 8) = ddEsh_dx3dz3(v1, v2, v3, a0, ksh);
+
+    loc_j(7, 7) = ddEsh_dy3dy3(v1, v2, v3, a0, ksh);
+    loc_j(7, 8) = ddEsh_dy3dz3(v1, v2, v3, a0, ksh);
+    loc_j(8, 8) = ddEsh_dz3dz3(v1, v2, v3, a0, ksh);
+}
+
+void locFbend(const Eigen::Vector3d& v0, const Eigen::Vector3d& v1, const Eigen::Vector3d& v2, const Eigen::Vector3d& v3,
+              const Eigen::Vector3d& kap0, const double& n1n20, Eigen::VectorXd& loc_f) {
+    loc_f(0) = dEb_dx0(v0, v1, v2, v3, kap0, n1n20);
+    loc_f(1) = dEb_dy0(v0, v1, v2, v3, kap0, n1n20);
+    loc_f(2) = dEb_dz0(v0, v1, v2, v3, kap0, n1n20);
+    loc_f(3) = dEb_dx1(v0, v1, v2, v3, kap0, n1n20);
+    loc_f(4) = dEb_dy1(v0, v1, v2, v3, kap0, n1n20);
+    loc_f(5) = dEb_dz1(v0, v1, v2, v3, kap0, n1n20);
+    loc_f(6) = dEb_dx2(v0, v1, v2, v3, kap0, n1n20);
+    loc_f(7) = dEb_dy2(v0, v1, v2, v3, kap0, n1n20);
+    loc_f(8) = dEb_dz2(v0, v1, v2, v3, kap0, n1n20);
+    loc_f(9) = dEb_dx3(v0, v1, v2, v3, kap0, n1n20);
+    loc_f(10) = dEb_dy3(v0, v1, v2, v3, kap0, n1n20);
+    loc_f(11) = dEb_dz3(v0, v1, v2, v3, kap0, n1n20);
+}
+
+void locJbend(const Eigen::Vector3d& v0, const Eigen::Vector3d& v1, const Eigen::Vector3d& v2, const Eigen::Vector3d& v3,
+              const Eigen::Vector3d& kap0, const double& n1n20, Eigen::MatrixXd& loc_j) {
+    loc_j(0, 0) = ddEb_dx0dx0(v0, v1, v2, v3, kap0, n1n20);
+    loc_j(0, 1) = ddEb_dx0dy0(v0, v1, v2, v3, kap0, n1n20);
+    loc_j(0, 2) = ddEb_dx0dz0(v0, v1, v2, v3, kap0, n1n20);
+    loc_j(0, 3) = ddEb_dx0dx1(v0, v1, v2, v3, kap0, n1n20);
+    loc_j(0, 4) = ddEb_dx0dy1(v0, v1, v2, v3, kap0, n1n20);
+    loc_j(0, 5) = ddEb_dx0dz1(v0, v1, v2, v3, kap0, n1n20);
+    loc_j(0, 6) = ddEb_dx0dx2(v0, v1, v2, v3, kap0, n1n20);
+    loc_j(0, 7) = ddEb_dx0dy2(v0, v1, v2, v3, kap0, n1n20);
+    loc_j(0, 8) = ddEb_dx0dz2(v0, v1, v2, v3, kap0, n1n20);
+    loc_j(0, 9) = ddEb_dx0dx3(v0, v1, v2, v3, kap0, n1n20);
+    loc_j(0, 10) = ddEb_dx0dy3(v0, v1, v2, v3, kap0, n1n20);
+    loc_j(0, 11) = ddEb_dx0dz3(v0, v1, v2, v3, kap0, n1n20);
+
+    loc_j(1, 1) = ddEb_dy0dy0(v0, v1, v2, v3, kap0, n1n20);
+    loc_j(1, 2) = ddEb_dy0dz0(v0, v1, v2, v3, kap0, n1n20);
+    loc_j(1, 3) = ddEb_dx1dy0(v0, v1, v2, v3, kap0, n1n20); //
+    loc_j(1, 4) = ddEb_dy0dy1(v0, v1, v2, v3, kap0, n1n20);
+    loc_j(1, 5) = ddEb_dy0dz1(v0, v1, v2, v3, kap0, n1n20);
+    loc_j(1, 6) = ddEb_dx2dy0(v0, v1, v2, v3, kap0, n1n20); //
+    loc_j(1, 7) = ddEb_dy0dy2(v0, v1, v2, v3, kap0, n1n20);
+    loc_j(1, 8) = ddEb_dy0dz2(v0, v1, v2, v3, kap0, n1n20);
+    loc_j(1, 9) = ddEb_dx3dy0(v0, v1, v2, v3, kap0, n1n20); //
+    loc_j(1, 10) = ddEb_dy0dy3(v0, v1, v2, v3, kap0, n1n20);
+    loc_j(1, 11) = ddEb_dy0dz3(v0, v1, v2, v3, kap0, n1n20);
+
+    loc_j(2, 2) = ddEb_dz0dz0(v0, v1, v2, v3, kap0, n1n20);
+    loc_j(2, 3) = ddEb_dx1dz0(v0, v1, v2, v3, kap0, n1n20); //
+    loc_j(2, 4) = ddEb_dy1dz0(v0, v1, v2, v3, kap0, n1n20); //
+    loc_j(2, 5) = ddEb_dz0dz1(v0, v1, v2, v3, kap0, n1n20);
+    loc_j(2, 6) = ddEb_dx2dz0(v0, v1, v2, v3, kap0, n1n20); //
+    loc_j(2, 7) = ddEb_dy2dz0(v0, v1, v2, v3, kap0, n1n20); //
+    loc_j(2, 8) = ddEb_dz0dz2(v0, v1, v2, v3, kap0, n1n20);
+    loc_j(2, 9) = ddEb_dx3dz0(v0, v1, v2, v3, kap0, n1n20); //
+    loc_j(2, 10) = ddEb_dy3dz0(v0, v1, v2, v3, kap0, n1n20);//
+    loc_j(2, 11) = ddEb_dz0dz3(v0, v1, v2, v3, kap0, n1n20);
+
+    loc_j(3, 3) = ddEb_dx1dx1(v0, v1, v2, v3, kap0, n1n20);
+    loc_j(3, 4) = ddEb_dx1dy1(v0, v1, v2, v3, kap0, n1n20);
+    loc_j(3, 5) = ddEb_dx1dz1(v0, v1, v2, v3, kap0, n1n20);
+    loc_j(3, 6) = ddEb_dx1dx2(v0, v1, v2, v3, kap0, n1n20);
+    loc_j(3, 7) = ddEb_dx1dy2(v0, v1, v2, v3, kap0, n1n20);
+    loc_j(3, 8) = ddEb_dx1dz2(v0, v1, v2, v3, kap0, n1n20);
+    loc_j(3, 9) = ddEb_dx1dx3(v0, v1, v2, v3, kap0, n1n20);
+    loc_j(3, 10) = ddEb_dx1dy3(v0, v1, v2, v3, kap0, n1n20);
+    loc_j(3, 11) = ddEb_dx1dz3(v0, v1, v2, v3, kap0, n1n20);
+
+    loc_j(4, 4) = ddEb_dy1dy1(v0, v1, v2, v3, kap0, n1n20);
+    loc_j(4, 5) = ddEb_dy1dz1(v0, v1, v2, v3, kap0, n1n20);
+    loc_j(4, 6) = ddEb_dx2dy1(v0, v1, v2, v3, kap0, n1n20); //
+    loc_j(4, 7) = ddEb_dy1dy2(v0, v1, v2, v3, kap0, n1n20);
+    loc_j(4, 8) = ddEb_dy1dz2(v0, v1, v2, v3, kap0, n1n20);
+    loc_j(4, 9) = ddEb_dx3dy1(v0, v1, v2, v3, kap0, n1n20); //
+    loc_j(4, 10) = ddEb_dy1dy3(v0, v1, v2, v3, kap0, n1n20);
+    loc_j(4, 11) = ddEb_dy1dz3(v0, v1, v2, v3, kap0, n1n20);
+
+    loc_j(5, 5) = ddEb_dz1dz1(v0, v1, v2, v3, kap0, n1n20);
+    loc_j(5, 6) = ddEb_dx2dz1(v0, v1, v2, v3, kap0, n1n20); //
+    loc_j(5, 7) = ddEb_dy2dz1(v0, v1, v2, v3, kap0, n1n20); //
+    loc_j(5, 8) = ddEb_dz1dz2(v0, v1, v2, v3, kap0, n1n20);
+    loc_j(5, 9) = ddEb_dx3dz1(v0, v1, v2, v3, kap0, n1n20); //
+    loc_j(5, 10) = ddEb_dy3dz1(v0, v1, v2, v3, kap0, n1n20);//
+    loc_j(5, 11) = ddEb_dz1dz3(v0, v1, v2, v3, kap0, n1n20);
+
+    loc_j(6, 6) = ddEb_dx2dx2(v0, v1, v2, v3, kap0, n1n20);
+    loc_j(6, 7) = ddEb_dx2dy2(v0, v1, v2, v3, kap0, n1n20);
+    loc_j(6, 8) = ddEb_dx2dz2(v0, v1, v2, v3, kap0, n1n20);
+    loc_j(6, 9) = ddEb_dx2dx3(v0, v1, v2, v3, kap0, n1n20);
+    loc_j(6, 10) = ddEb_dx2dy3(v0, v1, v2, v3, kap0, n1n20);
+    loc_j(6, 11) = ddEb_dx2dz3(v0, v1, v2, v3, kap0, n1n20);
+
+    loc_j(7, 7) = ddEb_dy2dy2(v0, v1, v2, v3, kap0, n1n20);
+    loc_j(7, 8) = ddEb_dy2dz2(v0, v1, v2, v3, kap0, n1n20);
+    loc_j(7, 9) = ddEb_dx3dy2(v0, v1, v2, v3, kap0, n1n20); //
+    loc_j(7, 10) = ddEb_dy2dy3(v0, v1, v2, v3, kap0, n1n20);
+    loc_j(7, 11) = ddEb_dy2dz3(v0, v1, v2, v3, kap0, n1n20);
+
+    loc_j(8, 8) = ddEb_dz2dz2(v0, v1, v2, v3, kap0, n1n20);
+    loc_j(8, 9) = ddEb_dx3dz2(v0, v1, v2, v3, kap0, n1n20); //
+    loc_j(8, 10) = ddEb_dy3dz2(v0, v1, v2, v3, kap0, n1n20);//
+    loc_j(8, 11) = ddEb_dz2dz3(v0, v1, v2, v3, kap0, n1n20);
+
+    loc_j(9, 9) = ddEb_dx3dx3(v0, v1, v2, v3, kap0, n1n20);
+    loc_j(9, 10) = ddEb_dx3dy3(v0, v1, v2, v3, kap0, n1n20);
+    loc_j(9, 11) = ddEb_dx3dz3(v0, v1, v2, v3, kap0, n1n20);
+
+    loc_j(10, 10) = ddEb_dy3dy3(v0, v1, v2, v3, kap0, n1n20);
+    loc_j(10, 11) = ddEb_dy3dz3(v0, v1, v2, v3, kap0, n1n20); //
+    loc_j(11, 11) = ddEb_dz3dz3(v0, v1, v2, v3, kap0, n1n20);
 }
