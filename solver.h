@@ -31,11 +31,10 @@ public:
     Eigen::VectorXd unconsVec(const Eigen::VectorXd& vec);
     Eigen::MatrixXd unconsMat(const Eigen::MatrixXd& mat);
     void updateNodes(Eigen::VectorXd& qnew);
-    void resetMarks();
 
-    void calcStretch(Element& el, Eigen::VectorXd& dEdq, Eigen::MatrixXd& ddEddq);
-    void calcShear(Element& el, Eigen::VectorXd& dEdq, Eigen::MatrixXd& ddEddq);
-    void calcBend(Element& el, Eigen::VectorXd& dEdq, Eigen::MatrixXd& ddEddq);
+    void calcStretch(Eigen::VectorXd& dEdq, Eigen::MatrixXd& ddEddq);
+    void calcShear  (Eigen::VectorXd& dEdq, Eigen::MatrixXd& ddEddq);
+    void calcBend   (Eigen::VectorXd& dEdq, Eigen::MatrixXd& ddEddq);
 
 private:
     Parameters* m_SimPar;

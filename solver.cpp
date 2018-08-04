@@ -11,6 +11,7 @@
 #include "loadbc.h"
 #include "node.h"
 #include "hinge.h"
+#include "edge.h"
 #include "element.h"
 #include "utilities.h"
 #include "stretch_derivatives.h"
@@ -159,14 +160,13 @@ void SolverImpl::calcDEnergy(Eigen::VectorXd& dEdq, Eigen::MatrixXd& ddEddq) {
     Eigen::MatrixXd jshear   = Eigen::MatrixXd::Zero(m_SimGeo->nn() * m_SimGeo->ndof(), m_SimGeo->nn() * m_SimGeo->ndof());
     Eigen::MatrixXd jbend    = Eigen::MatrixXd::Zero(m_SimGeo->nn() * m_SimGeo->ndof(), m_SimGeo->nn() * m_SimGeo->ndof());
 
-    Timer ts;
-    // loop over each element
-    for (unsigned int i = 0; i < m_SimGeo->nel(); i++) {
-        calcStretch(m_SimGeo->m_elementList[i], fstretch, jstretch);
-        calcShear(m_SimGeo->m_elementList[i], fshear, jshear);
-        calcBend(m_SimGeo->m_elementList[i], fbend, jbend);
-    }
-    std::cout << ts.elapsed() << " ms \t";
+    //Timer ts;
+
+    calcStretch(fstretch, jstretch);
+    calcShear(fshear, jshear);
+    calcBend(fbend, jbend);
+
+    //std::cout << ts.elapsed() << " ms \t";
 
     dEdq = fstretch + fshear + fbend;
     ddEddq = jstretch + jshear + jbend;
@@ -187,9 +187,6 @@ void SolverImpl::calcDEnergy(Eigen::VectorXd& dEdq, Eigen::MatrixXd& ddEddq) {
     std::cout << "bend" << std::endl;
     std::cout << jbend << std::endl;
      */
-
-    // reset all marks
-    resetMarks();
 }
 
 /*
@@ -283,9 +280,9 @@ Eigen::VectorXd SolverImpl::unconsVec(const Eigen::VectorXd& vec) {
     Eigen::VectorXd vec_free = Eigen::VectorXd::Zero(m_SimBC->m_numFree);
 
     std::vector<int>::const_iterator p = m_SimBC->m_specifiedDof.begin();
-    for (int i = 0, j = 0; i < m_SimBC->m_numTotal; i++) {
+    for (int i = 0, j = 0; i < m_SimBC->m_numTotal && p != m_SimBC->m_specifiedDof.end(); i++) {
         if (i == *p) {
-            if (p != m_SimBC->m_specifiedDof.end())
+            if (p != m_SimBC->m_specifiedDof.end()-1)
                 p++;
             continue;
         }
@@ -332,44 +329,17 @@ void SolverImpl::updateNodes(Eigen::VectorXd &qnew){
     }
 }
 
-void SolverImpl::resetMarks() {
-    for (int i = 0; i < m_SimGeo->nel(); i++) {
-        for (int j = 1; j <= 3; j++) {
-            // if the j-th edge is a hinge
-            if ( m_SimGeo->m_elementList[i].is_hinge(j) )
-                m_SimGeo->m_elementList[i].get_hinge(j)->reset_visited();
-        }
-    }
-}
-
 // stretch energy for each element
-void SolverImpl::calcStretch(Element& el, Eigen::VectorXd& dEdq, Eigen::MatrixXd& ddEddq){
+void SolverImpl::calcStretch(Eigen::VectorXd& dEdq, Eigen::MatrixXd& ddEddq){
 
-    // loop over 3 edges
-    for (int k = 1; k <= 3; k++) {
+    // loop over the edge list
+    for (std::vector<Edge*>::iterator iedge = m_SimGeo->m_edgeList.begin(); iedge != m_SimGeo->m_edgeList.end(); iedge++) {
 
-        double l0 = el.get_len_edge(k);
-        int loc1 = 0, loc2 = 0;
-
-        // switch over different edges
-        switch (k) {
-            case 1:
-                loc1 = 1;
-                loc2 = 2;
-                break;
-            case 2:
-                loc1 = 2;
-                loc2 = 3;
-                break;
-            case 3:
-                loc1 = 1;
-                loc2 = 3;
-                break;
-        }
+        double l0 = (*iedge)->get_len0();
 
         // coordinates of local nodes
-        Eigen::Vector3d loc_xyz1 = el.get_node(loc1)->get_xyz();
-        Eigen::Vector3d loc_xyz2 = el.get_node(loc2)->get_xyz();
+        Eigen::Vector3d loc_xyz1 = (*iedge)->get_node(1)->get_xyz();
+        Eigen::Vector3d loc_xyz2 = (*iedge)->get_node(2)->get_xyz();
 
         double ks = m_SimPar->kstretch();
 
@@ -381,12 +351,6 @@ void SolverImpl::calcStretch(Element& el, Eigen::VectorXd& dEdq, Eigen::MatrixXd
 
         locFstretch(loc_xyz1, loc_xyz2, l0, ks, loc_f);
         locJstretch(loc_xyz1, loc_xyz2, l0, ks, loc_j);
-
-        // if an edge is shared by two elements, local jacobian will be double counted
-        if (el.get_nearby_element(k) != 0) {
-            loc_f = loc_f * 0.5;
-            loc_j = loc_j * 0.5;
-        }
 
         // force and  needs to be divided by 2, because 1/2 wasn't included during derivation
         loc_f = 0.5 * loc_f;
@@ -400,8 +364,8 @@ void SolverImpl::calcStretch(Element& el, Eigen::VectorXd& dEdq, Eigen::MatrixXd
         }
 
         // local node number corresponds to global node number
-        unsigned int n1 = el.get_node_num(loc1);
-        unsigned int n2 = el.get_node_num(loc2);
+        unsigned int n1 = (*iedge)->get_node_num(1);
+        unsigned int n2 = (*iedge)->get_node_num(2);
 
         // stretch force for local node1
         dEdq(3*(n1-1))   += loc_f(0);
@@ -429,119 +393,108 @@ void SolverImpl::calcStretch(Element& el, Eigen::VectorXd& dEdq, Eigen::MatrixXd
 }
 
 // shear energy for each element
-void SolverImpl::calcShear(Element &el, Eigen::VectorXd &dEdq, Eigen::MatrixXd &ddEddq){
+void SolverImpl::calcShear(Eigen::VectorXd &dEdq, Eigen::MatrixXd &ddEddq){
 
-    // coordinates of local nodes
-    Eigen::Vector3d loc_xyz1 = el.get_node(1)->get_xyz();
-    Eigen::Vector3d loc_xyz2 = el.get_node(2)->get_xyz();
-    Eigen::Vector3d loc_xyz3 = el.get_node(3)->get_xyz();
+    for (std::vector<Element>::iterator iel = m_SimGeo->m_elementList.begin(); iel != m_SimGeo->m_elementList.end(); iel++) {
 
-    // local node number corresponds to global node number
-    unsigned int n1 = el.get_node_num(1);
-    unsigned int n2 = el.get_node_num(2);
-    unsigned int n3 = el.get_node_num(3);
+        // coordinates of local nodes
+        Eigen::Vector3d loc_xyz1 = (*iel).get_node(1)->get_xyz();
+        Eigen::Vector3d loc_xyz2 = (*iel).get_node(2)->get_xyz();
+        Eigen::Vector3d loc_xyz3 = (*iel).get_node(3)->get_xyz();
 
-    // area
-    double a0 = el.get_area();
+        // local node number corresponds to global node number
+        unsigned int n1 = (*iel).get_node_num(1);
+        unsigned int n2 = (*iel).get_node_num(2);
+        unsigned int n3 = (*iel).get_node_num(3);
 
-    double ksh = m_SimPar->kshear();
+        // area
+        double a0 = (*iel).get_area();
 
-    // local shearing force: fx1, fy1, fz1, fx2, fy2, fz2, fx3, fy3, fz3
-    Eigen::VectorXd loc_f = Eigen::VectorXd::Zero(9);
+        double ksh = m_SimPar->kshear();
 
-    // local jacobian matrix
-    Eigen::MatrixXd loc_j = Eigen::MatrixXd::Zero(9, 9);
+        // local shearing force: fx1, fy1, fz1, fx2, fy2, fz2, fx3, fy3, fz3
+        Eigen::VectorXd loc_f = Eigen::VectorXd::Zero(9);
 
-    locFshear(loc_xyz1, loc_xyz2, loc_xyz3, a0, ksh, loc_f);
-    locJshear(loc_xyz1, loc_xyz2, loc_xyz3, a0, ksh, loc_j);
+        // local jacobian matrix
+        Eigen::MatrixXd loc_j = Eigen::MatrixXd::Zero(9, 9);
 
-    for (int i = 0; i < 3 * m_SimGeo->ndof(); i++) {
-        for (int j = 0; j < 3 * m_SimGeo->ndof(); j++) {
-            if (i > j)
-                loc_j(i,j) = loc_j(j,i);
+        locFshear(loc_xyz1, loc_xyz2, loc_xyz3, a0, ksh, loc_f);
+        locJshear(loc_xyz1, loc_xyz2, loc_xyz3, a0, ksh, loc_j);
+
+        for (int i = 0; i < 3 * m_SimGeo->ndof(); i++) {
+            for (int j = 0; j < 3 * m_SimGeo->ndof(); j++) {
+                if (i > j)
+                    loc_j(i,j) = loc_j(j,i);
+            }
         }
-    }
 
-    // shearing force for local node1
-    dEdq(3*(n1-1))   += loc_f(0);
-    dEdq(3*(n1-1)+1) += loc_f(1);
-    dEdq(3*(n1-1)+2) += loc_f(2);
+        // shearing force for local node1
+        dEdq(3*(n1-1))   += loc_f(0);
+        dEdq(3*(n1-1)+1) += loc_f(1);
+        dEdq(3*(n1-1)+2) += loc_f(2);
 
-    // shearing force for local node2
-    dEdq(3*(n2-1))   += loc_f(3);
-    dEdq(3*(n2-1)+1) += loc_f(4);
-    dEdq(3*(n2-1)+2) += loc_f(5);
+        // shearing force for local node2
+        dEdq(3*(n2-1))   += loc_f(3);
+        dEdq(3*(n2-1)+1) += loc_f(4);
+        dEdq(3*(n2-1)+2) += loc_f(5);
 
-    // shearing force for local node3
-    dEdq(3*(n3-1))   += loc_f(6);
-    dEdq(3*(n3-1)+1) += loc_f(7);
-    dEdq(3*(n3-1)+2) += loc_f(8);
+        // shearing force for local node3
+        dEdq(3*(n3-1))   += loc_f(6);
+        dEdq(3*(n3-1)+1) += loc_f(7);
+        dEdq(3*(n3-1)+2) += loc_f(8);
 
-    // update jacobian
-    unsigned int nx1 = 3*(n1-1);
-    unsigned int nx2 = 3*(n2-1);
-    unsigned int nx3 = 3*(n3-1);
+        // update jacobian
+        unsigned int nx1 = 3*(n1-1);
+        unsigned int nx2 = 3*(n2-1);
+        unsigned int nx3 = 3*(n3-1);
 
-    for (int i = 0; i < m_SimGeo->ndof(); i++) {
-        for (int j = 0; j < m_SimGeo->ndof(); j++) {
+        for (int i = 0; i < m_SimGeo->ndof(); i++) {
+            for (int j = 0; j < m_SimGeo->ndof(); j++) {
 
-            ddEddq(nx1+i, nx1+j) += loc_j(i, j);
-            ddEddq(nx1+i, nx2+j) += loc_j(i, j+m_SimGeo->ndof());
-            ddEddq(nx1+i, nx3+j) += loc_j(i, j+m_SimGeo->ndof()*2);
+                ddEddq(nx1+i, nx1+j) += loc_j(i, j);
+                ddEddq(nx1+i, nx2+j) += loc_j(i, j+m_SimGeo->ndof());
+                ddEddq(nx1+i, nx3+j) += loc_j(i, j+m_SimGeo->ndof()*2);
 
-            ddEddq(nx2+i, nx1+j) += loc_j(i+m_SimGeo->ndof(), j);
-            ddEddq(nx2+i, nx2+j) += loc_j(i+m_SimGeo->ndof(), j+m_SimGeo->ndof());
-            ddEddq(nx2+i, nx3+j) += loc_j(i+m_SimGeo->ndof(), j+m_SimGeo->ndof()*2);
+                ddEddq(nx2+i, nx1+j) += loc_j(i+m_SimGeo->ndof(), j);
+                ddEddq(nx2+i, nx2+j) += loc_j(i+m_SimGeo->ndof(), j+m_SimGeo->ndof());
+                ddEddq(nx2+i, nx3+j) += loc_j(i+m_SimGeo->ndof(), j+m_SimGeo->ndof()*2);
 
-            ddEddq(nx3+i, nx1+j) += loc_j(i+m_SimGeo->ndof()*2, j);
-            ddEddq(nx3+i, nx2+j) += loc_j(i+m_SimGeo->ndof()*2, j+m_SimGeo->ndof());
-            ddEddq(nx3+i, nx3+j) += loc_j(i+m_SimGeo->ndof()*2, j+m_SimGeo->ndof()*2);
+                ddEddq(nx3+i, nx1+j) += loc_j(i+m_SimGeo->ndof()*2, j);
+                ddEddq(nx3+i, nx2+j) += loc_j(i+m_SimGeo->ndof()*2, j+m_SimGeo->ndof());
+                ddEddq(nx3+i, nx3+j) += loc_j(i+m_SimGeo->ndof()*2, j+m_SimGeo->ndof()*2);
+            }
         }
     }
 }
 
-void SolverImpl::calcBend(Element &el, Eigen::VectorXd &dEdq, Eigen::MatrixXd &ddEddq){
+void SolverImpl::calcBend(Eigen::VectorXd &dEdq, Eigen::MatrixXd &ddEddq){
 
-    // loop over 3 edges
-    for (int i = 1; i <= 3; i++) {
-
-        // if the edge is a hinge
-        if ( !el.is_hinge(i) )
-            continue;
-
-        // get the pointer to that hinge
-        Hinge* temp_hinge = el.get_hinge(i);
-
-        // and has NOT been visited yet
-        if (temp_hinge->check_visited())
-            continue;
-
-        // mark the edge as visited
-        temp_hinge->mark_visited();
+    // loop over the hinge list
+    for (std::vector<Hinge*>::iterator ihinge = m_SimGeo->m_hingeList.begin(); ihinge != m_SimGeo->m_hingeList.end(); ihinge++) {
 
         // coordinates of local nodes
-        Eigen::Vector3d loc_xyz0 = temp_hinge->get_node(0)->get_xyz();
-        Eigen::Vector3d loc_xyz1 = temp_hinge->get_node(1)->get_xyz();
-        Eigen::Vector3d loc_xyz2 = temp_hinge->get_node(2)->get_xyz();
-        Eigen::Vector3d loc_xyz3 = temp_hinge->get_node(3)->get_xyz();
+        Eigen::Vector3d loc_xyz0 = (*ihinge)->get_node(0)->get_xyz();
+        Eigen::Vector3d loc_xyz1 = (*ihinge)->get_node(1)->get_xyz();
+        Eigen::Vector3d loc_xyz2 = (*ihinge)->get_node(2)->get_xyz();
+        Eigen::Vector3d loc_xyz3 = (*ihinge)->get_node(3)->get_xyz();
 
         // local node number corresponds to global node number
-        unsigned int n0 = temp_hinge->get_node_num(0);
-        unsigned int n1 = temp_hinge->get_node_num(1);
-        unsigned int n2 = temp_hinge->get_node_num(2);
-        unsigned int n3 = temp_hinge->get_node_num(3);
+        unsigned int n0 = (*ihinge)->get_node_num(0);
+        unsigned int n1 = (*ihinge)->get_node_num(1);
+        unsigned int n2 = (*ihinge)->get_node_num(2);
+        unsigned int n3 = (*ihinge)->get_node_num(3);
 
         // original hinge length
-        double l0 = el.get_len_edge(i);
+        double l0 = (*ihinge)->get_e0();
 
         // original sum of the area of two elements
-        double a0 = temp_hinge->get_area_sum();
+        double a0 = (*ihinge)->get_area_sum();
 
         // original norm(n1)*norm(n2)
-        double n1n20 = temp_hinge->get_n1n20();
+        double n1n20 = (*ihinge)->get_n1n20();
 
         // original kappa0
-        Eigen::Vector3d kappa0 = temp_hinge->get_kappa0();
+        Eigen::Vector3d kappa0 = (*ihinge)->get_kappa0();
 
         // local bending force: fx0, fy0, fz0, fx1, fy1, fz1, fx2, fy2, fz2, fx3, fy3, fz3
         Eigen::VectorXd loc_f = Eigen::VectorXd::Zero(12);

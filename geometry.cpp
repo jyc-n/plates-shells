@@ -6,6 +6,8 @@
 #include "parameters.h"
 #include "node.h"
 #include "element.h"
+#include "edge.h"
+#include "hinge.h"
 
 #include <Eigen/Dense>
 
@@ -14,8 +16,10 @@ Geometry::Geometry(Parameters* SimPar) {
 }
 
 Geometry::~Geometry() {
-    delete [] m_nodeList;
-    delete [] m_elementList;
+    for (std::vector<Edge*>::iterator iedge = m_edgeList.begin(); iedge != m_edgeList.end(); iedge++)
+        delete *iedge;
+    for (std::vector<Hinge*>::iterator ihinge = m_hingeList.begin(); ihinge != m_hingeList.end(); ihinge++)
+        delete *ihinge;
 }
 
 void Geometry::buildGeo() {
@@ -23,8 +27,6 @@ void Geometry::buildGeo() {
     m_conn        = Eigen::MatrixXi::Zero(m_nel, m_nen);
     m_dof         = Eigen::VectorXd::Zero(m_nn * m_ndof);
     map_nodes     = Eigen::MatrixXi::Zero(m_num_nodes_wid, m_num_nodes_len);
-    m_nodeList    = new Node[m_nn];
-    m_elementList = new Element[m_nel];
 }
 
 void Geometry::calcMass() {
@@ -46,13 +48,13 @@ void Geometry::calcMass() {
                 m_mass(k * m_ndof + 1) = mi / 4.0;
                 m_mass(k * m_ndof + 2) = mi / 4.0;
             }
-                // edge nodes
+            // edge nodes
             else if ( (i == 0 || i == m_num_nodes_len - 1) || (j == 0 || j == m_num_nodes_wid - 1) ) {
                 m_mass(k * m_ndof) = mi / 2.0;
                 m_mass(k * m_ndof + 1) = mi / 2.0;
                 m_mass(k * m_ndof + 2) = mi / 2.0;
             }
-                // middle nodes
+            // middle nodes
             else {
                 m_mass(k * m_ndof) = mi;
                 m_mass(k * m_ndof + 1) = mi;

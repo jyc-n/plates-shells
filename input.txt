@@ -15,4 +15,4 @@ rho = 1000                  ! density
 thk = 1e-3                  ! thickness
 vis = 1                     ! viscosity
 
-outop = 0                   ! output option 0-no output, 1-write output
+outop = 1                   ! output option 0-no output, 1-write output

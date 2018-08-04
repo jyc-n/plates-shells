@@ -8,7 +8,7 @@ class Parameters;
 class Geometry;
 
 struct Sets {
-    bool m_free = true;         // true - BC applied to this set, false - no BC applied
+    bool m_free = true;         // false - BC applied to this set, true - no BC applied
     int m_typeBC = 0;           // 0 - free, 1 - pinned in x, 2 - pinned in y, 3 - clamped, 4 - displacement applied (not implemented yet)
     double m_force[3] = {0};    // force in x,y,z direction
     std::vector<int> m_nodes;

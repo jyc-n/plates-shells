@@ -2,11 +2,14 @@
 #include <iomanip>
 #include <fstream>
 #include <string>
+#include <cassert>
 #include "pre_processor.h"
 #include "parameters.h"
 #include "geometry.h"
 #include "node.h"
 #include "element.h"
+#include "hinge.h"
+#include "edge.h"
 
 // ========================================= //
 //      Declaration of helper functions      //
@@ -100,6 +103,8 @@ void PreProcessorImpl::readInput() {
 
     m_SimGeo->set_nn(m_SimGeo->num_nodes_len() * m_SimGeo->num_nodes_wid());
     m_SimGeo->set_nel(2 * (m_SimGeo->num_nodes_len()-1) * (m_SimGeo->num_nodes_wid()-1));
+    m_SimGeo->set_nhinge((3 * m_SimGeo->nel() - 2 * (m_SimGeo->num_nodes_len() + m_SimGeo->num_nodes_wid() - 2)) / 2);
+    m_SimGeo->set_nedge(3 * m_SimGeo->nel() - m_SimGeo->nhinge());
 
     input_file.close();
 }
@@ -165,11 +170,14 @@ void PreProcessorImpl::initConn() {
 // initialize element list
 void PreProcessorImpl::initGeoList() {
 
+    // build node list
     for (unsigned int i = 0; i < m_SimGeo->nn(); i++) {
         Node temp(i+1, m_SimGeo->m_coord(i,0), m_SimGeo->m_coord(i,1), m_SimGeo->m_coord(i,2));
-        m_SimGeo->m_nodeList[i] = temp;
+        m_SimGeo->m_nodeList.push_back(temp);
     }
+    assert(m_SimGeo->m_nodeList.size() == m_SimGeo->nn());
 
+    // build element list
     for (unsigned int i = 0; i < m_SimGeo->nel(); i++) {
         // pointers to 3 node object
         Node* pn1 = &m_SimGeo->m_nodeList[m_SimGeo->m_conn(i,0)-1];
@@ -179,11 +187,34 @@ void PreProcessorImpl::initGeoList() {
         Element temp(i+1, pn1, pn2, pn3);
 
         temp.find_nearby_element(*m_SimGeo);
-        m_SimGeo->m_elementList[i] = temp;
+        m_SimGeo->m_elementList.push_back(temp);
+    }
+    assert(m_SimGeo->m_elementList.size() == m_SimGeo->nel());
+
+    // find all edges and hinges
+    for (unsigned int i = 0; i < m_SimGeo->nel(); i++) {
+        m_SimGeo->m_elementList[i].find_edges(m_SimGeo->m_elementList);
+        m_SimGeo->m_elementList[i].find_hinges(m_SimGeo->m_elementList);
     }
 
-    for (unsigned int i = 0; i < m_SimGeo->nel(); i++)
-        m_SimGeo->m_elementList[i].find_hinges(m_SimGeo->m_elementList);
+    // build edge list
+    for (unsigned int i = 0; i < m_SimGeo->nel(); i++) {
+        for (int j = 1; j <= 3; j++) {
+            Edge* tempEdge = m_SimGeo->m_elementList[i].get_edge(j);
+            if (tempEdge != nullptr && !tempEdge->check_visited()) {
+                tempEdge->mark_visited();
+                m_SimGeo->m_edgeList.push_back(tempEdge);
+            }
+
+            Hinge* tempHinge = m_SimGeo->m_elementList[i].get_hinge(j);
+            if (tempHinge != nullptr && !tempHinge->check_visited()) {
+                tempHinge->mark_visited();
+                m_SimGeo->m_hingeList.push_back(tempHinge);
+            }
+        }
+    }
+    assert(m_SimGeo->edgeNumCheck());
+    assert(m_SimGeo->hingeNumCheck());
 }
 
 // ========================================= //

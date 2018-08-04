@@ -6,6 +6,7 @@
 Boundary::Boundary(Parameters* SimPar, Geometry* SimGeo) {
     m_SimPar = SimPar;
     m_SimGeo = SimGeo;
+    m_2D = false;
 }
 
 // destructor
