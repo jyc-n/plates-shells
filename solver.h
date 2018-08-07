@@ -57,9 +57,5 @@ void locFshear(const Eigen::Vector3d& v1, const Eigen::Vector3d& v2, const Eigen
                const double& a0, const double& ksh, Eigen::VectorXd& loc_f);
 void locJshear(const Eigen::Vector3d& v1, const Eigen::Vector3d& v2, const Eigen::Vector3d& v3,
                const double& a0, const double& ksh, Eigen::MatrixXd& loc_j);
-void locFbend(const Eigen::Vector3d& v0, const Eigen::Vector3d& v1, const Eigen::Vector3d& v2, const Eigen::Vector3d& v3,
-              const Eigen::Vector3d& kap0, const double& n1n20, Eigen::VectorXd& loc_f);
-void locJbend(const Eigen::Vector3d& v0, const Eigen::Vector3d& v1, const Eigen::Vector3d& v2, const Eigen::Vector3d& v3,
-              const Eigen::Vector3d& kap0, const double& n1n20, Eigen::MatrixXd& loc_j);
 
 #endif //PLATES_SHELLS_SOLVER_H

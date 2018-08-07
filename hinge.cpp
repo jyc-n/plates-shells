@@ -8,7 +8,7 @@ Hinge::Hinge()
  : m_el1(nullptr), m_el2(nullptr),
    m_node0(nullptr), m_node1(nullptr),
    m_node2(nullptr), m_node3(nullptr),
-   m_n1n20(0), m_e0(0), VISITED(false)
+   VISITED(false)
 {}
 
 void Hinge::mark_visited() {
@@ -31,26 +31,18 @@ void Hinge::find_node(Node& n0, Node& n1, Node& n2, Node& n3) {
     m_node3 = &n3;
 }
 
-void Hinge::find_n1n20() {
-    m_n1n20 = ( m_el1->get_normal().norm() ) * ( m_el2->get_normal().norm() );
-}
+void Hinge::find_originVal(){
+    Eigen::Vector3d ve0 = m_node1->get_xyz() - m_node2->get_xyz();
+    double e0 = ve0.norm();
+    double a0 = m_el1->get_area() + m_el2->get_area();
+    m_k = - 6.0 * pow(e0, 2) / a0;
 
-void Hinge::find_kappa0() {
-    m_kappa0 = 2.0 * m_el1->get_normal().cross(m_el2->get_normal()) /
-               ( m_n1n20 + m_el1->get_normal().dot(m_el2->get_normal()) );
-}
-
-void Hinge::find_e0() {
-    Eigen::Vector3d m_eVec = m_node1->get_xyz() - m_node2->get_xyz();
-    m_e0 = m_eVec.norm();
+    //TODO: calculate psi0
+    m_psi0 = 0;
 }
 
 bool Hinge::check_visited() const {
     return VISITED;
-}
-
-double Hinge::get_area_sum() const {
-    return m_el1->get_area() + m_el2->get_area();
 }
 
 Node* Hinge::get_node(int num) const {
@@ -85,14 +77,3 @@ unsigned int Hinge::get_node_num(const int num) const {
     }
 }
 
-double Hinge::get_n1n20() const {
-    return m_n1n20;
-}
-
-Eigen::Vector3d Hinge::get_kappa0() const {
-    return m_kappa0;
-}
-
-double Hinge::get_e0() const {
-    return m_e0;
-}

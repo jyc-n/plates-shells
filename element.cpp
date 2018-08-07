@@ -176,9 +176,7 @@ void Element::find_hinges(std::vector<Element>& l_element) {
                         break;
                 }
                 m_hinges[i]->find_node(*n0, *n1, *n2, *n3);
-                m_hinges[i]->find_n1n20();
-                m_hinges[i]->find_kappa0();
-                m_hinges[i]->find_e0();
+                m_hinges[i]->find_originVal();
             }
         }
     }

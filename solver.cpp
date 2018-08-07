@@ -16,7 +16,7 @@
 #include "utilities.h"
 #include "stretch_derivatives.h"
 #include "shear_derivatives.h"
-#include "bending_derivatives.h"
+#include "bending.h"
 
 
 SolverImpl::SolverImpl(Parameters* SimPar, Geometry* SimGeo, Boundary* SimBC) {
@@ -160,13 +160,14 @@ void SolverImpl::calcDEnergy(Eigen::VectorXd& dEdq, Eigen::MatrixXd& ddEddq) {
     Eigen::MatrixXd jshear   = Eigen::MatrixXd::Zero(m_SimGeo->nn() * m_SimGeo->ndof(), m_SimGeo->nn() * m_SimGeo->ndof());
     Eigen::MatrixXd jbend    = Eigen::MatrixXd::Zero(m_SimGeo->nn() * m_SimGeo->ndof(), m_SimGeo->nn() * m_SimGeo->ndof());
 
-    //Timer ts;
+
 
     calcStretch(fstretch, jstretch);
     calcShear(fshear, jshear);
+    Timer ts;
     calcBend(fbend, jbend);
 
-    //std::cout << ts.elapsed() << " ms \t";
+    std::cout << ts.elapsed() << " ms \t";
 
     dEdq = fstretch + fshear + fbend;
     ddEddq = jstretch + jshear + jbend;
@@ -472,49 +473,25 @@ void SolverImpl::calcBend(Eigen::VectorXd &dEdq, Eigen::MatrixXd &ddEddq){
     // loop over the hinge list
     for (std::vector<Hinge*>::iterator ihinge = m_SimGeo->m_hingeList.begin(); ihinge != m_SimGeo->m_hingeList.end(); ihinge++) {
 
-        // coordinates of local nodes
-        Eigen::Vector3d loc_xyz0 = (*ihinge)->get_node(0)->get_xyz();
-        Eigen::Vector3d loc_xyz1 = (*ihinge)->get_node(1)->get_xyz();
-        Eigen::Vector3d loc_xyz2 = (*ihinge)->get_node(2)->get_xyz();
-        Eigen::Vector3d loc_xyz3 = (*ihinge)->get_node(3)->get_xyz();
-
-        // local node number corresponds to global node number
-        unsigned int n0 = (*ihinge)->get_node_num(0);
-        unsigned int n1 = (*ihinge)->get_node_num(1);
-        unsigned int n2 = (*ihinge)->get_node_num(2);
-        unsigned int n3 = (*ihinge)->get_node_num(3);
-
-        // original hinge length
-        double l0 = (*ihinge)->get_e0();
-
-        // original sum of the area of two elements
-        double a0 = (*ihinge)->get_area_sum();
-
-        // original norm(n1)*norm(n2)
-        double n1n20 = (*ihinge)->get_n1n20();
-
-        // original kappa0
-        Eigen::Vector3d kappa0 = (*ihinge)->get_kappa0();
-
         // local bending force: fx0, fy0, fz0, fx1, fy1, fz1, fx2, fy2, fz2, fx3, fy3, fz3
         Eigen::VectorXd loc_f = Eigen::VectorXd::Zero(12);
 
         // local jacobian matrix
         Eigen::MatrixXd loc_j = Eigen::MatrixXd::Zero(12, 12);
 
-        locFbend(loc_xyz0, loc_xyz1, loc_xyz2, loc_xyz3, kappa0, n1n20, loc_f);
-        locJbend(loc_xyz0, loc_xyz1, loc_xyz2, loc_xyz3, kappa0, n1n20, loc_j);
+        // coefficients k for gradient and hessian
+        (*ihinge)->m_k = (*ihinge)->m_k * m_SimPar->kbend();
 
-        for (int k = 0; k < 4 * m_SimGeo->ndof(); k++) {
-            for (int j = 0; j < 4 * m_SimGeo->ndof(); j++) {
-                if (k > j)
-                    loc_j(k,j) = loc_j(j,k);
-            }
-        }
+        // bending energy calculation
+        Bending Ebend(*ihinge);
 
-        // force and jacobian needs to be multiplied by the coefficients
-        loc_f = loc_f * 0.5 * m_SimPar->kbend() * 3 * pow(l0, 2) / a0;
-        loc_j = loc_j * 0.5 * m_SimPar->kbend() * 3 * pow(l0, 2) / a0;
+        Ebend.locBend(loc_f, loc_j);
+
+        // local node number corresponds to global node number
+        unsigned int n0 = (*ihinge)->get_node_num(0);
+        unsigned int n1 = (*ihinge)->get_node_num(1);
+        unsigned int n2 = (*ihinge)->get_node_num(2);
+        unsigned int n3 = (*ihinge)->get_node_num(3);
 
         // bending force for local node1
         dEdq(3*(n0-1))   += loc_f(0);
@@ -676,112 +653,4 @@ void locJshear(const Eigen::Vector3d& v1, const Eigen::Vector3d& v2, const Eigen
     loc_j(7, 7) = ddEsh_dy3dy3(v1, v2, v3, a0, ksh);
     loc_j(7, 8) = ddEsh_dy3dz3(v1, v2, v3, a0, ksh);
     loc_j(8, 8) = ddEsh_dz3dz3(v1, v2, v3, a0, ksh);
-}
-
-void locFbend(const Eigen::Vector3d& v0, const Eigen::Vector3d& v1, const Eigen::Vector3d& v2, const Eigen::Vector3d& v3,
-              const Eigen::Vector3d& kap0, const double& n1n20, Eigen::VectorXd& loc_f) {
-    loc_f(0) = dEb_dx0(v0, v1, v2, v3, kap0, n1n20);
-    loc_f(1) = dEb_dy0(v0, v1, v2, v3, kap0, n1n20);
-    loc_f(2) = dEb_dz0(v0, v1, v2, v3, kap0, n1n20);
-    loc_f(3) = dEb_dx1(v0, v1, v2, v3, kap0, n1n20);
-    loc_f(4) = dEb_dy1(v0, v1, v2, v3, kap0, n1n20);
-    loc_f(5) = dEb_dz1(v0, v1, v2, v3, kap0, n1n20);
-    loc_f(6) = dEb_dx2(v0, v1, v2, v3, kap0, n1n20);
-    loc_f(7) = dEb_dy2(v0, v1, v2, v3, kap0, n1n20);
-    loc_f(8) = dEb_dz2(v0, v1, v2, v3, kap0, n1n20);
-    loc_f(9) = dEb_dx3(v0, v1, v2, v3, kap0, n1n20);
-    loc_f(10) = dEb_dy3(v0, v1, v2, v3, kap0, n1n20);
-    loc_f(11) = dEb_dz3(v0, v1, v2, v3, kap0, n1n20);
-}
-
-void locJbend(const Eigen::Vector3d& v0, const Eigen::Vector3d& v1, const Eigen::Vector3d& v2, const Eigen::Vector3d& v3,
-              const Eigen::Vector3d& kap0, const double& n1n20, Eigen::MatrixXd& loc_j) {
-    loc_j(0, 0) = ddEb_dx0dx0(v0, v1, v2, v3, kap0, n1n20);
-    loc_j(0, 1) = ddEb_dx0dy0(v0, v1, v2, v3, kap0, n1n20);
-    loc_j(0, 2) = ddEb_dx0dz0(v0, v1, v2, v3, kap0, n1n20);
-    loc_j(0, 3) = ddEb_dx0dx1(v0, v1, v2, v3, kap0, n1n20);
-    loc_j(0, 4) = ddEb_dx0dy1(v0, v1, v2, v3, kap0, n1n20);
-    loc_j(0, 5) = ddEb_dx0dz1(v0, v1, v2, v3, kap0, n1n20);
-    loc_j(0, 6) = ddEb_dx0dx2(v0, v1, v2, v3, kap0, n1n20);
-    loc_j(0, 7) = ddEb_dx0dy2(v0, v1, v2, v3, kap0, n1n20);
-    loc_j(0, 8) = ddEb_dx0dz2(v0, v1, v2, v3, kap0, n1n20);
-    loc_j(0, 9) = ddEb_dx0dx3(v0, v1, v2, v3, kap0, n1n20);
-    loc_j(0, 10) = ddEb_dx0dy3(v0, v1, v2, v3, kap0, n1n20);
-    loc_j(0, 11) = ddEb_dx0dz3(v0, v1, v2, v3, kap0, n1n20);
-
-    loc_j(1, 1) = ddEb_dy0dy0(v0, v1, v2, v3, kap0, n1n20);
-    loc_j(1, 2) = ddEb_dy0dz0(v0, v1, v2, v3, kap0, n1n20);
-    loc_j(1, 3) = ddEb_dx1dy0(v0, v1, v2, v3, kap0, n1n20); //
-    loc_j(1, 4) = ddEb_dy0dy1(v0, v1, v2, v3, kap0, n1n20);
-    loc_j(1, 5) = ddEb_dy0dz1(v0, v1, v2, v3, kap0, n1n20);
-    loc_j(1, 6) = ddEb_dx2dy0(v0, v1, v2, v3, kap0, n1n20); //
-    loc_j(1, 7) = ddEb_dy0dy2(v0, v1, v2, v3, kap0, n1n20);
-    loc_j(1, 8) = ddEb_dy0dz2(v0, v1, v2, v3, kap0, n1n20);
-    loc_j(1, 9) = ddEb_dx3dy0(v0, v1, v2, v3, kap0, n1n20); //
-    loc_j(1, 10) = ddEb_dy0dy3(v0, v1, v2, v3, kap0, n1n20);
-    loc_j(1, 11) = ddEb_dy0dz3(v0, v1, v2, v3, kap0, n1n20);
-
-    loc_j(2, 2) = ddEb_dz0dz0(v0, v1, v2, v3, kap0, n1n20);
-    loc_j(2, 3) = ddEb_dx1dz0(v0, v1, v2, v3, kap0, n1n20); //
-    loc_j(2, 4) = ddEb_dy1dz0(v0, v1, v2, v3, kap0, n1n20); //
-    loc_j(2, 5) = ddEb_dz0dz1(v0, v1, v2, v3, kap0, n1n20);
-    loc_j(2, 6) = ddEb_dx2dz0(v0, v1, v2, v3, kap0, n1n20); //
-    loc_j(2, 7) = ddEb_dy2dz0(v0, v1, v2, v3, kap0, n1n20); //
-    loc_j(2, 8) = ddEb_dz0dz2(v0, v1, v2, v3, kap0, n1n20);
-    loc_j(2, 9) = ddEb_dx3dz0(v0, v1, v2, v3, kap0, n1n20); //
-    loc_j(2, 10) = ddEb_dy3dz0(v0, v1, v2, v3, kap0, n1n20);//
-    loc_j(2, 11) = ddEb_dz0dz3(v0, v1, v2, v3, kap0, n1n20);
-
-    loc_j(3, 3) = ddEb_dx1dx1(v0, v1, v2, v3, kap0, n1n20);
-    loc_j(3, 4) = ddEb_dx1dy1(v0, v1, v2, v3, kap0, n1n20);
-    loc_j(3, 5) = ddEb_dx1dz1(v0, v1, v2, v3, kap0, n1n20);
-    loc_j(3, 6) = ddEb_dx1dx2(v0, v1, v2, v3, kap0, n1n20);
-    loc_j(3, 7) = ddEb_dx1dy2(v0, v1, v2, v3, kap0, n1n20);
-    loc_j(3, 8) = ddEb_dx1dz2(v0, v1, v2, v3, kap0, n1n20);
-    loc_j(3, 9) = ddEb_dx1dx3(v0, v1, v2, v3, kap0, n1n20);
-    loc_j(3, 10) = ddEb_dx1dy3(v0, v1, v2, v3, kap0, n1n20);
-    loc_j(3, 11) = ddEb_dx1dz3(v0, v1, v2, v3, kap0, n1n20);
-
-    loc_j(4, 4) = ddEb_dy1dy1(v0, v1, v2, v3, kap0, n1n20);
-    loc_j(4, 5) = ddEb_dy1dz1(v0, v1, v2, v3, kap0, n1n20);
-    loc_j(4, 6) = ddEb_dx2dy1(v0, v1, v2, v3, kap0, n1n20); //
-    loc_j(4, 7) = ddEb_dy1dy2(v0, v1, v2, v3, kap0, n1n20);
-    loc_j(4, 8) = ddEb_dy1dz2(v0, v1, v2, v3, kap0, n1n20);
-    loc_j(4, 9) = ddEb_dx3dy1(v0, v1, v2, v3, kap0, n1n20); //
-    loc_j(4, 10) = ddEb_dy1dy3(v0, v1, v2, v3, kap0, n1n20);
-    loc_j(4, 11) = ddEb_dy1dz3(v0, v1, v2, v3, kap0, n1n20);
-
-    loc_j(5, 5) = ddEb_dz1dz1(v0, v1, v2, v3, kap0, n1n20);
-    loc_j(5, 6) = ddEb_dx2dz1(v0, v1, v2, v3, kap0, n1n20); //
-    loc_j(5, 7) = ddEb_dy2dz1(v0, v1, v2, v3, kap0, n1n20); //
-    loc_j(5, 8) = ddEb_dz1dz2(v0, v1, v2, v3, kap0, n1n20);
-    loc_j(5, 9) = ddEb_dx3dz1(v0, v1, v2, v3, kap0, n1n20); //
-    loc_j(5, 10) = ddEb_dy3dz1(v0, v1, v2, v3, kap0, n1n20);//
-    loc_j(5, 11) = ddEb_dz1dz3(v0, v1, v2, v3, kap0, n1n20);
-
-    loc_j(6, 6) = ddEb_dx2dx2(v0, v1, v2, v3, kap0, n1n20);
-    loc_j(6, 7) = ddEb_dx2dy2(v0, v1, v2, v3, kap0, n1n20);
-    loc_j(6, 8) = ddEb_dx2dz2(v0, v1, v2, v3, kap0, n1n20);
-    loc_j(6, 9) = ddEb_dx2dx3(v0, v1, v2, v3, kap0, n1n20);
-    loc_j(6, 10) = ddEb_dx2dy3(v0, v1, v2, v3, kap0, n1n20);
-    loc_j(6, 11) = ddEb_dx2dz3(v0, v1, v2, v3, kap0, n1n20);
-
-    loc_j(7, 7) = ddEb_dy2dy2(v0, v1, v2, v3, kap0, n1n20);
-    loc_j(7, 8) = ddEb_dy2dz2(v0, v1, v2, v3, kap0, n1n20);
-    loc_j(7, 9) = ddEb_dx3dy2(v0, v1, v2, v3, kap0, n1n20); //
-    loc_j(7, 10) = ddEb_dy2dy3(v0, v1, v2, v3, kap0, n1n20);
-    loc_j(7, 11) = ddEb_dy2dz3(v0, v1, v2, v3, kap0, n1n20);
-
-    loc_j(8, 8) = ddEb_dz2dz2(v0, v1, v2, v3, kap0, n1n20);
-    loc_j(8, 9) = ddEb_dx3dz2(v0, v1, v2, v3, kap0, n1n20); //
-    loc_j(8, 10) = ddEb_dy3dz2(v0, v1, v2, v3, kap0, n1n20);//
-    loc_j(8, 11) = ddEb_dz2dz3(v0, v1, v2, v3, kap0, n1n20);
-
-    loc_j(9, 9) = ddEb_dx3dx3(v0, v1, v2, v3, kap0, n1n20);
-    loc_j(9, 10) = ddEb_dx3dy3(v0, v1, v2, v3, kap0, n1n20);
-    loc_j(9, 11) = ddEb_dx3dz3(v0, v1, v2, v3, kap0, n1n20);
-
-    loc_j(10, 10) = ddEb_dy3dy3(v0, v1, v2, v3, kap0, n1n20);
-    loc_j(10, 11) = ddEb_dy3dz3(v0, v1, v2, v3, kap0, n1n20); //
-    loc_j(11, 11) = ddEb_dz3dz3(v0, v1, v2, v3, kap0, n1n20);
 }
