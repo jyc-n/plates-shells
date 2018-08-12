@@ -49,10 +49,6 @@ private:
 };
 
 // other non-member helper functions
-void locFstretch(const Eigen::Vector3d& v1, const Eigen::Vector3d& v2,
-                 const double& l0, const double& ks, Eigen::VectorXd& loc_f);
-void locJstretch(const Eigen::Vector3d& v1, const Eigen::Vector3d& v2,
-                 const double& l0, const double& ks, Eigen::MatrixXd& loc_j);
 void locFshear(const Eigen::Vector3d& v1, const Eigen::Vector3d& v2, const Eigen::Vector3d& v3,
                const double& a0, const double& ksh, Eigen::VectorXd& loc_f);
 void locJshear(const Eigen::Vector3d& v1, const Eigen::Vector3d& v2, const Eigen::Vector3d& v3,

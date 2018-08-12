@@ -3,8 +3,6 @@
 
 #include <Eigen/Dense>
 
-class Hinge;
-
 /*
  *      Bending energy
  *
@@ -14,6 +12,8 @@ class Hinge;
  *      - Hess E = zeta(theta, theta0) * Hess theta + xi(theta, theta0) * grad theta ^T * grad theta
  *
  */
+
+class Hinge;
 
 class Bending {
 public:

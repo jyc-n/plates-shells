@@ -130,7 +130,7 @@ void Element::find_edges(std::vector<Element>& l_element) {
                 break;
         }
         m_edges[i]->find_node(*n1, *n2);
-        m_edges[i]->find_len0();
+        m_edges[i]->find_originVal();
     }
 }
 

@@ -14,7 +14,7 @@
 #include "edge.h"
 #include "element.h"
 #include "utilities.h"
-#include "stretch_derivatives.h"
+#include "stretching.h"
 #include "shear_derivatives.h"
 #include "bending.h"
 
@@ -336,33 +336,17 @@ void SolverImpl::calcStretch(Eigen::VectorXd& dEdq, Eigen::MatrixXd& ddEddq){
     // loop over the edge list
     for (std::vector<Edge*>::iterator iedge = m_SimGeo->m_edgeList.begin(); iedge != m_SimGeo->m_edgeList.end(); iedge++) {
 
-        double l0 = (*iedge)->get_len0();
-
-        // coordinates of local nodes
-        Eigen::Vector3d loc_xyz1 = (*iedge)->get_node(1)->get_xyz();
-        Eigen::Vector3d loc_xyz2 = (*iedge)->get_node(2)->get_xyz();
-
-        double ks = m_SimPar->kstretch();
-
         // local stretch force: fx1, fy1, fz1, fx2, fy2, fz2
         Eigen::VectorXd loc_f = Eigen::VectorXd::Zero(6);
 
         // local jacobian matrix
         Eigen::MatrixXd loc_j = Eigen::MatrixXd::Zero(6, 6);
 
-        locFstretch(loc_xyz1, loc_xyz2, l0, ks, loc_f);
-        locJstretch(loc_xyz1, loc_xyz2, l0, ks, loc_j);
+        (*iedge)->m_k = m_SimPar->kstretch();
 
-        // force and  needs to be divided by 2, because 1/2 wasn't included during derivation
-        loc_f = 0.5 * loc_f;
-        loc_j = 0.5 * loc_j;
+        Stretching EStretch(*iedge);
 
-        for (int i = 0; i < 2 * m_SimGeo->ndof(); i++) {
-            for (int j = 0; j < 2 * m_SimGeo->ndof(); j++) {
-                if (i > j)
-                    loc_j(i,j) = loc_j(j,i);
-            }
-        }
+        EStretch.locStretch(loc_f, loc_j);
 
         // local node number corresponds to global node number
         unsigned int n1 = (*iedge)->get_node_num(1);
@@ -544,46 +528,6 @@ void SolverImpl::calcBend(Eigen::VectorXd &dEdq, Eigen::MatrixXd &ddEddq){
             }
         }
     }
-}
-
-
-void locFstretch(const Eigen::Vector3d& v1, const Eigen::Vector3d& v2,
-                 const double& l0, const double& ks, Eigen::VectorXd& loc_f) {
-    loc_f(0) = dEs_dx1(v1, v2, l0, ks);
-    loc_f(1) = dEs_dy1(v1, v2, l0, ks);
-    loc_f(2) = dEs_dz1(v1, v2, l0, ks);
-    loc_f(3) = dEs_dx2(v1, v2, l0, ks);
-    loc_f(4) = dEs_dy2(v1, v2, l0, ks);
-    loc_f(5) = dEs_dz2(v1, v2, l0, ks);
-}
-
-void locJstretch(const Eigen::Vector3d& v1, const Eigen::Vector3d& v2,
-                 const double& l0, const double& ks, Eigen::MatrixXd& loc_j) {
-    loc_j(0, 0) = ddEs_dx1dx1(v1, v2, l0, ks);
-    loc_j(0, 1) = ddEs_dx1dy1(v1, v2, l0, ks);
-    loc_j(0, 2) = ddEs_dx1dz1(v1, v2, l0, ks);
-    loc_j(0, 3) = ddEs_dx1dx2(v1, v2, l0, ks);
-    loc_j(0, 4) = ddEs_dx1dy2(v1, v2, l0, ks);
-    loc_j(0, 5) = ddEs_dx1dz2(v1, v2, l0, ks);
-
-    loc_j(1, 1) = ddEs_dy1dy1(v1, v2, l0, ks);
-    loc_j(1, 2) = ddEs_dy1dz1(v1, v2, l0, ks);
-    loc_j(1, 3) = ddEs_dx2dy1(v1, v2, l0, ks); //
-    loc_j(1, 4) = ddEs_dy1dy2(v1, v2, l0, ks);
-    loc_j(1, 5) = ddEs_dy1dz2(v1, v2, l0, ks);
-
-    loc_j(2, 2) = ddEs_dz1dz1(v1, v2, l0, ks);
-    loc_j(2, 3) = ddEs_dx2dz1(v1, v2, l0, ks); //
-    loc_j(2, 4) = ddEs_dy2dz1(v1, v2, l0, ks); //
-    loc_j(2, 5) = ddEs_dz1dz2(v1, v2, l0, ks);
-
-    loc_j(3, 3) = ddEs_dx2dx2(v1, v2, l0, ks);
-    loc_j(3, 4) = ddEs_dx2dy2(v1, v2, l0, ks);
-    loc_j(3, 5) = ddEs_dx2dz2(v1, v2, l0, ks);
-
-    loc_j(4, 4) = ddEs_dy2dy2(v1, v2, l0, ks);
-    loc_j(4, 5) = ddEs_dy2dz2(v1, v2, l0, ks);
-    loc_j(5, 5) = ddEs_dz2dz2(v1, v2, l0, ks);
 }
 
 void locFshear(const Eigen::Vector3d& v1, const Eigen::Vector3d& v2, const Eigen::Vector3d& v3,
