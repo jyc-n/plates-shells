@@ -4,6 +4,8 @@
 #include <string>
 #include <algorithm>
 #include <Eigen/Dense>
+#include <Eigen/Sparse>
+#include <Eigen/IterativeLinearSolvers>
 
 #include "solver.h"
 #include "parameters.h"
@@ -15,7 +17,7 @@
 #include "element.h"
 #include "utilities.h"
 #include "stretching.h"
-#include "shear_derivatives.h"
+#include "shearing.h"
 #include "bending.h"
 
 
@@ -55,7 +57,7 @@ void SolverImpl::Solve() {
     // TODO: implement tolerance in parameter
     // tolerance
     //double tol = SimPar.kstretch() * 1e-2;
-    double tol = 9.81 * 1e-1;
+    double tol = m_SimGeo->m_mi * 9.81 * 1e-1;
 
     // true - write output, false - no output, configured in input.txt
     bool WRITE_OUTPUT = m_SimPar->outop();
@@ -161,10 +163,9 @@ void SolverImpl::calcDEnergy(Eigen::VectorXd& dEdq, Eigen::MatrixXd& ddEddq) {
     Eigen::MatrixXd jbend    = Eigen::MatrixXd::Zero(m_SimGeo->nn() * m_SimGeo->ndof(), m_SimGeo->nn() * m_SimGeo->ndof());
 
 
-
+    Timer ts;
     calcStretch(fstretch, jstretch);
     calcShear(fshear, jshear);
-    Timer ts;
     calcBend(fbend, jbend);
 
     std::cout << ts.elapsed() << " ms \t";
@@ -180,14 +181,21 @@ void SolverImpl::calcDEnergy(Eigen::VectorXd& dEdq, Eigen::MatrixXd& ddEddq) {
     std::cout << "bend" << std::endl;
     std::cout << fbend << std::endl;
      */
-    /*
-    std::cout << "stretch" << std::endl;
-    std::cout << jstretch << std::endl;
+/*
+    std::cout << "----------------" << std::endl;
+    std::cout << "bend" << std::endl;
+       std::cout << jbend << std::endl;
+    std::cout << "----------------" << std::endl;
+
+
+
+       std::cout << "stretch" << std::endl;
+       std::cout << jstretch << std::endl;
     std::cout << "shear" << std::endl;
     std::cout << jshear << std::endl;
-    std::cout << "bend" << std::endl;
-    std::cout << jbend << std::endl;
-     */
+
+        std::cout << ddEddq << std::endl;
+        */
 }
 
 /*
@@ -242,15 +250,8 @@ Eigen::VectorXd SolverImpl::calcDofnew(Eigen::VectorXd& qn, const Eigen::VectorX
     Eigen::VectorXd dq_free = Eigen::VectorXd::Zero(m_SimBC->m_numFree);
     Eigen::VectorXd dq      = Eigen::VectorXd::Zero(m_SimBC->m_numTotal);
 
-    // 0 * x = 0
-    if (abs(temp_f.norm()) < 1e-16 && abs(temp_j.norm()) < 1e-16) {
-        std::cout << "Warning: 0 * x = 0 case" << std::endl;
-        dq_free.setZero();
-    }
-        // regular case
-    else
-        dq_free = temp_j.llt().solve(temp_f);
-
+    //denseSolver(temp_j, temp_f, dq_free);
+    sparseSolver(temp_j, temp_f, dq_free);
     //std::cout << res_f << std::endl;
 
     //std::cout << "---dq_free---" << std::endl;
@@ -270,6 +271,32 @@ Eigen::VectorXd SolverImpl::calcDofnew(Eigen::VectorXd& qn, const Eigen::VectorX
     }
     //std::cout << dq << std::endl;
     return (qn - dq);
+}
+
+// ========================================= //
+//              Solver functions             //
+// ========================================= //
+
+void SolverImpl::denseSolver(const Eigen::MatrixXd& A, const Eigen::VectorXd& b, Eigen::VectorXd& x) {
+    x = A.llt().solve(b);
+}
+
+void SolverImpl::sparseSolver(const Eigen::MatrixXd& A, const Eigen::VectorXd& b, Eigen::VectorXd& x) {
+    // definition numerical error
+    double epsilon = 1e-16;
+    double refVal = 1.0;
+
+    Eigen::SparseMatrix<double> As;
+    As = A.sparseView(refVal, epsilon);
+
+    Eigen::ConjugateGradient<Eigen::SparseMatrix<double>, Eigen::Upper> CGsolver;
+    CGsolver.compute(As);
+    if (CGsolver.info() != Eigen::Success)
+        throw "decomposition failed";
+
+    x = CGsolver.solve(b);
+    if (CGsolver.info() != Eigen::Success)
+        throw "solving failed";
 }
 
 // ========================================= //
@@ -382,36 +409,22 @@ void SolverImpl::calcShear(Eigen::VectorXd &dEdq, Eigen::MatrixXd &ddEddq){
 
     for (std::vector<Element>::iterator iel = m_SimGeo->m_elementList.begin(); iel != m_SimGeo->m_elementList.end(); iel++) {
 
-        // coordinates of local nodes
-        Eigen::Vector3d loc_xyz1 = (*iel).get_node(1)->get_xyz();
-        Eigen::Vector3d loc_xyz2 = (*iel).get_node(2)->get_xyz();
-        Eigen::Vector3d loc_xyz3 = (*iel).get_node(3)->get_xyz();
-
-        // local node number corresponds to global node number
-        unsigned int n1 = (*iel).get_node_num(1);
-        unsigned int n2 = (*iel).get_node_num(2);
-        unsigned int n3 = (*iel).get_node_num(3);
-
-        // area
-        double a0 = (*iel).get_area();
-
-        double ksh = m_SimPar->kshear();
-
         // local shearing force: fx1, fy1, fz1, fx2, fy2, fz2, fx3, fy3, fz3
         Eigen::VectorXd loc_f = Eigen::VectorXd::Zero(9);
 
         // local jacobian matrix
         Eigen::MatrixXd loc_j = Eigen::MatrixXd::Zero(9, 9);
 
-        locFshear(loc_xyz1, loc_xyz2, loc_xyz3, a0, ksh, loc_f);
-        locJshear(loc_xyz1, loc_xyz2, loc_xyz3, a0, ksh, loc_j);
+        (*iel).m_k = m_SimPar->kshear() * (*iel).get_area();
 
-        for (int i = 0; i < 3 * m_SimGeo->ndof(); i++) {
-            for (int j = 0; j < 3 * m_SimGeo->ndof(); j++) {
-                if (i > j)
-                    loc_j(i,j) = loc_j(j,i);
-            }
-        }
+        Shearing EShear(&(*iel));
+
+        EShear.locShear(loc_f, loc_j);
+
+        // local node number corresponds to global node number
+        unsigned int n1 = (*iel).get_node_num(1);
+        unsigned int n2 = (*iel).get_node_num(2);
+        unsigned int n3 = (*iel).get_node_num(3);
 
         // shearing force for local node1
         dEdq(3*(n1-1))   += loc_f(0);
@@ -464,7 +477,7 @@ void SolverImpl::calcBend(Eigen::VectorXd &dEdq, Eigen::MatrixXd &ddEddq){
         Eigen::MatrixXd loc_j = Eigen::MatrixXd::Zero(12, 12);
 
         // coefficients k for gradient and hessian
-        (*ihinge)->m_k = (*ihinge)->m_k * m_SimPar->kbend();
+        (*ihinge)->m_k = (*ihinge)->m_const * m_SimPar->kbend();
 
         // bending energy calculation
         Bending Ebend(*ihinge);
@@ -476,6 +489,13 @@ void SolverImpl::calcBend(Eigen::VectorXd &dEdq, Eigen::MatrixXd &ddEddq){
         unsigned int n1 = (*ihinge)->get_node_num(1);
         unsigned int n2 = (*ihinge)->get_node_num(2);
         unsigned int n3 = (*ihinge)->get_node_num(3);
+
+/*
+        std::cout << n0 << "\t" << n1 << "\t" << n2 << "\t" << n3 << std::endl;
+
+        std::cout << "m_k " << (*ihinge)->m_k << std::endl;
+        std::cout << loc_j << std::endl;*/
+
 
         // bending force for local node1
         dEdq(3*(n0-1))   += loc_f(0);
@@ -528,73 +548,4 @@ void SolverImpl::calcBend(Eigen::VectorXd &dEdq, Eigen::MatrixXd &ddEddq){
             }
         }
     }
-}
-
-void locFshear(const Eigen::Vector3d& v1, const Eigen::Vector3d& v2, const Eigen::Vector3d& v3,
-               const double& a0, const double& ksh, Eigen::VectorXd& loc_f) {
-    loc_f(0) = dEsh_dx1(v1, v2, v3, a0, ksh);
-    loc_f(1) = dEsh_dy1(v1, v2, v3, a0, ksh);
-    loc_f(2) = dEsh_dz1(v1, v2, v3, a0, ksh);
-    loc_f(3) = dEsh_dx2(v1, v2, v3, a0, ksh);
-    loc_f(4) = dEsh_dy2(v1, v2, v3, a0, ksh);
-    loc_f(5) = dEsh_dz2(v1, v2, v3, a0, ksh);
-    loc_f(6) = dEsh_dx3(v1, v2, v3, a0, ksh);
-    loc_f(7) = dEsh_dy3(v1, v2, v3, a0, ksh);
-    loc_f(8) = dEsh_dz3(v1, v2, v3, a0, ksh);
-}
-
-void locJshear(const Eigen::Vector3d& v1, const Eigen::Vector3d& v2, const Eigen::Vector3d& v3,
-               const double& a0, const double& ksh, Eigen::MatrixXd& loc_j) {
-    loc_j(0, 0) = ddEsh_dx1dx1(v1, v2, v3, a0, ksh);
-    loc_j(0, 1) = ddEsh_dx1dy1(v1, v2, v3, a0, ksh);
-    loc_j(0, 2) = ddEsh_dx1dz1(v1, v2, v3, a0, ksh);
-    loc_j(0, 3) = ddEsh_dx1dx2(v1, v2, v3, a0, ksh);
-    loc_j(0, 4) = ddEsh_dx1dy2(v1, v2, v3, a0, ksh);
-    loc_j(0, 5) = ddEsh_dx1dz2(v1, v2, v3, a0, ksh);
-    loc_j(0, 6) = ddEsh_dx1dx3(v1, v2, v3, a0, ksh);
-    loc_j(0, 7) = ddEsh_dx1dy3(v1, v2, v3, a0, ksh);
-    loc_j(0, 8) = ddEsh_dx1dz3(v1, v2, v3, a0, ksh);
-
-    loc_j(1, 1) = ddEsh_dy1dy1(v1, v2, v3, a0, ksh);
-    loc_j(1, 2) = ddEsh_dy1dz1(v1, v2, v3, a0, ksh);
-    loc_j(1, 3) = ddEsh_dx2dy1(v1, v2, v3, a0, ksh); //
-    loc_j(1, 4) = ddEsh_dy1dy2(v1, v2, v3, a0, ksh);
-    loc_j(1, 5) = ddEsh_dy1dz2(v1, v2, v3, a0, ksh);
-    loc_j(1, 6) = ddEsh_dx3dy1(v1, v2, v3, a0, ksh); //
-    loc_j(1, 7) = ddEsh_dy1dy3(v1, v2, v3, a0, ksh);
-    loc_j(1, 8) = ddEsh_dy1dz3(v1, v2, v3, a0, ksh);
-
-    loc_j(2, 2) = ddEsh_dz1dz1(v1, v2, v3, a0, ksh);
-    loc_j(2, 3) = ddEsh_dx2dz1(v1, v2, v3, a0, ksh); //
-    loc_j(2, 4) = ddEsh_dy2dz1(v1, v2, v3, a0, ksh); //
-    loc_j(2, 5) = ddEsh_dz1dz2(v1, v2, v3, a0, ksh);
-    loc_j(2, 6) = ddEsh_dx3dz1(v1, v2, v3, a0, ksh); //
-    loc_j(2, 7) = ddEsh_dy3dz1(v1, v2, v3, a0, ksh); //
-    loc_j(2, 8) = ddEsh_dz1dz3(v1, v2, v3, a0, ksh);
-
-    loc_j(3, 3) = ddEsh_dx2dx2(v1, v2, v3, a0, ksh);
-    loc_j(3, 4) = ddEsh_dx2dy2(v1, v2, v3, a0, ksh);
-    loc_j(3, 5) = ddEsh_dx2dz2(v1, v2, v3, a0, ksh);
-    loc_j(3, 6) = ddEsh_dx2dx3(v1, v2, v3, a0, ksh);
-    loc_j(3, 7) = ddEsh_dx2dy3(v1, v2, v3, a0, ksh);
-    loc_j(3, 8) = ddEsh_dx2dz3(v1, v2, v3, a0, ksh);
-
-    loc_j(4, 4) = ddEsh_dy2dy2(v1, v2, v3, a0, ksh);
-    loc_j(4, 5) = ddEsh_dy2dz2(v1, v2, v3, a0, ksh);
-    loc_j(4, 6) = ddEsh_dx2dx3(v1, v2, v3, a0, ksh);
-    loc_j(4, 7) = ddEsh_dx2dy3(v1, v2, v3, a0, ksh);
-    loc_j(4, 8) = ddEsh_dx2dz3(v1, v2, v3, a0, ksh);
-
-    loc_j(5, 5) = ddEsh_dz2dz2(v1, v2, v3, a0, ksh);
-    loc_j(5, 6) = ddEsh_dx3dz2(v1, v2, v3, a0, ksh); //
-    loc_j(5, 7) = ddEsh_dy3dz2(v1, v2, v3, a0, ksh); //
-    loc_j(5, 8) = ddEsh_dz2dz3(v1, v2, v3, a0, ksh);
-
-    loc_j(6, 6) = ddEsh_dx3dx3(v1, v2, v3, a0, ksh);
-    loc_j(6, 7) = ddEsh_dx3dy3(v1, v2, v3, a0, ksh);
-    loc_j(6, 8) = ddEsh_dx3dz3(v1, v2, v3, a0, ksh);
-
-    loc_j(7, 7) = ddEsh_dy3dy3(v1, v2, v3, a0, ksh);
-    loc_j(7, 8) = ddEsh_dy3dz3(v1, v2, v3, a0, ksh);
-    loc_j(8, 8) = ddEsh_dz3dz3(v1, v2, v3, a0, ksh);
 }

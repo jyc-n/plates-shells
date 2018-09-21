@@ -8,8 +8,8 @@
  *
  *      E_b = k_b * ( 3 * l0^2 )/A * ( phi(theta) - phi0 )^2
  *
- *      - grad E = zeta(theta, theta0) * grad theta
- *      - Hess E = zeta(theta, theta0) * Hess theta + xi(theta, theta0) * grad theta ^T * grad theta
+ *      grad E = zeta(theta, theta0) * grad theta
+ *      Hess E = zeta(theta, theta0) * Hess theta + xi(theta, theta0) * grad theta * grad theta ^T
  *
  */
 

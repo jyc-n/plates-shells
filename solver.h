@@ -20,12 +20,18 @@ public:
     // main solver function
     void Solve();
 
+private:
+
     // subroutine
     void calcDEnergy(Eigen::VectorXd& dEdq, Eigen::MatrixXd& ddEddq);
     void updateResidual(Eigen::VectorXd& qn, Eigen::VectorXd& qnew, Eigen::VectorXd& vel, Eigen::VectorXd& dEdq, Eigen::VectorXd& res_f);
     void updateJacobian(Eigen::MatrixXd& ddEddq, Eigen::MatrixXd& mat_j);
     Eigen::VectorXd calcVel(double dt, const Eigen::VectorXd& qcurr, const Eigen::VectorXd& qnew);
     Eigen::VectorXd calcDofnew(Eigen::VectorXd& qn, const Eigen::VectorXd& temp_f, const Eigen::MatrixXd& temp_j);
+
+    // solver functions
+    void denseSolver(const Eigen::MatrixXd& A, const Eigen::VectorXd& b, Eigen::VectorXd& x);
+    void sparseSolver(const Eigen::MatrixXd& A, const Eigen::VectorXd& b, Eigen::VectorXd& x);
 
     // helper functions
     Eigen::VectorXd unconsVec(const Eigen::VectorXd& vec);
@@ -36,7 +42,7 @@ public:
     void calcShear  (Eigen::VectorXd& dEdq, Eigen::MatrixXd& ddEddq);
     void calcBend   (Eigen::VectorXd& dEdq, Eigen::MatrixXd& ddEddq);
 
-private:
+    // pointers
     Parameters* m_SimPar;
     Geometry*   m_SimGeo;
     Boundary*   m_SimBC;
@@ -47,11 +53,5 @@ private:
     Eigen::VectorXd m_residual;
     Eigen::MatrixXd m_jacobian;
 };
-
-// other non-member helper functions
-void locFshear(const Eigen::Vector3d& v1, const Eigen::Vector3d& v2, const Eigen::Vector3d& v3,
-               const double& a0, const double& ksh, Eigen::VectorXd& loc_f);
-void locJshear(const Eigen::Vector3d& v1, const Eigen::Vector3d& v2, const Eigen::Vector3d& v3,
-               const double& a0, const double& ksh, Eigen::MatrixXd& loc_j);
 
 #endif //PLATES_SHELLS_SOLVER_H

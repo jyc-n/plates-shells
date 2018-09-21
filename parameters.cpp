@@ -24,7 +24,7 @@ void Parameters::set_thk(const double var)                  { thk_ = var; }
 void Parameters::set_vis(const double var)                  { vis_ = var; }
 void Parameters::set_kstretch()                             { ks_ = E_modulus_ * thk_; }
 void Parameters::set_kshear()                               { ksh_ = E_modulus_ * thk_; }
-void Parameters::set_kbend()                                { kb_ = E_modulus_ * pow(thk_,3) / (12.0 * (1 - pow(nu_,2))); }
+void Parameters::set_kbend()                                { kb_ = E_modulus_ * pow(thk_,3) / (24.0 * (1 - pow(nu_,2))); }
 
 // accessors
 std::string   Parameters::inputPath()  const    { return m_inputPath; }

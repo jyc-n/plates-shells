@@ -25,6 +25,7 @@ public:
     unsigned int get_node_num(const int num) const;
 
     double m_psi0;
+    double m_const;
     double m_k;
 
 private:

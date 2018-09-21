@@ -1,5 +1,6 @@
 #include <iostream>
 #include <cmath>
+#include <algorithm>
 #include "geometry.h"
 #include "element.h"
 #include "node.h"
@@ -30,10 +31,8 @@ Element::Element(const unsigned int num_el, Node* n1, Node* n2, Node* n3)
     m_num_n2 = (*m_node2).get_num();
     m_num_n3 = (*m_node3).get_num();
 
-    calculate_vec_edge();
-    calculate_len_edge();
     calculate_area();
-    calculate_normal();
+    calculate_phi0();
 
     for (int &i : m_adj_element)
         i = 0;
@@ -47,24 +46,18 @@ Element::Element(const unsigned int num_el, Node* n1, Node* n2, Node* n3)
 Element::~Element()
 {}
 
-void Element::calculate_vec_edge() {
-    m_dir12 = (*m_node2).get_xyz() - (*m_node1).get_xyz();
-    m_dir23 = (*m_node3).get_xyz() - (*m_node2).get_xyz();
-    m_dir13 = (*m_node3).get_xyz() - (*m_node1).get_xyz();
-}
-
-void Element::calculate_len_edge() {
-    m_len_edge[0] = m_dir12.norm();
-    m_len_edge[1] = m_dir23.norm();
-    m_len_edge[2] = m_dir13.norm();
-}
-
 void Element::calculate_area() {
-    m_area = 0.5 * (m_dir12.cross(m_dir23)).norm();
+    Eigen::Vector3d dir12 = (*m_node2).get_xyz() - (*m_node1).get_xyz();
+    Eigen::Vector3d dir23 = (*m_node3).get_xyz() - (*m_node2).get_xyz();
+    m_area = 0.5 * (dir12.cross(dir23)).norm();
 }
 
-void Element::calculate_normal() {
-    m_normal = m_dir12.cross(m_dir23);
+void Element::calculate_phi0() {
+    Eigen::Vector3d dir12 = (*m_node1).get_xyz() - (*m_node2).get_xyz();
+    Eigen::Vector3d dir23 = (*m_node3).get_xyz() - (*m_node2).get_xyz();
+    dir12 = dir12 / dir12.norm();
+    dir23 = dir23 / dir23.norm();
+    m_phi0 = acos(dir12.dot(dir23));
 }
 
 void Element::find_nearby_element(Geometry& Geo) {
@@ -160,8 +153,8 @@ void Element::find_hinges(std::vector<Element>& l_element) {
 
                 switch (i) {
                     case 0:
-                        n0 = m_node2;
-                        n1 = m_node1;
+                        n0 = m_node1;
+                        n1 = m_node2;
                         n2 = m_node3;
                         break;
                     case 1:
@@ -173,10 +166,14 @@ void Element::find_hinges(std::vector<Element>& l_element) {
                         n0 = m_node1;
                         n1 = m_node3;
                         n2 = m_node2;
+                        std::swap(n2, n3);
                         break;
                 }
                 m_hinges[i]->find_node(*n0, *n1, *n2, *n3);
                 m_hinges[i]->find_originVal();
+
+                std::cout << n0->get_num() << '\t' << n1->get_num() << '\t'
+                          << n2->get_num() << '\t' << n3->get_num() << '\t' << std::endl;
             }
         }
     }
@@ -194,18 +191,6 @@ unsigned int Element::get_node_num(const int num) const {
             std::cerr << "Local number of node can only be 1, 2, 3" << std::endl;
             exit(1);
     }
-}
-
-double Element::get_area() const {
-    return m_area;
-}
-
-double Element::get_len_edge(const int num) const {
-    if (!(num == 1 || num == 2 || num == 3)){
-        std::cerr << "Local number of edge can only be 1, 2, 3" << std::endl;
-        exit(1);
-    }
-    return m_len_edge[num-1];
 }
 
 Node* Element::get_node(const int num) const {
@@ -280,22 +265,4 @@ Hinge* Element::get_hinge(int num_edge) const {
     if (this->is_hinge(num_edge))
         return m_hinges[num_edge-1];
     return nullptr;
-}
-
-Eigen::Vector3d Element::get_vec_edge(const int num) const {
-    switch (num) {
-        case 1:
-            return m_dir12;
-        case 2:
-            return m_dir23;
-        case 3:
-            return m_dir13;
-        default:
-            std::cerr << "Local number of edge can only be 1, 2, 3" << std::endl;
-            exit(1);
-    }
-}
-
-Eigen::Vector3d Element::get_normal() const {
-    return m_normal;
 }

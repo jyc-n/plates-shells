@@ -6,7 +6,7 @@
 /*
  *      Stretch energy
  *
- *      E_s = k_s * l0^2 * (l/l0 - 1)^2
+ *      E_s = 1/2 * k_s * l0^2 * (l/l0 - 1)^2
  *
  *      l0: original length, regarded as constant
  *      l: length after deformation

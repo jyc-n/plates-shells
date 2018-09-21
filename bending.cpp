@@ -80,6 +80,24 @@ void Bending::locBend(Eigen::VectorXd &loc_f, Eigen::MatrixXd &loc_j) {
 
     loc_f = m_zeta * gradTheta;
     loc_j = m_zeta * hessTheta + m_xi * gradTheta * gradTheta.transpose();
+
+/*
+    std::cout << "---------------------" << std::endl;
+    std::cout << "c alpha1 " << m_alpha1 * 180/M_PI
+                << " c alpha2 " << m_alpha2 * 180/M_PI
+                << " c alpha3 " << m_alpha3 * 180/M_PI
+                << " c alpha4 " << m_alpha4 * 180/M_PI << std::endl;
+    std::cout << "h1 " << m_h1
+              << " h2 " << m_h2
+              << " h3 " << m_h3
+              << " h4 " << m_h4
+              << " h01 " << m_h01
+              << " h02 " << m_h02 << std::endl;
+    //std::cout << "nn1\n" << m_nn1 << "\n nn2\n" << m_nn2 << std::endl;
+
+    std::cout << gradTheta << std::endl;
+
+     */
 }
 
 // -----------------------------------------------------------------------
@@ -89,11 +107,11 @@ void Bending::psi() {
 }
 
 void Bending::zeta() {
-    m_zeta = (2.0 * m_hinge->m_k * (m_psi - m_hinge->m_psi0) * (1 + pow(m_psi, 2)));
+    m_zeta = 2.0 * m_hinge->m_k * (m_psi - m_hinge->m_psi0) * (1 + pow(m_psi, 2));
 }
 
 void Bending::xi() {
-    m_xi = (m_hinge->m_k * (1 + pow(m_psi, 2)) * (2 * (m_psi - m_hinge->m_psi0) * m_psi + (1 + pow(m_psi, 2))));
+    m_xi = m_hinge->m_k * (1 + pow(m_psi, 2)) * (2 * (m_psi - m_hinge->m_psi0) * m_psi + (1 + pow(m_psi, 2)));
 }
 
 Eigen::Matrix3d Bending::s(Eigen::Matrix3d &mat) {

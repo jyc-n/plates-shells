@@ -18,30 +18,25 @@ public:
     ~Element();
 
     // modifier
-    void calculate_vec_edge();
-    void calculate_len_edge();
+    void calculate_phi0();
     void calculate_area();
-    void calculate_normal();
     void find_nearby_element(Geometry& Geo);
     void find_edges(std::vector<Element>& l_element);
     void find_hinges(std::vector<Element>& l_element);
 
     // accessor
     unsigned int get_node_num(const int num) const;
-    double get_area() const;
-    double get_len_edge(const int num) const;
-
     int get_nearby_element(int num) const;
     bool is_hinge(int num_edge) const;
+    double get_phi0() const;
+    double get_area() const;
     Node* get_node(const int num) const;
     Edge* get_edge(int num_edge) const;
     Hinge* get_hinge(int num_edge) const;
 
-    Eigen::Vector3d get_vec_edge(const int num) const;
-    Eigen::Vector3d get_normal() const;
+    double m_k;
 
 private:
-
 
     int get_overlapped_edge_num(int num_el) const;
     int get_remain_node_num(int num_edge) const;
@@ -49,9 +44,8 @@ private:
     unsigned int m_num_el;
     unsigned int m_num_n1, m_num_n2, m_num_n3;
     int m_adj_element[3];
-    double m_len_edge[3];
+    double m_phi0;
     double m_area;
-    Eigen::Vector3d m_normal, m_dir12, m_dir23, m_dir13;
 
     Node* m_node1;
     Node* m_node2;
@@ -59,5 +53,8 @@ private:
     Edge*  m_edges[3];
     Hinge* m_hinges[3];
 };
+
+inline double Element::get_phi0() const { return m_phi0; }
+inline double Element::get_area() const { return m_area; }
 
 #endif //PLATES_SHELLS_ELEMENT_H

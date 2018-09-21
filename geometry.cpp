@@ -33,7 +33,7 @@ void Geometry::calcMass() {
     m_mass = Eigen::VectorXd::Zero(m_nn * m_ndof);
 
     // Total mass per small rectangle (2 triangular elements)
-    double mi = (m_rec_len * m_rec_wid * m_SimPar->thk() * m_SimPar->rho())
+    m_mi = (m_rec_len * m_rec_wid * m_SimPar->thk() * m_SimPar->rho())
                 / ((m_num_nodes_len - 1) * (m_num_nodes_wid - 1));
 
     for (int i = 0; i < m_num_nodes_len; i++) {
@@ -44,21 +44,21 @@ void Geometry::calcMass() {
 
             // corner nodes
             if ( (i == 0 || i == m_num_nodes_len - 1) && (j == 0 || j == m_num_nodes_wid - 1) ) {
-                m_mass(k * m_ndof) = mi / 4.0;
-                m_mass(k * m_ndof + 1) = mi / 4.0;
-                m_mass(k * m_ndof + 2) = mi / 4.0;
+                m_mass(k * m_ndof) = m_mi / 4.0;
+                m_mass(k * m_ndof + 1) = m_mi / 4.0;
+                m_mass(k * m_ndof + 2) = m_mi / 4.0;
             }
             // edge nodes
             else if ( (i == 0 || i == m_num_nodes_len - 1) || (j == 0 || j == m_num_nodes_wid - 1) ) {
-                m_mass(k * m_ndof) = mi / 2.0;
-                m_mass(k * m_ndof + 1) = mi / 2.0;
-                m_mass(k * m_ndof + 2) = mi / 2.0;
+                m_mass(k * m_ndof) = m_mi / 2.0;
+                m_mass(k * m_ndof + 1) = m_mi / 2.0;
+                m_mass(k * m_ndof + 2) = m_mi / 2.0;
             }
             // middle nodes
             else {
-                m_mass(k * m_ndof) = mi;
-                m_mass(k * m_ndof + 1) = mi;
-                m_mass(k * m_ndof + 2) = mi;
+                m_mass(k * m_ndof) = m_mi;
+                m_mass(k * m_ndof + 1) = m_mi;
+                m_mass(k * m_ndof + 2) = m_mi;
             }
         }
     }

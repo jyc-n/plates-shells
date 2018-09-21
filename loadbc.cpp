@@ -72,12 +72,24 @@ void Boundary::configBC() {
     /*
      *   Simple bending test
      *
-     */
     m_sets[0]->m_free = false;          // clamp left edge
     m_sets[0]->m_typeBC = 3;
     fixDir(2);                          // fix y dof of all nodes
     m_sets[2]->m_free = false;          // apply force on the right edge
     m_sets[2]->m_force[2] = -10;
+    */
+
+    /*
+     *   Bending under gravity
+     *
+     */
+    m_sets[1]->m_free = false;          // clamp bottom edge
+    m_sets[1]->m_typeBC = 3;
+
+    for (int i = 0; i < m_SimGeo->nn() * m_SimGeo->ndof(); i++) {
+        if (i % 3 == 2)
+            m_fext(i) = m_SimGeo->m_mass(i) * 9.81;
+    }
 
 }
 
@@ -127,6 +139,13 @@ void Boundary::buildBCinfo() {
                         m_disp[3*(nn-1)] = false;
                         m_disp[3*(nn-1)+1] = false;
                         m_disp[3*(nn-1)+2] = false;
+                    }
+
+                    // TODO: implement a better algorithm to configure clamped BC
+                    for (int num = 1+m_SimGeo->num_nodes_len(); num <= 2*m_SimGeo->num_nodes_len(); num++) {
+                        m_disp[3*(num-1)] = false;
+                        m_disp[3*(num-1)+1] = false;
+                        m_disp[3*(num-1)+2] = false;
                     }
                     break;
                 case 4:

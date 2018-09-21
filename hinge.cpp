@@ -32,10 +32,10 @@ void Hinge::find_node(Node& n0, Node& n1, Node& n2, Node& n3) {
 }
 
 void Hinge::find_originVal(){
-    Eigen::Vector3d ve0 = m_node1->get_xyz() - m_node2->get_xyz();
+    Eigen::Vector3d ve0 = m_node1->get_xyz() - m_node0->get_xyz();
     double e0 = ve0.norm();
     double a0 = m_el1->get_area() + m_el2->get_area();
-    m_k = - 6.0 * pow(e0, 2) / a0;
+    m_const = 6.0 * pow(e0, 2) / a0;
 
     //TODO: calculate psi0
     m_psi0 = 0;
