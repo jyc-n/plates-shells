@@ -1,12 +1,12 @@
 rec_len = 0.1                 ! length of the rectangular domain
 rec_wid = 0.1                 ! width of the rectangular domain
-num_nodes_len = 5           ! number of nodes along the length
-num_nodes_wid = 5          ! number of nodes along the width
+num_nodes_len = 3           ! number of nodes along the length
+num_nodes_wid = 3          ! number of nodes along the width
 
 dof = 3                     ! degree of freedom
 nen = 3                     ! number of nodes per element (triangular mesh)
 dt = 1e-3                   ! step size
-nst = 200                     ! total number of steps
+nst = 1                     ! total number of steps
 iter_lim = 10                ! maximum number of iterations allowed per time step
 
 E_modulus = 1e5             ! Young's modulus

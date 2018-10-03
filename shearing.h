@@ -15,25 +15,33 @@ class Element;
 class Shearing {
 public:
     Shearing(Element* ptr);
-    void initValues();
+    void init();
     void locShear(Eigen::VectorXd& loc_f, Eigen::MatrixXd& loc_j);
 
+    double m_coeff;
+
 private:
-    void grad(Eigen::VectorXd& gradPhi);
-    void hess(Eigen::VectorXd& gradPhi, Eigen::MatrixXd& hessPhi);
+    void perturb(int pos, double val);
+    void recover(int pos);
+    double getAngle();
+    double getEnergy();
+
+    void grad();
+    void hess();
+
+    bool READY;
 
     Element* m_element;
 
-    Eigen::Vector3d m_e1;
-    Eigen::Vector3d m_e2;
-    Eigen::Matrix3d m_M1;
-    Eigen::Matrix3d m_M2;
+    Eigen::VectorXd m_q;
+    Eigen::VectorXd m_qCurrent;
+    Eigen::VectorXd m_gradE;
+    Eigen::MatrixXd m_hessE;
 
-    double m_phi;
-    double m_ne1;
-    double m_ne2;
-    double m_h1;
-    double m_h2;
+    double m_phi0;
+    double m_phiPerturbed;
+
+    const double delta;
 };
 
 #endif //PLATES_SHELLS_SHEAR_DERIVATIVES_H

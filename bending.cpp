@@ -25,145 +25,127 @@
 
 // -----------------------------------------------------------------------
 
-Bending::Bending(Hinge* ptr) {
+Bending::Bending(Hinge* ptr)
+  : delta(1e-6)
+{
     m_hinge = ptr;
-
-    m_e0 = m_hinge->get_node(1)->get_xyz() - m_hinge->get_node(0)->get_xyz();
-    m_e1 = m_hinge->get_node(2)->get_xyz() - m_hinge->get_node(0)->get_xyz();
-    m_e2 = m_hinge->get_node(3)->get_xyz() - m_hinge->get_node(0)->get_xyz();
-    m_e3 = m_hinge->get_node(2)->get_xyz() - m_hinge->get_node(1)->get_xyz();
-    m_e4 = m_hinge->get_node(3)->get_xyz() - m_hinge->get_node(1)->get_xyz();
-    initValues();
+    READY = false;
 }
 
-void Bending::initValues() {
-    m_alpha1 = abs(acos(m_e0.dot(m_e1) / (m_e0.norm() * m_e1.norm())));
-    m_alpha2 = abs(acos(m_e0.dot(m_e2) / (m_e0.norm() * m_e2.norm())));
-    m_alpha3 = M_PI - abs(acos(m_e0.dot(m_e3) / (m_e0.norm() * m_e3.norm())));
-    m_alpha4 = M_PI - abs(acos(m_e0.dot(m_e4) / (m_e0.norm() * m_e4.norm())));
+void Bending::init() {
+    m_phi0 = 2 * m_hinge->m_psi0;
 
-    m_nn1 = m_e0.cross(m_e3);
-    m_nn1 = m_nn1 / (m_nn1.norm());
-    m_nn2 = -m_e0.cross(m_e4);
-    m_nn2 = m_nn2 / (m_nn2.norm());
+    // dof vector x1 y1 z1 x2 y2 z2 x3 y3 z3 x4 y4 z4
+    m_q = Eigen::VectorXd::Zero(12);
 
-    m_m1 = (m_nn1).cross(m_e1 / m_e1.norm());
-    m_m2 = (m_e2 / m_e2.norm()).cross(m_nn2);
-    m_m3 = (m_e3 / m_e3.norm()).cross(m_nn1);
-    m_m4 = (m_e4 / m_e4.norm()).cross(m_nn2);
-    m_m01 = (m_e0 / m_e0.norm()).cross(m_nn1);
-    m_m02 = (m_nn2).cross(m_e0 / m_e0.norm());
+    m_q.segment(0,3) = m_hinge->get_node(0)->get_xyz();
+    m_q.segment(3,3) = m_hinge->get_node(1)->get_xyz();
+    m_q.segment(6,3) = m_hinge->get_node(2)->get_xyz();
+    m_q.segment(9,3) = m_hinge->get_node(3)->get_xyz();
 
-    double val = (m_nn1 - m_nn2).norm() / (m_nn1 + m_nn2).norm();
-    m_theta = 2 * atan(val);
+    m_qCurrent = m_q;
 
-    m_h1 = m_e0.norm() * sin(m_alpha1);
-    m_h2 = m_e0.norm() * sin(m_alpha2);
-    m_h3 = m_e0.norm() * sin(m_alpha3);
-    m_h4 = m_e0.norm() * sin(m_alpha4);
-    m_h01 = m_e1.norm() * sin(m_alpha1);
-    m_h02 = m_e2.norm() * sin(m_alpha2);
+    m_gradE = Eigen::VectorXd::Zero(12);
+    m_hessE = Eigen::MatrixXd::Zero(12, 12);
 
-    psi();
-    zeta();
-    xi();
+    READY = true;
 }
 
 // -----------------------------------------------------------------------
 
-void Bending::locBend(Eigen::VectorXd &loc_f, Eigen::MatrixXd &loc_j) {
-    Eigen::VectorXd gradTheta = Eigen::VectorXd::Zero(12);
-    Eigen::MatrixXd hessTheta = Eigen::MatrixXd::Zero(12, 12);
+void Bending::perturb(int pos, double val) {
+    m_qCurrent(pos) += val;
+    m_phiPerturbed = getAngle();
+}
 
-    grad(gradTheta);
-    hess(hessTheta);
+void Bending::recover(int pos) {
+    m_qCurrent(pos) = m_q(pos);
+    m_phiPerturbed = getAngle();
+}
 
-    loc_f = m_zeta * gradTheta;
-    loc_j = m_zeta * hessTheta + m_xi * gradTheta * gradTheta.transpose();
+double Bending::getAngle() {
+    Eigen::Vector3d e0 = Eigen::Vector3d::Zero();
+    Eigen::Vector3d e3 = Eigen::Vector3d::Zero();
+    Eigen::Vector3d e4 = Eigen::Vector3d::Zero();
+    Eigen::Vector3d nn1 = Eigen::Vector3d::Zero();
+    Eigen::Vector3d nn2 = Eigen::Vector3d::Zero();
 
-/*
-    std::cout << "---------------------" << std::endl;
-    std::cout << "c alpha1 " << m_alpha1 * 180/M_PI
-                << " c alpha2 " << m_alpha2 * 180/M_PI
-                << " c alpha3 " << m_alpha3 * 180/M_PI
-                << " c alpha4 " << m_alpha4 * 180/M_PI << std::endl;
-    std::cout << "h1 " << m_h1
-              << " h2 " << m_h2
-              << " h3 " << m_h3
-              << " h4 " << m_h4
-              << " h01 " << m_h01
-              << " h02 " << m_h02 << std::endl;
-    //std::cout << "nn1\n" << m_nn1 << "\n nn2\n" << m_nn2 << std::endl;
+    e0 = m_qCurrent.segment(3,3) - m_qCurrent.segment(0,3);
+    e3 = m_qCurrent.segment(6,3) - m_qCurrent.segment(3,3);
+    e4 = m_qCurrent.segment(9,3) - m_qCurrent.segment(3,3);
 
-    std::cout << gradTheta << std::endl;
+    nn1 = e0.cross(e3);
+    nn1 = nn1 / (nn1.norm());
+    nn2 = -e0.cross(e4);
+    nn2 = nn2 / (nn2.norm());
 
-     */
+    double val = (nn1 - nn2).norm() / (nn1 + nn2).norm();
+    double phi = 2 * atan(val);
+
+    return phi;
+}
+
+double Bending::getEnergy() {
+    return m_coeff * pow(m_phiPerturbed - m_phi0, 2);
 }
 
 // -----------------------------------------------------------------------
 
-void Bending::psi() {
-    m_psi = tan(m_theta / 2.0);
+void Bending::locBend(Eigen::VectorXd &loc_f, Eigen::MatrixXd &loc_j){
+    if (!READY)
+        throw "must initialize before solving";
+
+    grad();
+    hess();
+
+    loc_f = m_gradE;
+    loc_j = m_hessE;
 }
 
-void Bending::zeta() {
-    m_zeta = 2.0 * m_hinge->m_k * (m_psi - m_hinge->m_psi0) * (1 + pow(m_psi, 2));
+void Bending::grad() {
+    double EshHi = 0, EshLo = 0;
+    for (int i = 0; i < 12; i++) {
+        perturb(i, delta);
+        EshHi = getEnergy();
+        recover(i);
+
+        perturb(i, -delta);
+        EshLo = getEnergy();
+        recover(i);
+
+        m_gradE(i) = (EshHi - EshLo) / (2 * delta);
+    }
 }
 
-void Bending::xi() {
-    m_xi = m_hinge->m_k * (1 + pow(m_psi, 2)) * (2 * (m_psi - m_hinge->m_psi0) * m_psi + (1 + pow(m_psi, 2)));
-}
+void Bending::hess() {
+    double Esh_i_Hi_j_Hi = 0, Esh_i_Hi_j_Lo = 0, Esh_i_Lo_j_Hi = 0, Esh_i_Lo_j_Lo = 0;
+    for (int i = 0; i < 12; i++) {
+        for (int j = 0; j < 12; j++) {
+            perturb(i, delta);
+            perturb(j, delta);
+            Esh_i_Hi_j_Hi = getEnergy();
+            recover(i);
+            recover(j);
 
-Eigen::Matrix3d Bending::s(Eigen::Matrix3d &mat) {
-    return (mat + mat.transpose());
-}
+            perturb(i, delta);
+            perturb(j, -delta);
+            Esh_i_Hi_j_Lo = getEnergy();
+            recover(i);
+            recover(j);
 
-void Bending::grad(Eigen::VectorXd& gradTheta) {
-    gradTheta.segment(0, 3) = cos(m_alpha3) * m_nn1 / m_h3 + cos(m_alpha4) * m_nn2 / m_h4;
-    gradTheta.segment(3, 3) = cos(m_alpha1) * m_nn1 / m_h1 + cos(m_alpha2) * m_nn2 / m_h2;
-    gradTheta.segment(6, 3) = - m_nn1 / m_h01;
-    gradTheta.segment(9, 3) = - m_nn2 / m_h02;
-}
+            perturb(i, -delta);
+            perturb(j, delta);
+            Esh_i_Lo_j_Hi = getEnergy();
+            recover(i);
+            recover(j);
 
-void Bending::hess(Eigen::MatrixXd& hessTheta) {
-    Eigen::Matrix3d M331 = cos(m_alpha3) / (m_h3 * m_h3) * m_m3 * m_nn1.transpose();
-    Eigen::Matrix3d M311 = cos(m_alpha3) / (m_h3 * m_h1) * m_m1 * m_nn1.transpose();
-    Eigen::Matrix3d M131 = cos(m_alpha1) / (m_h1 * m_h3) * m_m3 * m_nn1.transpose();
-    Eigen::Matrix3d M3011 = cos(m_alpha3) / (m_h3 * m_h01) * m_m01 * m_nn1.transpose();
-    Eigen::Matrix3d M111 = cos(m_alpha1) / (m_h1 * m_h1) * m_m1 * m_nn1.transpose();
-    Eigen::Matrix3d M1011 = cos(m_alpha1) / (m_h1 * m_h01) * m_m01 * m_nn1.transpose();
+            perturb(i, -delta);
+            perturb(j, -delta);
+            Esh_i_Lo_j_Lo = getEnergy();
+            recover(i);
+            recover(j);
 
-    Eigen::Matrix3d M442 = cos(m_alpha4) / (m_h4 * m_h4) * m_m4 * m_nn2.transpose();
-    Eigen::Matrix3d M422 = cos(m_alpha4) / (m_h4 * m_h2) * m_m2 * m_nn2.transpose();
-    Eigen::Matrix3d M242 = cos(m_alpha2) / (m_h2 * m_h4) * m_m4 * m_nn2.transpose();
-    Eigen::Matrix3d M4022 = cos(m_alpha4) / (m_h4 * m_h02) * m_m02 * m_nn2.transpose();
-    Eigen::Matrix3d M222 = cos(m_alpha2) / (m_h2 * m_h2) * m_m2 * m_nn2.transpose();
-    Eigen::Matrix3d M2022 = cos(m_alpha2) / (m_h2 * m_h02) * m_m02 * m_nn2.transpose();
-
-    Eigen::Matrix3d B1 = 1 / (pow(m_e0.norm(), 2)) * m_nn1 * m_m01.transpose();
-    Eigen::Matrix3d B2 = 1 / (pow(m_e0.norm(), 2)) * m_nn2 * m_m02.transpose();
-
-    Eigen::Matrix3d N13 = 1 / (m_h01 * m_h3) * m_nn1 * m_m3.transpose();
-    Eigen::Matrix3d N24 = 1 / (m_h02 * m_h4) * m_nn2 * m_m4.transpose();
-    Eigen::Matrix3d N11 = 1 / (m_h01 * m_h1) * m_nn1 * m_m1.transpose();
-    Eigen::Matrix3d N22 = 1 / (m_h02 * m_h2) * m_nn2 * m_m2.transpose();
-    Eigen::Matrix3d N101 = 1 / (m_h01 * m_h01) * m_nn1 * m_m01.transpose();
-    Eigen::Matrix3d N202 = 1 / (m_h02 * m_h02) * m_nn2 * m_m02.transpose();
-
-    hessTheta.block(0,0, 3,3) = s(M331) - B1 + s(M442) - B2;
-    hessTheta.block(0,3, 3,3) = M331 + M131.transpose() + B1 + M422 + M242.transpose() + B2;
-    hessTheta.block(0,6, 3,3) = M3011 - N13;
-    hessTheta.block(0,9, 3,3) = M4022 - N24;
-    hessTheta.block(3,3, 3,3) = s(M111) - B1 + s(M222) - B2;
-    hessTheta.block(3,6, 3,3) = M1011 - N11;
-    hessTheta.block(3,9, 3,3) = M2022 - N22;
-    hessTheta.block(6,6, 3,3) = -s(N101);
-    hessTheta.block(9,9, 3,3) = -s(N202);
-
-    // symmetric matrix
-    hessTheta.block(3,0, 3,3) = hessTheta.block(0,3, 3,3);
-    hessTheta.block(6,0, 3,3) = hessTheta.block(0,6, 3,3);
-    hessTheta.block(9,0, 3,3) = hessTheta.block(0,9, 3,3);
-    hessTheta.block(6,3, 3,3) = hessTheta.block(3,6, 3,3);
-    hessTheta.block(9,3, 3,3) = hessTheta.block(9,6, 3,3);
+            m_hessE(i, j) = (Esh_i_Hi_j_Hi - Esh_i_Hi_j_Lo - Esh_i_Lo_j_Hi + Esh_i_Lo_j_Lo) / (4 * pow(delta, 2));
+        }
+    }
 }

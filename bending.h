@@ -18,53 +18,33 @@ class Hinge;
 class Bending {
 public:
     Bending(Hinge* ptr);
-
-    void initValues();
+    void init();
     void locBend(Eigen::VectorXd& loc_f, Eigen::MatrixXd& loc_j);
 
+    double m_coeff;
+
 private:
-    void psi();
-    void zeta();
-    void xi();
-    Eigen::Matrix3d s(Eigen::Matrix3d& mat);
+    void perturb(int pos, double val);
+    void recover(int pos);
+    double getAngle();
+    double getEnergy();
 
-    void grad(Eigen::VectorXd& gradTheta);
-    void hess(Eigen::MatrixXd& hessTheta);
+    void grad();
+    void hess();
 
+    bool READY;
 
     Hinge* m_hinge;
 
-    Eigen::Vector3d m_e0;
-    Eigen::Vector3d m_e1;
-    Eigen::Vector3d m_e2;
-    Eigen::Vector3d m_e3;
-    Eigen::Vector3d m_e4;
+    Eigen::VectorXd m_q;
+    Eigen::VectorXd m_qCurrent;
+    Eigen::VectorXd m_gradE;
+    Eigen::MatrixXd m_hessE;
 
-    Eigen::Vector3d m_nn1;
-    Eigen::Vector3d m_nn2;
-    Eigen::Vector3d m_m1;
-    Eigen::Vector3d m_m2;
-    Eigen::Vector3d m_m3;
-    Eigen::Vector3d m_m4;
-    Eigen::Vector3d m_m01;
-    Eigen::Vector3d m_m02;
+    double m_phi0;
+    double m_phiPerturbed;
 
-    double m_theta;
-    double m_alpha1;
-    double m_alpha2;
-    double m_alpha3;
-    double m_alpha4;
-
-    double m_psi;
-    double m_zeta;
-    double m_xi;
-
-    double m_h1;
-    double m_h2;
-    double m_h3;
-    double m_h4;
-    double m_h01;
-    double m_h02;
+    const double delta;
 };
 
 

@@ -4,7 +4,7 @@
 #include <Eigen/Dense>
 
 /*
- *      Stretch energy
+ *      Stretch energy (numerical version)
  *
  *      E_s = 1/2 * k_s * l0^2 * (l/l0 - 1)^2
  *
@@ -18,17 +18,34 @@ class Edge;
 class Stretching {
 public:
     Stretching(Edge* ptr);
-
+    void init();
     void locStretch(Eigen::VectorXd& loc_f, Eigen::MatrixXd& loc_j);
 
+    double m_ks;
+
 private:
-    void grad(Eigen::VectorXd& gradLen);
-    void hess(Eigen::MatrixXd& hessLen);
+    void perturb(int pos, double val);
+    void recover(int pos);
+    double getLen();
+    double getEnergy();
+
+    void grad();
+    void hess();
+
+    bool READY;
+    double m_coeff;
 
     Edge* m_edge;
 
-    Eigen::Vector3d m_ne0;
-    double m_len;
+    Eigen::VectorXd m_q;
+    Eigen::VectorXd m_qCurrent;
+    Eigen::VectorXd m_gradE;
+    Eigen::MatrixXd m_hessE;
+
+    double m_l0;
+    double m_lPerturbed;
+
+    const double delta;
 };
 
 #endif //PLATES_SHELLS_DERIVATIVES_H
