@@ -121,6 +121,11 @@ void Bending::hess() {
     double Esh_i_Hi_j_Hi = 0, Esh_i_Hi_j_Lo = 0, Esh_i_Lo_j_Hi = 0, Esh_i_Lo_j_Lo = 0;
     for (int i = 0; i < 12; i++) {
         for (int j = 0; j < 12; j++) {
+            if (i > j) {
+                m_hessE(i, j) = m_hessE(j, i);
+                continue;
+            }
+
             perturb(i, delta);
             perturb(j, delta);
             Esh_i_Hi_j_Hi = getEnergy();

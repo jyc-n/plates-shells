@@ -88,11 +88,11 @@ void SolverImpl::Solve() {
 
             // calculate residual vector
             updateResidual(dof, dof_new, vel, m_dEdq, m_residual);
-            //std::cout << residual << std::endl;
+            //std::cout << m_residual << std::endl;
 
             // calculate jacobian matrix
             updateJacobian(m_ddEddq, m_jacobian);
-            //std::cout << jacobian << std::endl;
+            //std::cout << m_jacobian << std::endl;
 
             // residual vector and jacobian matrix at dofs that are not specified
             Eigen::VectorXd res_free = unconsVec(m_residual);
@@ -163,12 +163,12 @@ void SolverImpl::calcDEnergy(Eigen::VectorXd& dEdq, Eigen::MatrixXd& ddEddq) {
     Eigen::MatrixXd jbend    = Eigen::MatrixXd::Zero(m_SimGeo->nn() * m_SimGeo->ndof(), m_SimGeo->nn() * m_SimGeo->ndof());
 
 
-    Timer ts;
+    //Timer ts;
     calcStretch(fstretch, jstretch);
     calcShear(fshear, jshear);
     calcBend(fbend, jbend);
 
-    std::cout << ts.elapsed() << " ms \t";
+    //std::cout << ts.elapsed() << " ms \t";
 
     dEdq = fstretch + fshear + fbend;
     ddEddq = jstretch + jshear + jbend;
@@ -181,21 +181,15 @@ void SolverImpl::calcDEnergy(Eigen::VectorXd& dEdq, Eigen::MatrixXd& ddEddq) {
     std::cout << "bend" << std::endl;
     std::cout << fbend << std::endl;
      */
-/*
-    std::cout << "----------------" << std::endl;
-    std::cout << "bend" << std::endl;
-       std::cout << jbend << std::endl;
-    std::cout << "----------------" << std::endl;
-
-
-
-       std::cout << "stretch" << std::endl;
-       std::cout << jstretch << std::endl;
+    
+    /*
+    std::cout << "stretch" << std::endl;
+    std::cout << jstretch << std::endl;
     std::cout << "shear" << std::endl;
     std::cout << jshear << std::endl;
-
-        std::cout << ddEddq << std::endl;
-        */
+    std::cout << "bend" << std::endl;
+    std::cout << jbend << std::endl;
+    */
 }
 
 /*
@@ -208,18 +202,12 @@ void SolverImpl::updateResidual(Eigen::VectorXd& qn, Eigen::VectorXd& qnew, Eige
     for (unsigned int i = 0; i < m_SimGeo->nn() * m_SimGeo->ndof(); i++)
         res_f(i) = m_SimGeo->m_mass(i) * (qnew(i) - qn(i)) / pow(dt,2) - m_SimGeo->m_mass(i) * vel(i)/dt
                  + dEdq(i) - m_SimBC->m_fext(i);
-
     /*
-    std::cout << "inertial term" << std::endl;
-    std::cout << mi * (qnew - qn) / pow(dt,2) << std::endl;
-    std::cout << "velocity term" << std::endl;
-    std::cout << mi * vel/dt << std::endl;
-
     std::cout << "dEdq" << std::endl;
     std::cout << dEdq << std::endl;
     std::cout << "residual" << std::endl;
     std::cout << res_f << std::endl;
-     */
+    */
 }
 
 /*
@@ -369,15 +357,20 @@ void SolverImpl::calcStretch(Eigen::VectorXd& dEdq, Eigen::MatrixXd& ddEddq){
         // local jacobian matrix
         Eigen::MatrixXd loc_j = Eigen::MatrixXd::Zero(6, 6);
 
-        (*iedge)->m_k = m_SimPar->kstretch();
-
         Stretching EStretch(*iedge);
 
+        EStretch.m_ks = m_SimPar->kstretch();
+
+        EStretch.init();
         EStretch.locStretch(loc_f, loc_j);
 
         // local node number corresponds to global node number
         unsigned int n1 = (*iedge)->get_node_num(1);
         unsigned int n2 = (*iedge)->get_node_num(2);
+
+        //std::cout << n1 << '\t' << n2 << '\n';
+        //std::cout << loc_f << std::endl;
+        //std::cout << loc_j << std::endl;
 
         // stretch force for local node1
         dEdq(3*(n1-1))   += loc_f(0);
@@ -415,16 +408,21 @@ void SolverImpl::calcShear(Eigen::VectorXd &dEdq, Eigen::MatrixXd &ddEddq){
         // local jacobian matrix
         Eigen::MatrixXd loc_j = Eigen::MatrixXd::Zero(9, 9);
 
-        (*iel).m_k = m_SimPar->kshear() * (*iel).get_area();
-
         Shearing EShear(&(*iel));
 
+        EShear.m_coeff = 0.5 * m_SimPar->kshear() * (*iel).get_area();
+
+        EShear.init();
         EShear.locShear(loc_f, loc_j);
 
         // local node number corresponds to global node number
         unsigned int n1 = (*iel).get_node_num(1);
         unsigned int n2 = (*iel).get_node_num(2);
         unsigned int n3 = (*iel).get_node_num(3);
+
+        //std::cout << n1 << '\t' << n2 << '\t' << n3 << '\n';
+        //std::cout << loc_f << std::endl;
+        //std::cout << loc_j << std::endl;
 
         // shearing force for local node1
         dEdq(3*(n1-1))   += loc_f(0);
@@ -476,12 +474,12 @@ void SolverImpl::calcBend(Eigen::VectorXd &dEdq, Eigen::MatrixXd &ddEddq){
         // local jacobian matrix
         Eigen::MatrixXd loc_j = Eigen::MatrixXd::Zero(12, 12);
 
-        // coefficients k for gradient and hessian
-        (*ihinge)->m_k = (*ihinge)->m_const * m_SimPar->kbend();
-
         // bending energy calculation
         Bending Ebend(*ihinge);
 
+        Ebend.m_coeff = (*ihinge)->m_const * m_SimPar->kbend();
+
+        Ebend.init();
         Ebend.locBend(loc_f, loc_j);
 
         // local node number corresponds to global node number

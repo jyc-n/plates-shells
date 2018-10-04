@@ -87,6 +87,11 @@ void Stretching::hess() {
     double Es_i_Hi_j_Hi = 0, Es_i_Hi_j_Lo = 0, Es_i_Lo_j_Hi = 0, Es_i_Lo_j_Lo = 0;
     for (int i = 0; i < 6; i++) {
         for (int j = 0; j < 6; j++) {
+            if (i > j) {
+                m_hessE(i, j) = m_hessE(j, i);
+                continue;
+            }
+
             perturb(i, delta);
             perturb(j, delta);
             Es_i_Hi_j_Hi = getEnergy();
