@@ -181,7 +181,7 @@ void SolverImpl::calcDEnergy(Eigen::VectorXd& dEdq, Eigen::MatrixXd& ddEddq) {
     std::cout << "bend" << std::endl;
     std::cout << fbend << std::endl;
      */
-    
+
     /*
     std::cout << "stretch" << std::endl;
     std::cout << jstretch << std::endl;

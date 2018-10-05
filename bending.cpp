@@ -55,12 +55,10 @@ void Bending::init() {
 
 void Bending::perturb(int pos, double val) {
     m_qCurrent(pos) += val;
-    m_phiPerturbed = getAngle();
 }
 
 void Bending::recover(int pos) {
     m_qCurrent(pos) = m_q(pos);
-    m_phiPerturbed = getAngle();
 }
 
 double Bending::getAngle() {
@@ -86,6 +84,7 @@ double Bending::getAngle() {
 }
 
 double Bending::getEnergy() {
+    m_phiPerturbed = getAngle();
     return m_coeff * pow(m_phiPerturbed - m_phi0, 2);
 }
 

@@ -48,12 +48,10 @@ void Shearing::init() {
 
 void Shearing::perturb(int pos, double val) {
     m_qCurrent(pos) += val;
-    m_phiPerturbed = getAngle();
 }
 
 void Shearing::recover(int pos) {
     m_qCurrent(pos) = m_q(pos);
-    m_phiPerturbed = getAngle();
 }
 
 double Shearing::getAngle() {
@@ -76,6 +74,7 @@ double Shearing::getAngle() {
 }
 
 double Shearing::getEnergy() {
+    m_phiPerturbed = getAngle();
     return m_coeff * pow(m_phiPerturbed - m_phi0, 2);
 }
 

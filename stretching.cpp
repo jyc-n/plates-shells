@@ -38,12 +38,10 @@ void Stretching::init() {
 // -----------------------------------------------------------------------
 void Stretching::perturb(int pos, double val) {
     m_qCurrent(pos) += val;
-    m_lPerturbed = getLen();
 }
 
 void Stretching::recover(int pos) {
     m_qCurrent(pos) = m_q(pos);
-    m_lPerturbed = getLen();
 }
 
 double Stretching::getLen() {
@@ -53,6 +51,7 @@ double Stretching::getLen() {
 }
 
 double Stretching::getEnergy() {
+    m_lPerturbed = getLen();
     return m_coeff * pow(m_lPerturbed/m_l0 - 1, 2);
 }
 
