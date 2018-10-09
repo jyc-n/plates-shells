@@ -5,7 +5,6 @@
 #include <algorithm>
 #include <Eigen/Dense>
 #include <Eigen/Sparse>
-#include <Eigen/IterativeLinearSolvers>
 
 #include "solver.h"
 #include "parameters.h"
@@ -56,7 +55,6 @@ void SolverImpl::Solve() {
 
     // TODO: implement tolerance in parameter
     // tolerance
-    //double tol = SimPar.kstretch() * 1e-2;
     double tol = m_SimGeo->m_mi * 9.81 * 1e-1;
 
     // true - write output, false - no output, configured in input.txt
@@ -88,16 +86,13 @@ void SolverImpl::Solve() {
 
             // calculate residual vector
             updateResidual(dof, dof_new, vel, m_dEdq, m_residual);
-            //std::cout << residual << std::endl;
 
             // calculate jacobian matrix
             updateJacobian(m_ddEddq, m_jacobian);
-            //std::cout << jacobian << std::endl;
 
             // residual vector and jacobian matrix at dofs that are not specified
             Eigen::VectorXd res_free = unconsVec(m_residual);
             Eigen::MatrixXd jacobian_free = unconsMat(m_jacobian);
-            //std::cout << res_free << std::endl;
 
             // solve for new dof vector
             dof_new = calcDofnew(dof_old, res_free, jacobian_free);
@@ -113,7 +108,7 @@ void SolverImpl::Solve() {
 
             // convergence criteria
             if (res_free.norm() < tol) {
-                std::cout << "Newton's method converges in " << niter + 1 << " step(s)" << std::endl;
+                std::cout << "Newton's method converges in " << niter + 1 << " iteration(s)" << std::endl;
                 CONVERGED = true;
                 break;
             }
@@ -162,40 +157,12 @@ void SolverImpl::calcDEnergy(Eigen::VectorXd& dEdq, Eigen::MatrixXd& ddEddq) {
     Eigen::MatrixXd jshear   = Eigen::MatrixXd::Zero(m_SimGeo->nn() * m_SimGeo->ndof(), m_SimGeo->nn() * m_SimGeo->ndof());
     Eigen::MatrixXd jbend    = Eigen::MatrixXd::Zero(m_SimGeo->nn() * m_SimGeo->ndof(), m_SimGeo->nn() * m_SimGeo->ndof());
 
-
-    Timer ts;
     calcStretch(fstretch, jstretch);
     calcShear(fshear, jshear);
     calcBend(fbend, jbend);
 
-    std::cout << ts.elapsed() << " ms \t";
-
     dEdq = fstretch + fshear + fbend;
     ddEddq = jstretch + jshear + jbend;
-
-    /*
-    std::cout << "stretch" << std::endl;
-    std::cout << fstretch << std::endl;
-    std::cout << "shear" << std::endl;
-    std::cout << fshear << std::endl;
-    std::cout << "bend" << std::endl;
-    std::cout << fbend << std::endl;
-     */
-/*
-    std::cout << "----------------" << std::endl;
-    std::cout << "bend" << std::endl;
-       std::cout << jbend << std::endl;
-    std::cout << "----------------" << std::endl;
-
-
-
-       std::cout << "stretch" << std::endl;
-       std::cout << jstretch << std::endl;
-    std::cout << "shear" << std::endl;
-    std::cout << jshear << std::endl;
-
-        std::cout << ddEddq << std::endl;
-        */
 }
 
 /*
@@ -208,18 +175,6 @@ void SolverImpl::updateResidual(Eigen::VectorXd& qn, Eigen::VectorXd& qnew, Eige
     for (unsigned int i = 0; i < m_SimGeo->nn() * m_SimGeo->ndof(); i++)
         res_f(i) = m_SimGeo->m_mass(i) * (qnew(i) - qn(i)) / pow(dt,2) - m_SimGeo->m_mass(i) * vel(i)/dt
                  + dEdq(i) - m_SimBC->m_fext(i);
-
-    /*
-    std::cout << "inertial term" << std::endl;
-    std::cout << mi * (qnew - qn) / pow(dt,2) << std::endl;
-    std::cout << "velocity term" << std::endl;
-    std::cout << mi * vel/dt << std::endl;
-
-    std::cout << "dEdq" << std::endl;
-    std::cout << dEdq << std::endl;
-    std::cout << "residual" << std::endl;
-    std::cout << res_f << std::endl;
-     */
 }
 
 /*
@@ -252,14 +207,6 @@ Eigen::VectorXd SolverImpl::calcDofnew(Eigen::VectorXd& qn, const Eigen::VectorX
 
     //denseSolver(temp_j, temp_f, dq_free);
     sparseSolver(temp_j, temp_f, dq_free);
-    //std::cout << res_f << std::endl;
-
-    //std::cout << "---dq_free---" << std::endl;
-    //std::cout << dq_free << std::endl;
-    //std::cout << "---temp_f---" << std::endl;
-    //std::cout << temp_f << std::endl;
-    //std::cout << "---temp_j---" << std::endl;
-    //std::cout << temp_j << std::endl;
 
     // map the free part dof vector back to the full dof vector
     for (int i = 0, j = 0; i < m_SimBC->m_numTotal && j < m_SimBC->m_numFree; i++) {
@@ -269,7 +216,6 @@ Eigen::VectorXd SolverImpl::calcDofnew(Eigen::VectorXd& qn, const Eigen::VectorX
             j++;
         }
     }
-    //std::cout << dq << std::endl;
     return (qn - dq);
 }
 
@@ -489,13 +435,6 @@ void SolverImpl::calcBend(Eigen::VectorXd &dEdq, Eigen::MatrixXd &ddEddq){
         unsigned int n1 = (*ihinge)->get_node_num(1);
         unsigned int n2 = (*ihinge)->get_node_num(2);
         unsigned int n3 = (*ihinge)->get_node_num(3);
-
-/*
-        std::cout << n0 << "\t" << n1 << "\t" << n2 << "\t" << n3 << std::endl;
-
-        std::cout << "m_k " << (*ihinge)->m_k << std::endl;
-        std::cout << loc_j << std::endl;*/
-
 
         // bending force for local node1
         dEdq(3*(n0-1))   += loc_f(0);

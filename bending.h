@@ -49,11 +49,15 @@ private:
     Eigen::Vector3d m_m01;
     Eigen::Vector3d m_m02;
 
-    double m_theta;
-    double m_alpha1;
-    double m_alpha2;
-    double m_alpha3;
-    double m_alpha4;
+    double m_cosA1;
+    double m_cosA2;
+    double m_cosA3;
+    double m_cosA4;
+
+    double m_sinA1;
+    double m_sinA2;
+    double m_sinA3;
+    double m_sinA4;
 
     double m_psi;
     double m_zeta;

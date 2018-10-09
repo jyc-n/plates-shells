@@ -1,4 +1,3 @@
-#include <iostream>
 #include <cmath>
 #include "bending.h"
 #include "hinge.h"
@@ -37,10 +36,20 @@ Bending::Bending(Hinge* ptr) {
 }
 
 void Bending::initValues() {
-    m_alpha1 = abs(acos(m_e0.dot(m_e1) / (m_e0.norm() * m_e1.norm())));
-    m_alpha2 = abs(acos(m_e0.dot(m_e2) / (m_e0.norm() * m_e2.norm())));
-    m_alpha3 = M_PI - abs(acos(m_e0.dot(m_e3) / (m_e0.norm() * m_e3.norm())));
-    m_alpha4 = M_PI - abs(acos(m_e0.dot(m_e4) / (m_e0.norm() * m_e4.norm())));
+    m_cosA1 = m_e0.dot(m_e1) / (m_e0.norm() * m_e1.norm());
+    m_cosA2 = m_e0.dot(m_e2) / (m_e0.norm() * m_e2.norm());
+    m_cosA3 = -m_e0.dot(m_e3) / (m_e0.norm() * m_e3.norm());
+    m_cosA4 = -m_e0.dot(m_e4) / (m_e0.norm() * m_e4.norm());
+
+    double alpha1 = acos(m_cosA1);
+    double alpha2 = acos(m_cosA2);
+    double alpha3 = acos(m_cosA3);
+    double alpha4 = acos(m_cosA4);
+
+    m_sinA1 = sin(alpha1);
+    m_sinA2 = sin(alpha2);
+    m_sinA3 = sin(alpha3);
+    m_sinA4 = sin(alpha4);
 
     m_nn1 = m_e0.cross(m_e3);
     m_nn1 = m_nn1 / (m_nn1.norm());
@@ -54,15 +63,12 @@ void Bending::initValues() {
     m_m01 = (m_e0 / m_e0.norm()).cross(m_nn1);
     m_m02 = (m_nn2).cross(m_e0 / m_e0.norm());
 
-    double val = (m_nn1 - m_nn2).norm() / (m_nn1 + m_nn2).norm();
-    m_theta = 2 * atan(val);
-
-    m_h1 = m_e0.norm() * sin(m_alpha1);
-    m_h2 = m_e0.norm() * sin(m_alpha2);
-    m_h3 = m_e0.norm() * sin(m_alpha3);
-    m_h4 = m_e0.norm() * sin(m_alpha4);
-    m_h01 = m_e1.norm() * sin(m_alpha1);
-    m_h02 = m_e2.norm() * sin(m_alpha2);
+    m_h1 = m_e0.norm() * m_sinA1;
+    m_h2 = m_e0.norm() * m_sinA2;
+    m_h3 = m_e0.norm() * m_sinA3;
+    m_h4 = m_e0.norm() * m_sinA4;
+    m_h01 = m_e1.norm() * m_sinA1;
+    m_h02 = m_e2.norm() * m_sinA2;
 
     psi();
     zeta();
@@ -80,30 +86,18 @@ void Bending::locBend(Eigen::VectorXd &loc_f, Eigen::MatrixXd &loc_j) {
 
     loc_f = m_zeta * gradTheta;
     loc_j = m_zeta * hessTheta + m_xi * gradTheta * gradTheta.transpose();
-
-/*
-    std::cout << "---------------------" << std::endl;
-    std::cout << "c alpha1 " << m_alpha1 * 180/M_PI
-                << " c alpha2 " << m_alpha2 * 180/M_PI
-                << " c alpha3 " << m_alpha3 * 180/M_PI
-                << " c alpha4 " << m_alpha4 * 180/M_PI << std::endl;
-    std::cout << "h1 " << m_h1
-              << " h2 " << m_h2
-              << " h3 " << m_h3
-              << " h4 " << m_h4
-              << " h01 " << m_h01
-              << " h02 " << m_h02 << std::endl;
-    //std::cout << "nn1\n" << m_nn1 << "\n nn2\n" << m_nn2 << std::endl;
-
-    std::cout << gradTheta << std::endl;
-
-     */
 }
 
 // -----------------------------------------------------------------------
 
 void Bending::psi() {
-    m_psi = tan(m_theta / 2.0);
+    Eigen::Vector3d cross = m_nn1.cross(m_nn2);
+    double angleSign = 0.0;
+    if (m_e0.dot(cross) > 0)
+        angleSign = 1.0;
+    else
+        angleSign = -1.0;
+    m_psi = angleSign * (m_nn1 - m_nn2).norm() / (m_nn1 + m_nn2).norm();
 }
 
 void Bending::zeta() {
@@ -119,26 +113,26 @@ Eigen::Matrix3d Bending::s(Eigen::Matrix3d &mat) {
 }
 
 void Bending::grad(Eigen::VectorXd& gradTheta) {
-    gradTheta.segment(0, 3) = cos(m_alpha3) * m_nn1 / m_h3 + cos(m_alpha4) * m_nn2 / m_h4;
-    gradTheta.segment(3, 3) = cos(m_alpha1) * m_nn1 / m_h1 + cos(m_alpha2) * m_nn2 / m_h2;
+    gradTheta.segment(0, 3) = m_cosA3 * m_nn1 / m_h3 + m_cosA4 * m_nn2 / m_h4;
+    gradTheta.segment(3, 3) = m_cosA1 * m_nn1 / m_h1 + m_cosA2 * m_nn2 / m_h2;
     gradTheta.segment(6, 3) = - m_nn1 / m_h01;
     gradTheta.segment(9, 3) = - m_nn2 / m_h02;
 }
 
 void Bending::hess(Eigen::MatrixXd& hessTheta) {
-    Eigen::Matrix3d M331 = cos(m_alpha3) / (m_h3 * m_h3) * m_m3 * m_nn1.transpose();
-    Eigen::Matrix3d M311 = cos(m_alpha3) / (m_h3 * m_h1) * m_m1 * m_nn1.transpose();
-    Eigen::Matrix3d M131 = cos(m_alpha1) / (m_h1 * m_h3) * m_m3 * m_nn1.transpose();
-    Eigen::Matrix3d M3011 = cos(m_alpha3) / (m_h3 * m_h01) * m_m01 * m_nn1.transpose();
-    Eigen::Matrix3d M111 = cos(m_alpha1) / (m_h1 * m_h1) * m_m1 * m_nn1.transpose();
-    Eigen::Matrix3d M1011 = cos(m_alpha1) / (m_h1 * m_h01) * m_m01 * m_nn1.transpose();
+    Eigen::Matrix3d M331 = m_cosA3 / (m_h3 * m_h3) * m_m3 * m_nn1.transpose();
+    Eigen::Matrix3d M311 = m_cosA3 / (m_h3 * m_h1) * m_m1 * m_nn1.transpose();
+    Eigen::Matrix3d M131 = m_cosA1 / (m_h1 * m_h3) * m_m3 * m_nn1.transpose();
+    Eigen::Matrix3d M3011 = m_cosA3 / (m_h3 * m_h01) * m_m01 * m_nn1.transpose();
+    Eigen::Matrix3d M111 = m_cosA1 / (m_h1 * m_h1) * m_m1 * m_nn1.transpose();
+    Eigen::Matrix3d M1011 = m_cosA1 / (m_h1 * m_h01) * m_m01 * m_nn1.transpose();
 
-    Eigen::Matrix3d M442 = cos(m_alpha4) / (m_h4 * m_h4) * m_m4 * m_nn2.transpose();
-    Eigen::Matrix3d M422 = cos(m_alpha4) / (m_h4 * m_h2) * m_m2 * m_nn2.transpose();
-    Eigen::Matrix3d M242 = cos(m_alpha2) / (m_h2 * m_h4) * m_m4 * m_nn2.transpose();
-    Eigen::Matrix3d M4022 = cos(m_alpha4) / (m_h4 * m_h02) * m_m02 * m_nn2.transpose();
-    Eigen::Matrix3d M222 = cos(m_alpha2) / (m_h2 * m_h2) * m_m2 * m_nn2.transpose();
-    Eigen::Matrix3d M2022 = cos(m_alpha2) / (m_h2 * m_h02) * m_m02 * m_nn2.transpose();
+    Eigen::Matrix3d M442 = m_cosA4 / (m_h4 * m_h4) * m_m4 * m_nn2.transpose();
+    Eigen::Matrix3d M422 = m_cosA4 / (m_h4 * m_h2) * m_m2 * m_nn2.transpose();
+    Eigen::Matrix3d M242 = m_cosA2 / (m_h2 * m_h4) * m_m4 * m_nn2.transpose();
+    Eigen::Matrix3d M4022 = m_cosA4 / (m_h4 * m_h02) * m_m02 * m_nn2.transpose();
+    Eigen::Matrix3d M222 = m_cosA2 / (m_h2 * m_h2) * m_m2 * m_nn2.transpose();
+    Eigen::Matrix3d M2022 = m_cosA2 / (m_h2 * m_h02) * m_m02 * m_nn2.transpose();
 
     Eigen::Matrix3d B1 = 1 / (pow(m_e0.norm(), 2)) * m_nn1 * m_m01.transpose();
     Eigen::Matrix3d B2 = 1 / (pow(m_e0.norm(), 2)) * m_nn2 * m_m02.transpose();

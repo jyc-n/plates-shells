@@ -1,7 +1,7 @@
+#include <cmath>
 #include "shearing.h"
 #include "element.h"
 #include "node.h"
-#include <iostream>
 
 /*
  *                x3
@@ -101,14 +101,4 @@ void Shearing::hess(Eigen::VectorXd& gradPhi, Eigen::MatrixXd& hessPhi) {
     hessPhi.block(3,0, 3,3) = hessPhi.block(0,3, 3,3);
     hessPhi.block(6,0, 3,3) = hessPhi.block(0,6, 3,3);
     hessPhi.block(6,3, 3,3) = hessPhi.block(3,6, 3,3);
-
-/*
-    std::cout << "H11" << std::endl;
-    std::cout << hessPhi.block(0,0, 3,3) << std::endl;
-
-    std::cout << "H22" << std::endl;
-    std::cout << hessPhi.block(3,3, 3,3) << std::endl;
-    std::cout << "H33" << std::endl;
-    std::cout << hessPhi.block(6,6, 3,3) << std::endl;
-     */
 }
