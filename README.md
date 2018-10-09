@@ -7,4 +7,4 @@ Energy derivatives calculated using symbolic math tools
 Derivatives were analytically derived
 
 ### Numerical Branch (slow)
-Numerical differentiation (central difference) werer used
+Numerical differentiation (central difference) were used
