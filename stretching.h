@@ -17,7 +17,7 @@ class Edge;
 
 class Stretching {
 public:
-    Stretching(Edge* ptr);
+    Stretching(Edge* ptr, double E, double D);
 
     void locStretch(Eigen::VectorXd& loc_f, Eigen::MatrixXd& loc_j);
 
@@ -28,7 +28,8 @@ private:
     Edge* m_edge;
 
     Eigen::Vector3d m_ne0;
-    double m_len;
+    double m_len;           // Current length of edge
+    double m_ks;            // Stretching stiffness
 };
 
 #endif //PLATES_SHELLS_DERIVATIVES_H

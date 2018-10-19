@@ -18,8 +18,11 @@
 
 // -----------------------------------------------------------------------
 
-Shearing::Shearing(Element* ptr) {
+Shearing::Shearing(Element* ptr, double E, double nu, double area, double clen) {
     m_element = ptr;
+
+    double G = E / (2.0 * (1.0 + nu));
+    m_ksh = G * area * clen;
 
     initValues();
 }
@@ -55,8 +58,8 @@ void Shearing::locShear(Eigen::VectorXd& loc_f, Eigen::MatrixXd& loc_j) {
     grad(gradPhi);
     hess(gradPhi, hessPhi);
 
-    loc_f = m_element->m_k * (m_phi - m_element->get_phi0()) * gradPhi;
-    loc_j = m_element->m_k * (gradPhi * gradPhi.transpose() + (m_phi - m_element->get_phi0()) * hessPhi);
+    loc_f = m_ksh * (m_phi - m_element->get_phi0()) * gradPhi;
+    loc_j = m_ksh * (gradPhi * gradPhi.transpose() + (m_phi - m_element->get_phi0()) * hessPhi);
 }
 
 // -----------------------------------------------------------------------

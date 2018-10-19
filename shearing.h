@@ -14,7 +14,7 @@ class Element;
 
 class Shearing {
 public:
-    Shearing(Element* ptr);
+    Shearing(Element* ptr, double E, double nu, double area, double clen);
     void initValues();
     void locShear(Eigen::VectorXd& loc_f, Eigen::MatrixXd& loc_j);
 
@@ -34,6 +34,7 @@ private:
     double m_ne2;
     double m_h1;
     double m_h2;
+    double m_ksh;           // Shear stiffness
 };
 
 #endif //PLATES_SHELLS_SHEAR_DERIVATIVES_H

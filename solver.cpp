@@ -84,6 +84,9 @@ void SolverImpl::Solve() {
             // calculate derivatives of energy functions
             calcDEnergy(m_dEdq, m_ddEddq);
 
+            // add viscosity
+            calcViscous(dof, dof_new, m_dEdq, m_ddEddq);
+
             // calculate residual vector
             updateResidual(dof, dof_new, vel, m_dEdq, m_residual);
 
@@ -163,6 +166,15 @@ void SolverImpl::calcDEnergy(Eigen::VectorXd& dEdq, Eigen::MatrixXd& ddEddq) {
 
     dEdq = fstretch + fshear + fbend;
     ddEddq = jstretch + jshear + jbend;
+
+    /*
+    std::cout << "stretch" << std::endl;
+    std::cout << jstretch << std::endl;
+    std::cout << "shear" << std::endl;
+    std::cout << jshear << std::endl;
+    std::cout << "bend" << std::endl;
+    std::cout << jbend << std::endl;*/
+
 }
 
 /*
@@ -315,9 +327,7 @@ void SolverImpl::calcStretch(Eigen::VectorXd& dEdq, Eigen::MatrixXd& ddEddq){
         // local jacobian matrix
         Eigen::MatrixXd loc_j = Eigen::MatrixXd::Zero(6, 6);
 
-        (*iedge)->m_k = m_SimPar->kstretch();
-
-        Stretching EStretch(*iedge);
+        Stretching EStretch(*iedge, m_SimPar->E_modulus(), m_SimPar->thk());
 
         EStretch.locStretch(loc_f, loc_j);
 
@@ -361,9 +371,7 @@ void SolverImpl::calcShear(Eigen::VectorXd &dEdq, Eigen::MatrixXd &ddEddq){
         // local jacobian matrix
         Eigen::MatrixXd loc_j = Eigen::MatrixXd::Zero(9, 9);
 
-        (*iel).m_k = m_SimPar->kshear() * (*iel).get_area();
-
-        Shearing EShear(&(*iel));
+        Shearing EShear(&(*iel), m_SimPar->E_modulus(), m_SimPar->nu(), (*iel).get_area(), m_SimPar->thk());
 
         EShear.locShear(loc_f, loc_j);
 
@@ -487,4 +495,14 @@ void SolverImpl::calcBend(Eigen::VectorXd &dEdq, Eigen::MatrixXd &ddEddq){
             }
         }
     }
+}
+
+void SolverImpl::calcViscous(const Eigen::VectorXd &qn, const Eigen::VectorXd &qnew, Eigen::VectorXd &dEdq,
+                             Eigen::MatrixXd &ddEddq) {
+    double area = 0.5 * m_SimGeo->rec_len() * m_SimGeo->rec_wid()
+                    / (m_SimGeo->num_nodes_len() * m_SimGeo->num_nodes_wid());
+    Eigen::VectorXd vis_f = m_SimPar->vis() * area * (qnew - qn) / m_SimPar->dt();
+    Eigen::MatrixXd vis_j = Eigen::MatrixXd::Identity(3*m_SimGeo->nn(), 3*m_SimGeo->nn());
+    dEdq += vis_f;
+    ddEddq += vis_j;
 }

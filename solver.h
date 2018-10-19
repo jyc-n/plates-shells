@@ -41,6 +41,7 @@ private:
     void calcStretch(Eigen::VectorXd& dEdq, Eigen::MatrixXd& ddEddq);
     void calcShear  (Eigen::VectorXd& dEdq, Eigen::MatrixXd& ddEddq);
     void calcBend   (Eigen::VectorXd& dEdq, Eigen::MatrixXd& ddEddq);
+    void calcViscous(const Eigen::VectorXd& qn, const Eigen::VectorXd& qnew, Eigen::VectorXd& dEdq, Eigen::MatrixXd& ddEddq);
 
     // pointers
     Parameters* m_SimPar;

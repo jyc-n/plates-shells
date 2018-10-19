@@ -20,7 +20,7 @@ void Edge::find_node(Node &n1, Node &n2) {
     m_node2 = &n2;
 }
 
-void Edge::find_originVal(){
+void Edge::find_originVal() {
     m_eVec = m_node1->get_xyz() - m_node2->get_xyz();
     m_len0 = m_eVec.norm();
 }

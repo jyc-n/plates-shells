@@ -11,12 +11,14 @@
 
 // -----------------------------------------------------------------------
 
-Stretching::Stretching(Edge* ptr) {
+Stretching::Stretching(Edge* ptr, double E, double D) {
     m_edge = ptr;
 
     m_ne0 = m_edge->get_node(2)->get_xyz() - m_edge->get_node(1)->get_xyz();
     m_len = m_ne0.norm();
     m_ne0 = m_ne0 / m_len;
+
+    m_ks = E * M_PI/4.0 * pow(D, 2) / m_len;
 }
 
 // -----------------------------------------------------------------------
@@ -27,8 +29,8 @@ void Stretching::locStretch(Eigen::VectorXd& loc_f, Eigen::MatrixXd& loc_j) {
     grad(gradLen);
     hess(hessLen);
 
-    loc_f = m_edge->m_k * gradLen;
-    loc_j = m_edge->m_k * hessLen;
+    loc_f = m_ks * gradLen;
+    loc_j = m_ks * hessLen;
 }
 
 // -----------------------------------------------------------------------
