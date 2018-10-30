@@ -27,16 +27,113 @@ SolverImpl::SolverImpl(Parameters* SimPar, Geometry* SimGeo, Boundary* SimBC) {
 }
 
 void SolverImpl::initSolver() {
-    m_dEdq = Eigen::VectorXd::Zero(m_SimGeo->nn() * m_SimGeo->ndof());
-    m_ddEddq = Eigen::MatrixXd::Zero(m_SimGeo->nn() * m_SimGeo->ndof(), m_SimGeo->nn() * m_SimGeo->ndof());
-    m_residual = Eigen::VectorXd::Zero(m_SimGeo->nn() * m_SimGeo->ndof());
-    m_jacobian = Eigen::MatrixXd::Zero(m_SimGeo->nn() * m_SimGeo->ndof(), m_SimGeo->nn() * m_SimGeo->ndof());
+    DYNAMIC_SOLVER = m_SimPar->solver_op();
+    WRITE_OUTPUT = m_SimPar->outop();
+    m_tol = m_SimGeo->m_mi * m_SimPar->gconst() * m_SimPar->ctol();
+    m_incRatio = 1.0 / ((double) m_SimPar->nst());
 }
 
 // ========================================= //
 //            Main solver function           //
 // ========================================= //
 
+void SolverImpl::staticSolve() {
+
+    // dof vector at t_n and t_{n+1}
+    Eigen::VectorXd dof(m_SimGeo->nn() * m_SimGeo->ndof());
+    Eigen::VectorXd dof_new(m_SimGeo->nn() * m_SimGeo->ndof());
+    dof = m_SimGeo->m_dof;
+
+    // additional dof vector for Newton's method
+    Eigen::VectorXd dof_old(m_SimGeo->nn() * m_SimGeo->ndof());
+
+    Timer t;
+    Timer t_all(true);
+
+    for (int i = 0; i < m_SimPar->nst(); i++) {
+
+        double fextRatio = (i+1) * m_incRatio;
+
+        // initial guess
+        dof_new = dof;
+        dof_old = dof;
+
+        std::cout << "--------Increment " << i << "--------" << std::endl;
+        std::cout << "#iter " << '\t' << "norm of residual" << '\t' << "time" << std::endl;
+
+        // convergence flag
+        bool CONVERGED = false;
+
+        // apply Newton-Raphson Method
+        for (int niter = 0; niter < m_SimPar->iter_lim(); niter++) {
+
+            resetVariables();
+
+            std::cout << niter+1 << '\t';
+
+            t.start();
+
+            // calculate derivatives of energy functions
+            calcDEnergy(m_dEdq, m_ddEddq);
+
+            // calculate residual vector
+            updateResidual(dof, dof_new, fextRatio, m_dEdq, m_residual);
+
+            // calculate jacobian matrix
+            updateJacobian(m_ddEddq, m_jacobian);
+
+            // residual vector and jacobian matrix at dofs that are not specified
+            Eigen::VectorXd res_free = unconsVec(m_residual);
+            Eigen::MatrixXd jacobian_free = unconsMat(m_jacobian);
+
+            // solve for new dof vector
+            dof_new = calcDofnew(dof_old, res_free, jacobian_free);
+
+            // update coordinates for the nodes
+            updateNodes(dof_new);
+
+            // update for next iteration
+            dof_old = dof_new;
+
+            // display residual
+            std::cout << res_free.norm() << '\t' << t.elapsed() << " ms" << std::endl;
+
+            // convergence criteria
+            if (res_free.norm() < m_SimPar->ctol()) {
+                std::cout << "Newton's method converges in " << niter + 1 << " iteration(s)" << std::endl;
+                CONVERGED = true;
+                break;
+            }
+        }
+
+        dof = dof_new;
+
+        if (WRITE_OUTPUT) {
+            // output files
+            std::string filepath = "/Users/chenjingyu/Dropbox/Research/Codes/plates-shells/results/";
+            std::string filename = "result" + std::to_string(i) + ".txt";
+            std::ofstream myfile((filepath+filename).c_str());
+            for (int k = 0; k < m_SimGeo->nn(); k++) {
+                myfile << std::setprecision(8) << std::fixed
+                       << dof(3*k) << '\t'
+                       << dof(3*k+1) << '\t'
+                       << dof(3*k+2) << std::endl;
+            }
+        }
+
+        if (!CONVERGED) {
+            std::cerr << "Solver did not converge in " << m_SimPar->iter_lim()
+                      << " iterations at step " << i << std::endl;
+            throw "Cannot converge! Program terminated";
+        }
+    }
+    std::cout << "---------------------------" << std::endl;
+    std::cout << "Simulation completed" << std::endl;
+    std::cout << "Total time used " << t_all.elapsed(true) << " seconds" << std::endl;
+}
+
+
+// TODO: implement Newmark-beta method
 void SolverImpl::Solve() {
 
     // dof vector at t_n and t_{n+1}
@@ -53,13 +150,6 @@ void SolverImpl::Solve() {
     Timer t;
     Timer t_all(true);
 
-    // TODO: implement tolerance in parameter
-    // tolerance
-    double tol = m_SimGeo->m_mi * 9.81 * 1e-1;
-
-    // true - write output, false - no output, configured in input.txt
-    bool WRITE_OUTPUT = m_SimPar->outop();
-
     for (int i = 0; i < m_SimPar->nst(); i++) {
 
         // initial guess
@@ -75,7 +165,7 @@ void SolverImpl::Solve() {
         // apply Newton-Raphson Method
         for (int niter = 0; niter < m_SimPar->iter_lim(); niter++) {
 
-            initSolver();
+            resetVariables();
 
             std::cout << niter+1 << '\t';
 
@@ -110,7 +200,7 @@ void SolverImpl::Solve() {
             std::cout << res_free.norm() << '\t' << t.elapsed() << " ms" << std::endl;
 
             // convergence criteria
-            if (res_free.norm() < tol) {
+            if (res_free.norm() < m_tol) {
                 std::cout << "Newton's method converges in " << niter + 1 << " iteration(s)" << std::endl;
                 CONVERGED = true;
                 break;
@@ -178,6 +268,17 @@ void SolverImpl::calcDEnergy(Eigen::VectorXd& dEdq, Eigen::MatrixXd& ddEddq) {
 }
 
 /*
+ *    f_i = dE/dq - F_ext
+ */
+void SolverImpl::updateResidual(Eigen::VectorXd& qn, Eigen::VectorXd& qnew, double ratio, Eigen::VectorXd& dEdq, Eigen::VectorXd& res_f) {
+
+    double dt = m_SimPar->dt();
+
+    for (unsigned int i = 0; i < m_SimGeo->nn() * m_SimGeo->ndof(); i++)
+        res_f(i) = dEdq(i) - m_SimBC->m_fext(i) * ratio;
+}
+
+/*
  *    f_i = m_i * (q_i(t_n+1) - q_i(t_n)) / dt^2 - m_i * v(t_n) / dt + dE/dq - F_ext
  */
 void SolverImpl::updateResidual(Eigen::VectorXd& qn, Eigen::VectorXd& qnew, Eigen::VectorXd& vel, Eigen::VectorXd& dEdq, Eigen::VectorXd& res_f) {
@@ -186,7 +287,7 @@ void SolverImpl::updateResidual(Eigen::VectorXd& qn, Eigen::VectorXd& qnew, Eige
 
     for (unsigned int i = 0; i < m_SimGeo->nn() * m_SimGeo->ndof(); i++)
         res_f(i) = m_SimGeo->m_mass(i) * (qnew(i) - qn(i)) / pow(dt,2) - m_SimGeo->m_mass(i) * vel(i)/dt
-                 + dEdq(i) - m_SimBC->m_fext(i);
+                   + dEdq(i) - m_SimBC->m_fext(i);
 }
 
 /*
@@ -200,7 +301,8 @@ void SolverImpl::updateJacobian(Eigen::MatrixXd& ddEddq, Eigen::MatrixXd& mat_j)
         for (int j = 0; j < m_SimGeo->nn() * m_SimGeo->ndof(); j++) {
             mat_j(i, j) = ddEddq(i, j);
         }
-        mat_j(i, i) += m_SimGeo->m_mass(i) / pow(dt, 2);
+        if (DYNAMIC_SOLVER)
+            mat_j(i, i) += m_SimGeo->m_mass(i) / pow(dt, 2);
     }
 }
 
@@ -220,6 +322,7 @@ Eigen::VectorXd SolverImpl::calcDofnew(Eigen::VectorXd& qn, const Eigen::VectorX
     //denseSolver(temp_j, temp_f, dq_free);
     sparseSolver(temp_j, temp_f, dq_free);
 
+    // TODO: implement inverse mapping function, O(1)
     // map the free part dof vector back to the full dof vector
     for (int i = 0, j = 0; i < m_SimBC->m_numTotal && j < m_SimBC->m_numFree; i++) {
         std::vector<int>::const_iterator it = find(m_SimBC->m_specifiedDof.begin(), m_SimBC->m_specifiedDof.end(), i);
@@ -260,6 +363,16 @@ void SolverImpl::sparseSolver(const Eigen::MatrixXd& A, const Eigen::VectorXd& b
 // ========================================= //
 //          Other helper functions           //
 // ========================================= //
+
+// TODO: may not need to create a full residual vector and jacobian matrix, (N - nDirichlet) * ndof should be good
+void SolverImpl::resetVariables() {
+    m_dEdq = Eigen::VectorXd::Zero(m_SimGeo->nn() * m_SimGeo->ndof());
+    m_ddEddq = Eigen::MatrixXd::Zero(m_SimGeo->nn() * m_SimGeo->ndof(), m_SimGeo->nn() * m_SimGeo->ndof());
+    m_residual = Eigen::VectorXd::Zero(m_SimGeo->nn() * m_SimGeo->ndof());
+    m_jacobian = Eigen::MatrixXd::Zero(m_SimGeo->nn() * m_SimGeo->ndof(), m_SimGeo->nn() * m_SimGeo->ndof());
+}
+
+// TODO: implement a function to find the indices in the reduced system in O(1)
 
 Eigen::VectorXd SolverImpl::unconsVec(const Eigen::VectorXd& vec) {
 
@@ -503,6 +616,6 @@ void SolverImpl::calcViscous(const Eigen::VectorXd &qn, const Eigen::VectorXd &q
                     / (m_SimGeo->num_nodes_len() * m_SimGeo->num_nodes_wid());
     Eigen::VectorXd vis_f = m_SimPar->vis() * area * (qnew - qn) / m_SimPar->dt();
     Eigen::MatrixXd vis_j = Eigen::MatrixXd::Identity(3*m_SimGeo->nn(), 3*m_SimGeo->nn());
-    dEdq += vis_f;
-    ddEddq += vis_j;
+    dEdq -= vis_f;
+    ddEddq -= vis_j;
 }

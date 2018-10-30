@@ -26,8 +26,12 @@ Simulation::~Simulation() {
 void Simulation::pre_process() {
     m_PreProcessor->PreProcess();
     m_SimBC->initBC();
+    m_SolverImpl->initSolver();
 }
 
 void Simulation::solve() {
-    m_SolverImpl->Solve();
+    if (m_SimPar->solver_op())
+        m_SolverImpl->Solve();
+    else
+        m_SolverImpl->staticSolve();
 }

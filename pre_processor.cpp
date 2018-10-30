@@ -83,6 +83,8 @@ void PreProcessorImpl::readInput() {
                 m_SimPar->set_nst(std::stoi(value_var));                 // total number of steps
             else if (name_var == "iter_lim")
                 m_SimPar->set_iter_lim(std::stoi(value_var));            // maximum number of iterations allowed per time step
+            else if (name_var == "ctol")
+                m_SimPar->set_ctol(std::stod(value_var));                // tolerance scaling factor
             else if (name_var == "E_modulus")
                 m_SimPar->set_E_modulus(std::stod(value_var));           // Young's modulus
             else if (name_var == "nu")
@@ -93,8 +95,12 @@ void PreProcessorImpl::readInput() {
                 m_SimPar->set_thk(std::stod(value_var));                 // thickness
             else if (name_var == "vis")
                 m_SimPar->set_vis(std::stod(value_var));                 // viscosity
+            else if (name_var == "gconst")
+                m_SimPar->set_gconst(std::stod(value_var));              // gravitational acceleration constant
             else if (name_var == "outop")
-                m_SimPar->set_outop((bool) std::stoi(value_var));
+                m_SimPar->set_outop((bool) std::stoi(value_var));        // output option
+            else if (name_var == "solver_op")
+                m_SimPar->set_solver_op((bool) std::stoi(value_var));    // solver option
         }
     }
     m_SimPar->set_kstretch();

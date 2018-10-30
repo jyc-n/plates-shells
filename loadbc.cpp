@@ -1,5 +1,6 @@
 #include <iostream>
 #include "loadbc.h"
+#include "parameters.h"
 #include "geometry.h"
 
 // constructor
@@ -88,7 +89,7 @@ void Boundary::configBC() {
 
     for (int i = 0; i < m_SimGeo->nn() * m_SimGeo->ndof(); i++) {
         if (i % 3 == 2)
-            m_fext(i) = - m_SimGeo->m_mass(i) * 9.81;
+            m_fext(i) = - m_SimGeo->m_mass(i) * m_SimPar->gconst();
     }
 
 }
@@ -161,18 +162,18 @@ void Boundary::buildBCinfo() {
 }
 
 void Boundary::getSpecifiedDof() {
-    /*
+
     for (int i = 0; i < m_disp.size(); i++) {
         if ( !m_disp[i] )
             m_specifiedDof.push_back(i);
     }
-*/
+/*
     // Hanging cloth
     for (int i = 0; i < 6; i++)
         m_specifiedDof.push_back(i);
     for (int i = m_SimGeo->num_nodes_len()*3; i < m_SimGeo->num_nodes_len()*3+6; i++)
         m_specifiedDof.push_back(i);
-
+*/
     m_numTotal = m_SimGeo->nn() * m_SimGeo->ndof();
     m_numFree = m_numTotal - (int) m_specifiedDof.size();
 }

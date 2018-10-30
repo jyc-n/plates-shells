@@ -18,13 +18,19 @@ public:
     void initSolver();
 
     // main solver function
+    void staticSolve();
     void Solve();
 
 private:
 
+    // solver flags
+    bool DYNAMIC_SOLVER;        // true - dynamic solver, false - static solver
+    bool WRITE_OUTPUT;          // true - write output, false - no output, configured in input.txt
+
     // subroutine
     void calcDEnergy(Eigen::VectorXd& dEdq, Eigen::MatrixXd& ddEddq);
-    void updateResidual(Eigen::VectorXd& qn, Eigen::VectorXd& qnew, Eigen::VectorXd& vel, Eigen::VectorXd& dEdq, Eigen::VectorXd& res_f);
+    void updateResidual(Eigen::VectorXd& qn, Eigen::VectorXd& qnew, double ratio, Eigen::VectorXd& dEdq, Eigen::VectorXd& res_f);                         // static
+    void updateResidual(Eigen::VectorXd& qn, Eigen::VectorXd& qnew, Eigen::VectorXd& vel, Eigen::VectorXd& dEdq, Eigen::VectorXd& res_f);   // dynamic
     void updateJacobian(Eigen::MatrixXd& ddEddq, Eigen::MatrixXd& mat_j);
     Eigen::VectorXd calcVel(double dt, const Eigen::VectorXd& qcurr, const Eigen::VectorXd& qnew);
     Eigen::VectorXd calcDofnew(Eigen::VectorXd& qn, const Eigen::VectorXd& temp_f, const Eigen::MatrixXd& temp_j);
@@ -34,6 +40,7 @@ private:
     void sparseSolver(const Eigen::MatrixXd& A, const Eigen::VectorXd& b, Eigen::VectorXd& x);
 
     // helper functions
+    void resetVariables();
     Eigen::VectorXd unconsVec(const Eigen::VectorXd& vec);
     Eigen::MatrixXd unconsMat(const Eigen::MatrixXd& mat);
     void updateNodes(Eigen::VectorXd& qnew);
@@ -49,6 +56,8 @@ private:
     Boundary*   m_SimBC;
 
     // member variables
+    double m_tol;
+    double m_incRatio;
     Eigen::VectorXd m_dEdq;
     Eigen::MatrixXd m_ddEddq;
     Eigen::VectorXd m_residual;
