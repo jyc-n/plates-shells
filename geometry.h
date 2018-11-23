@@ -17,6 +17,7 @@ public:
     ~Geometry();
 
     // modifier
+    void set_datum(const int var);
     void set_ndof(const int var);
     void set_nen(const int var);
     void set_rec_len(const double var);
@@ -32,6 +33,7 @@ public:
     void calcMass();
 
     // accessor
+    int           datum() const;
     int           ndof() const;
     int           nen() const;
     double        rec_len() const;
@@ -64,6 +66,7 @@ public:
 private:
 
     // geometry parameters
+    int             m_datum;                      // initial datum plane
     int             m_ndof;                       // degree of freedom
     int             m_nen;                        // number of nodes per element
     double          m_rec_len;                    // length of the rectangular domain
@@ -81,6 +84,7 @@ private:
 };
 
 // inline implementations for short functions
+inline void Geometry::set_datum(const int var)                   { m_datum = var; }
 inline void Geometry::set_ndof(const int var)                    { m_ndof = var; }
 inline void Geometry::set_nen(const int var)                     { m_nen = var; }
 inline void Geometry::set_rec_len(const double var)              { m_rec_len = var; }
@@ -92,6 +96,7 @@ inline void Geometry::set_nel(const unsigned int var)            { m_nel = var; 
 inline void Geometry::set_nedge(const unsigned int var)          { m_nedge = var; }
 inline void Geometry::set_nhinge(const unsigned int var)         { m_nhinge = var; }
 
+inline int           Geometry::datum() const                     { return m_datum; }
 inline int           Geometry::ndof() const                      { return m_ndof; }
 inline int           Geometry::nen() const                       { return m_nen; }
 inline double        Geometry::rec_len() const                   { return m_rec_len; }

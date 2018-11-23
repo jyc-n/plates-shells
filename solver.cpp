@@ -39,6 +39,8 @@ void SolverImpl::initSolver() {
 
 void SolverImpl::staticSolve() {
 
+    analyticalStatic();
+
     // dof vector at t_n and t_{n+1}
     Eigen::VectorXd dof(m_SimGeo->nn() * m_SimGeo->ndof());
     Eigen::VectorXd dof_new(m_SimGeo->nn() * m_SimGeo->ndof());
@@ -50,19 +52,20 @@ void SolverImpl::staticSolve() {
     Timer t;
     Timer t_all(true);
 
-    for (int i = 0; i < m_SimPar->nst(); i++) {
+    for (int ist = 1; ist <= m_SimPar->nst(); ist++) {
 
-        double fextRatio = (i+1) * m_incRatio;
+        double fextRatio = (ist+1) * m_incRatio;
 
         // initial guess
         dof_new = dof;
         dof_old = dof;
 
-        std::cout << "--------Increment " << i << "--------" << std::endl;
+        std::cout << "--------Increment " << ist << "--------" << std::endl;
         std::cout << "#iter " << '\t' << "norm of residual" << '\t' << "time" << std::endl;
 
         // convergence flag
         bool CONVERGED = false;
+        double error = 0.0;
 
         // apply Newton-Raphson Method
         for (int niter = 0; niter < m_SimPar->iter_lim(); niter++) {
@@ -83,6 +86,7 @@ void SolverImpl::staticSolve() {
             updateJacobian(m_ddEddq, m_jacobian);
 
             // residual vector and jacobian matrix at dofs that are not specified
+
             Eigen::VectorXd res_free = unconsVec(m_residual);
             Eigen::MatrixXd jacobian_free = unconsMat(m_jacobian);
 
@@ -95,11 +99,13 @@ void SolverImpl::staticSolve() {
             // update for next iteration
             dof_old = dof_new;
 
+            error = res_free.norm();
+
             // display residual
-            std::cout << res_free.norm() << '\t' << t.elapsed() << " ms" << std::endl;
+            std::cout << error << '\t' << t.elapsed() << " ms" << std::endl;
 
             // convergence criteria
-            if (res_free.norm() < m_SimPar->ctol()) {
+            if (error < m_SimPar->ctol()) {
                 std::cout << "Newton's method converges in " << niter + 1 << " iteration(s)" << std::endl;
                 CONVERGED = true;
                 break;
@@ -109,9 +115,15 @@ void SolverImpl::staticSolve() {
         dof = dof_new;
 
         if (WRITE_OUTPUT) {
+            if (ist % m_SimPar->out_freq() != 0)
+                continue;
+            if (m_SimPar->out_freq() == -1)
+                if (ist != m_SimPar->nst())
+                    continue;
+
             // output files
             std::string filepath = "/Users/chenjingyu/Dropbox/Research/Codes/plates-shells/results/";
-            std::string filename = "result" + std::to_string(i) + ".txt";
+            std::string filename = "result" + std::to_string(ist) + ".txt";
             std::ofstream myfile((filepath+filename).c_str());
             for (int k = 0; k < m_SimGeo->nn(); k++) {
                 myfile << std::setprecision(8) << std::fixed
@@ -123,7 +135,7 @@ void SolverImpl::staticSolve() {
 
         if (!CONVERGED) {
             std::cerr << "Solver did not converge in " << m_SimPar->iter_lim()
-                      << " iterations at step " << i << std::endl;
+                      << " iterations at step " << ist << std::endl;
             throw "Cannot converge! Program terminated";
         }
     }
@@ -150,13 +162,13 @@ void SolverImpl::Solve() {
     Timer t;
     Timer t_all(true);
 
-    for (int i = 0; i < m_SimPar->nst(); i++) {
+    for (int ist = 1; ist <= m_SimPar->nst(); ist++) {
 
         // initial guess
         dof_new = dof;
         dof_old = dof;
 
-        std::cout << "--------Step " << i << "--------" << std::endl;
+        std::cout << "--------Step " << ist << "--------" << std::endl;
         std::cout << "#iter " << '\t' << "norm of residual" << '\t' << "time" << std::endl;
 
         // convergence flag
@@ -213,9 +225,15 @@ void SolverImpl::Solve() {
         dof = dof_new;
 
         if (WRITE_OUTPUT) {
+            if (ist % m_SimPar->out_freq() != 0)
+                continue;
+            if (m_SimPar->out_freq() == -1)
+                if (ist != m_SimPar->nst())
+                    continue;
+
             // output files
             std::string filepath = "/Users/chenjingyu/Dropbox/Research/Codes/plates-shells/results/";
-            std::string filename = "result" + std::to_string(i) + ".txt";
+            std::string filename = "result" + std::to_string(ist) + ".txt";
             std::ofstream myfile((filepath+filename).c_str());
             for (int k = 0; k < m_SimGeo->nn(); k++) {
                 myfile << std::setprecision(8) << std::fixed
@@ -227,7 +245,7 @@ void SolverImpl::Solve() {
 
         if (!CONVERGED) {
             std::cerr << "Solver did not converge in " << m_SimPar->iter_lim()
-                      << " iterations at step " << i << std::endl;
+                      << " iterations at step " << ist << std::endl;
             throw "Cannot converge! Program terminated";
         }
     }
@@ -319,8 +337,10 @@ Eigen::VectorXd SolverImpl::calcDofnew(Eigen::VectorXd& qn, const Eigen::VectorX
     Eigen::VectorXd dq_free = Eigen::VectorXd::Zero(m_SimBC->m_numFree);
     Eigen::VectorXd dq      = Eigen::VectorXd::Zero(m_SimBC->m_numTotal);
 
+    Timer t1;
     //denseSolver(temp_j, temp_f, dq_free);
     sparseSolver(temp_j, temp_f, dq_free);
+    std::cout << t1.elapsed() << '\t';
 
     // TODO: implement inverse mapping function, O(1)
     // map the free part dof vector back to the full dof vector
@@ -616,6 +636,22 @@ void SolverImpl::calcViscous(const Eigen::VectorXd &qn, const Eigen::VectorXd &q
                     / (m_SimGeo->num_nodes_len() * m_SimGeo->num_nodes_wid());
     Eigen::VectorXd vis_f = m_SimPar->vis() * area * (qnew - qn) / m_SimPar->dt();
     Eigen::MatrixXd vis_j = Eigen::MatrixXd::Identity(3*m_SimGeo->nn(), 3*m_SimGeo->nn());
-    dEdq -= vis_f;
-    ddEddq -= vis_j;
+    dEdq += vis_f;
+    ddEddq += vis_j;
+}
+
+void SolverImpl::analyticalStatic() {
+    int nl = m_SimGeo->num_nodes_len();
+    double b = m_SimGeo->rec_wid();
+    double l = m_SimGeo->rec_len() * double(nl-1)/double(nl);
+    double h = m_SimPar->thk();
+    double g = 9.81;
+    double E = m_SimPar->E_modulus();
+    double rho = m_SimPar->rho();
+
+    double mtotal = b*l*h*rho;
+    double w = mtotal*g/b;
+    double I = 1.0/12.0 * b * pow(h,3);
+    double ymax = - w*pow(l,4)/(8.0*E*I);
+    std::cout << ymax << std::endl;
 }

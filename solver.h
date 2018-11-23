@@ -26,6 +26,7 @@ private:
     // solver flags
     bool DYNAMIC_SOLVER;        // true - dynamic solver, false - static solver
     bool WRITE_OUTPUT;          // true - write output, false - no output, configured in input.txt
+    bool INFO_STYLE;            // true - print info on console, false - progress bar + log file
 
     // subroutine
     void calcDEnergy(Eigen::VectorXd& dEdq, Eigen::MatrixXd& ddEddq);
@@ -49,6 +50,8 @@ private:
     void calcShear  (Eigen::VectorXd& dEdq, Eigen::MatrixXd& ddEddq);
     void calcBend   (Eigen::VectorXd& dEdq, Eigen::MatrixXd& ddEddq);
     void calcViscous(const Eigen::VectorXd& qn, const Eigen::VectorXd& qnew, Eigen::VectorXd& dEdq, Eigen::MatrixXd& ddEddq);
+
+    void analyticalStatic();
 
     // pointers
     Parameters* m_SimPar;

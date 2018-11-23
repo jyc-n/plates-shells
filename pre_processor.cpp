@@ -29,10 +29,8 @@ PreProcessorImpl::PreProcessorImpl(Parameters* SimPar, Geometry* SimGeo) {
 
 // main pre-processor function
 void PreProcessorImpl::PreProcess() {
-    //std::cout << "Pre-processor starts" << '\n';
-
+    // read input file
     readInput();
-    //std::cout << "Finish reading input file" << std::endl;
     m_SimPar->print_parameters();
 
     m_SimGeo->buildGeo();
@@ -73,6 +71,8 @@ void PreProcessorImpl::readInput() {
                 m_SimGeo->set_num_nodes_len(std::stoul(value_var));      // number of nodes along the length
             else if (name_var == "num_nodes_wid")
                 m_SimGeo->set_num_nodes_wid(std::stoul(value_var));      // number of nodes along the width
+            else if (name_var == "datum_plane")
+                m_SimGeo->set_datum(std::stoi(value_var));               // degree of freedom
             else if (name_var == "dof")
                 m_SimGeo->set_ndof(std::stoi(value_var));                // degree of freedom
             else if (name_var == "nen")
@@ -99,8 +99,12 @@ void PreProcessorImpl::readInput() {
                 m_SimPar->set_gconst(std::stod(value_var));              // gravitational acceleration constant
             else if (name_var == "outop")
                 m_SimPar->set_outop((bool) std::stoi(value_var));        // output option
+            else if (name_var == "out_freq")
+                m_SimPar->set_out_freq(std::stoi(value_var));            // output frequency
             else if (name_var == "solver_op")
                 m_SimPar->set_solver_op((bool) std::stoi(value_var));    // solver option
+            else if (name_var == "info_style")
+                m_SimPar->set_info_style((bool) std::stoi(value_var));   // console output style
         }
     }
     m_SimPar->set_kstretch();
@@ -122,6 +126,8 @@ void PreProcessorImpl::initCoord() {
     delta_len = m_SimGeo->rec_len() / (double) (m_SimGeo->num_nodes_len() - 1);
     delta_wid = m_SimGeo->rec_wid() / (double) (m_SimGeo->num_nodes_wid() - 1);
 
+    int datum_op = m_SimGeo->datum();
+
     unsigned int node_count = 0;
     for (int i = 0; i < m_SimGeo->num_nodes_wid(); i++) {
         for (int j = 0; j < m_SimGeo->num_nodes_len(); j++) {
@@ -129,13 +135,29 @@ void PreProcessorImpl::initCoord() {
             if (node_count == m_SimGeo->nn())
                 break;
 
-            m_SimGeo->m_coord(node_count, 0) = (double) j * delta_len;
-            m_SimGeo->m_coord(node_count, 1) = (double) i * delta_wid;
-            m_SimGeo->m_coord(node_count, 2) = 0.0;
+            double x = 0, y = 0, z = 0;
+            switch (datum_op) {
+                default:
+                case 1:             // xy plane
+                    x = (double) j * delta_len;
+                    y = (double) i * delta_wid;
+                    z = 0.0;
+                    break;
+                case 2:             // xz plane
+                    x = (double) j * delta_len;
+                    y = 0.0;
+                    z = -(double) i * delta_wid;
+                    break;
+                case 3:             // yz plane
+                    x = 0.0;
+                    y = (double) j * delta_len;
+                    z = -(double) i * delta_wid;
+                    break;
+            }
 
-            m_SimGeo->m_dof(node_count * 3)     = m_SimGeo->m_coord(node_count, 0);
-            m_SimGeo->m_dof(node_count * 3 + 1) = m_SimGeo->m_coord(node_count, 1);
-            m_SimGeo->m_dof(node_count * 3 + 2) = m_SimGeo->m_coord(node_count, 2);
+            m_SimGeo->m_dof(node_count * 3)     = x;
+            m_SimGeo->m_dof(node_count * 3 + 1) = y;
+            m_SimGeo->m_dof(node_count * 3 + 2) = z;
 
             m_SimGeo->map_nodes(i,j) = node_count + 1;
             node_count++;
@@ -178,7 +200,7 @@ void PreProcessorImpl::initGeoList() {
 
     // build node list
     for (unsigned int i = 0; i < m_SimGeo->nn(); i++) {
-        Node temp(i+1, m_SimGeo->m_coord(i,0), m_SimGeo->m_coord(i,1), m_SimGeo->m_coord(i,2));
+        Node temp(i+1, m_SimGeo->m_dof(3*i), m_SimGeo->m_dof(3*i+1), m_SimGeo->m_dof(3*i+2));
         m_SimGeo->m_nodeList.push_back(temp);
     }
     assert(m_SimGeo->m_nodeList.size() == m_SimGeo->nn());

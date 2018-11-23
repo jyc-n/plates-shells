@@ -13,6 +13,8 @@ public:
     void link_geo(Geometry* geo);
     void set_outop(const bool var);
     void set_solver_op(const bool var);
+    void set_info_style(const bool var);
+    void set_out_freq(const int var);
     void set_nst(const int var);
     void set_iter_lim(const int var);
     void set_dt(const double var);
@@ -32,6 +34,8 @@ public:
     std::string   outputPath() const;
     bool          outop() const;
     bool          solver_op() const;
+    bool          info_style() const;
+    int           out_freq() const;
     int           nst() const;
     int           iter_lim() const;
     double        dt() const;
@@ -57,6 +61,8 @@ private:
     // parameters
     bool            outop_;                      // output option
     bool            solver_op_;                  // solver option
+    bool            info_style_;                 // console output style
+    int             out_freq_;                   // output frequency
     int             nst_;                        // total number of steps
     int             iter_lim_;                   // maximum number of iterations allowed per time step
     double          dt_;                         // step size

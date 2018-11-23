@@ -69,10 +69,7 @@ void Geometry::printGeo() {
     std::cout << "----List of Nodes----" << '\n';
     for (int i = 0; i < m_nn; i++) {
         std::cout << i+1 << '\t';
-        for (int j = 0; j < m_ndof; j++) {
-            std::cout << std::setprecision(8) << std::fixed << m_coord(i,j) << '\t';
-        }
-        std::cout << std::endl;
+        std::cout << std::setprecision(8) << std::fixed << m_dof(3*i) << '\t' << m_dof(3*i+1) << '\t' << m_dof(3*i+2) << std::endl;
     }
     //std::cout << "----DOF Vector----" << '\n';
     //std::cout << m_dof << std::endl;
