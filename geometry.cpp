@@ -32,6 +32,7 @@ void Geometry::buildGeo() {
 void Geometry::calcMass() {
     m_mass = Eigen::VectorXd::Zero(m_nn * m_ndof);
 
+
     // Total mass per small rectangle (2 triangular elements)
     m_mi = (m_rec_len * m_rec_wid * m_SimPar->thk() * m_SimPar->rho())
                 / ((m_num_nodes_len - 1) * (m_num_nodes_wid - 1));
@@ -43,18 +44,18 @@ void Geometry::calcMass() {
             int k = i + j * m_num_nodes_len;
 
             // corner nodes
-            if ( (i == 0 || i == m_num_nodes_len - 1) && (j == 0 || j == m_num_nodes_wid - 1) ) {
+            if ((i == 0 || i == m_num_nodes_len - 1) && (j == 0 || j == m_num_nodes_wid - 1)) {
                 m_mass(k * m_ndof) = m_mi / 4.0;
                 m_mass(k * m_ndof + 1) = m_mi / 4.0;
                 m_mass(k * m_ndof + 2) = m_mi / 4.0;
             }
-            // edge nodes
-            else if ( (i == 0 || i == m_num_nodes_len - 1) || (j == 0 || j == m_num_nodes_wid - 1) ) {
+                // edge nodes
+            else if ((i == 0 || i == m_num_nodes_len - 1) || (j == 0 || j == m_num_nodes_wid - 1)) {
                 m_mass(k * m_ndof) = m_mi / 2.0;
                 m_mass(k * m_ndof + 1) = m_mi / 2.0;
                 m_mass(k * m_ndof + 2) = m_mi / 2.0;
             }
-            // middle nodes
+                // middle nodes
             else {
                 m_mass(k * m_ndof) = m_mi;
                 m_mass(k * m_ndof + 1) = m_mi;
@@ -62,32 +63,50 @@ void Geometry::calcMass() {
             }
         }
     }
+    /*
+    // triangular element mass
+    double tri_mass = (m_rec_len * m_rec_wid * m_SimPar->thk() * m_SimPar->rho())
+           / (2.0 * (m_num_nodes_len - 1) * (m_num_nodes_wid - 1));
+    m_mi = tri_mass / 3.0;
+
+    for (int i = 0; i < m_nel; i++) {
+        for (int j = 0; j < m_ndof; j++) {
+            int inn = m_conn(i, j);
+
+            m_mass((inn-1) * m_ndof) += m_mi;
+            m_mass((inn-1) * m_ndof + 1) += m_mi;
+            m_mass((inn-1) * m_ndof + 2) += m_mi;
+        }
+    }
+    */
+
 }
 
 // print geometric information and generate connectivity file
 void Geometry::printGeo() {
+    /*
     std::cout << "----List of Nodes----" << '\n';
     for (int i = 0; i < m_nn; i++) {
         std::cout << i+1 << '\t';
         std::cout << std::setprecision(8) << std::fixed << m_dof(3*i) << '\t' << m_dof(3*i+1) << '\t' << m_dof(3*i+2) << std::endl;
     }
-    //std::cout << "----DOF Vector----" << '\n';
-    //std::cout << m_dof << std::endl;
-    //std::cout << "----Map of Nodes----" << '\n';
-    //std::cout << map_nodes << std::endl;
-    std::cout << "----List of Elements----" << '\n';
+    std::cout << "----DOF Vector----" << '\n';
+    std::cout << m_dof << std::endl;
+    std::cout << "----Map of Nodes----" << '\n';
+    std::cout << map_nodes << std::endl;
+    std::cout << "----List of Elements----" << '\n';*/
     std::string filepath = m_SimPar->outputPath();
     std::string filename = "connectivity.txt";
     std::ofstream myfile((filepath+filename).c_str());
 
     for (int i = 0; i < m_nel; i++) {
-        std::cout << i+1 << '\t';
+        //std::cout << i+1 << '\t';
         myfile << i+1 << '\t';
         for (int j = 0; j < m_nen; j++) {
-            std::cout << m_conn(i,j) << '\t';
+            //std::cout << m_conn(i,j) << '\t';
             myfile << m_conn(i,j) << '\t';
         }
-        std::cout << std::endl;
+        //std::cout << std::endl;
         myfile << std::endl;
     }
 }

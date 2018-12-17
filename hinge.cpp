@@ -35,7 +35,7 @@ void Hinge::find_originVal(){
     Eigen::Vector3d ve0 = m_node1->get_xyz() - m_node0->get_xyz();
     double e0 = ve0.norm();
     double a0 = m_el1->get_area() + m_el2->get_area();
-    m_const = 6.0 * pow(e0, 2) / a0;
+    m_const = 6.0 * pow(e0, 2) / a0;  // FIXME: should be 2.0 * in order to match beam bending
 
     //TODO: calculate psi0
     m_psi0 = 0;

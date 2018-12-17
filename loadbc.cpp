@@ -162,23 +162,24 @@ void Boundary::buildBCinfo() {
 }
 
 void Boundary::getSpecifiedDof() {
-
+    /*
     for (int i = 0; i < m_disp.size(); i++) {
         if ( !m_disp[i] )
             m_specifiedDof.push_back(i);
-    }
-    /*
-    // Hanging cloth middle
-        int mid = m_SimGeo->num_nodes_len() / 2;
-        for (int i = mid; i < mid+6; i++)
-            m_specifiedDof.push_back(i);
+    }*/
 
     // Hanging cloth corner
     for (int i = 0; i < 6; i++)
         m_specifiedDof.push_back(i);
     for (int i = m_SimGeo->num_nodes_len()*3; i < m_SimGeo->num_nodes_len()*3+6; i++)
         m_specifiedDof.push_back(i);
-*/
+/*
+    // Hanging cloth middle
+        int mid = m_SimGeo->num_nodes_len() / 2;
+        for (int i = mid; i < mid+6; i++)
+            m_specifiedDof.push_back(i);
+    */
+
 
     m_numTotal = m_SimGeo->nn() * m_SimGeo->ndof();
     m_numFree = m_numTotal - (int) m_specifiedDof.size();

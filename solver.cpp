@@ -105,7 +105,7 @@ void SolverImpl::staticSolve() {
             std::cout << error << '\t' << t.elapsed() << " ms" << std::endl;
 
             // convergence criteria
-            if (error < m_SimPar->ctol()) {
+            if (error < m_tol) {
                 std::cout << "Newton's method converges in " << niter + 1 << " iteration(s)" << std::endl;
                 CONVERGED = true;
                 break;
@@ -123,7 +123,10 @@ void SolverImpl::staticSolve() {
 
             // output files
             std::string filepath = "/Users/chenjingyu/Dropbox/Research/Codes/plates-shells/results/";
-            std::string filename = "result" + std::to_string(ist) + ".txt";
+            std::string filename;
+            char buffer[20] = {0};
+            sprintf(buffer, "result%05d.txt", ist);
+            filename.assign(buffer);
             std::ofstream myfile((filepath+filename).c_str());
             for (int k = 0; k < m_SimGeo->nn(); k++) {
                 myfile << std::setprecision(8) << std::fixed
@@ -232,8 +235,13 @@ void SolverImpl::Solve() {
                     continue;
 
             // output files
-            std::string filepath = "/Users/chenjingyu/Dropbox/Research/Codes/plates-shells/results/";
-            std::string filename = "result" + std::to_string(ist) + ".txt";
+            std::string filepath = "/Users/chenjingyu/Dropbox/Research/Codes/plates-shells/results/"
+                                 + std::to_string((int) (m_SimGeo->rec_len()/m_SimGeo->rec_wid()*10))
+                                 + "_" + std::to_string((int) (m_SimPar->thk()*1000)) + "/";
+            std::string filename;
+            char buffer[20] = {0};
+            sprintf(buffer, "result%05d.txt", ist);
+            filename.assign(buffer);
             std::ofstream myfile((filepath+filename).c_str());
             for (int k = 0; k < m_SimGeo->nn(); k++) {
                 myfile << std::setprecision(8) << std::fixed
