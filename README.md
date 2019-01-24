@@ -5,10 +5,10 @@
 - Modifications should be made onto this branch
 
 ---
-## The following branches are deprecated
+**The following branches are deprecated**
 
-# Symbolic Branch (deprecated)
+**Symbolic Branch (deprecated)**
 Energy derivatives calculated using symbolic math tools
 
-# Numerical Branch (deprecated)
+**Numerical Branch (deprecated)**
 Numerical differentiation (central difference) were used
