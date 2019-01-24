@@ -1,10 +1,14 @@
 # plates-shells
 
-### Master Branch (outdated)
+### Master Branch (currently active)
+- Derivatives were analytically derived
+- Modifications should be made onto this branch
+
+---
+## The following branches are deprecated
+
+# Symbolic Branch (deprecated)
 Energy derivatives calculated using symbolic math tools
 
-### Optimize Branch (will replace Master branch)
-Derivatives were analytically derived
-
-### Numerical Branch (slow)
+# Numerical Branch (deprecated)
 Numerical differentiation (central difference) were used
