@@ -10,6 +10,9 @@ Parameters::Parameters() {
     m_outputPath = "/Users/chenjingyu/Dropbox/Research/Codes/plates-shells/results/";
 }
 
+// destructor
+Parameters::~Parameters()
+{}
 
 // modifiers
 void Parameters::link_geo(Geometry* geo)                    { m_SimGeo = geo; }

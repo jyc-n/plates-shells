@@ -6,19 +6,20 @@
 class Node {
 public:
     //constructor
-    Node();
-    Node(const unsigned int num, const double xpos, const double ypos, const double zpos);
-
-    // modifier
-    void set_xyz(double x, double y, double z);
+    Node()
+        : m_num(0), m_xyz(nullptr)
+    {}
+    Node(const unsigned int num, Eigen::Vector3d* xyz)
+        : m_num(num), m_xyz(xyz)
+    {}
 
     // accessor
-    unsigned int get_num() const;
-    Eigen::Vector3d get_xyz() const;
+    unsigned int get_num() const { return m_num; }
+    Eigen::Vector3d* get_xyz() { return m_xyz; }
 
 private:
     unsigned int m_num;
-    double m_x, m_y, m_z;
+    Eigen::Vector3d* m_xyz;
 };
 
 #endif //PLATES_SHELLS_NODE_H

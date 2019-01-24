@@ -33,12 +33,17 @@ void PreProcessorImpl::PreProcess() {
     readInput();
     m_SimPar->print_parameters();
 
-    m_SimGeo->buildGeo();
-    initCoord();
-    initConn();
-    initGeoList();
-    m_SimGeo->calcMass();
+    std::cout << "input file read, preprocessor starts" << std::endl;
+    buildNodes();
+    std::cout << "seeding completed" << std::endl;
+    buildMesh();
+    std::cout << "meshing completed\nbuilding node, element, edge, hinge lists (this may take a while)" << std::endl;
+    buildGeoList();
+    std::cout << "all lists building completed" << std::endl;
+    m_SimGeo->findMassVector();
+    std::cout << "mass calculated completed" << std::endl;
     m_SimGeo->printGeo();
+    std::cout << "connectivity file written, preprocessing completed\n" << std::endl;
 }
 
 // read input file
@@ -74,7 +79,7 @@ void PreProcessorImpl::readInput() {
             else if (name_var == "datum_plane")
                 m_SimGeo->set_datum(std::stoi(value_var));               // degree of freedom
             else if (name_var == "dof")
-                m_SimGeo->set_ndof(std::stoi(value_var));                // degree of freedom
+                m_SimGeo->set_nsd(std::stoi(value_var));                // degree of freedom
             else if (name_var == "nen")
                 m_SimGeo->set_nen(std::stoi(value_var));                 // number of nodes per element
             else if (name_var == "dt")
@@ -119,23 +124,26 @@ void PreProcessorImpl::readInput() {
     input_file.close();
 }
 
+// read Abaqus .inp file
+void PreProcessorImpl::readGeoFile() {
+    // TODO: implement read abaqus input file subroutine
+}
+
 // initialize coordinates (seeding)
-void PreProcessorImpl::initCoord() {
-
-    double delta_len, delta_wid;
-    delta_len = m_SimGeo->rec_len() / (double) (m_SimGeo->num_nodes_len() - 1);
-    delta_wid = m_SimGeo->rec_wid() / (double) (m_SimGeo->num_nodes_wid() - 1);
-
+void PreProcessorImpl::buildNodes() {
+    // increment along length/width
+    double delta_len = m_SimGeo->rec_len() / (double) (m_SimGeo->num_nodes_len() - 1);
+    double delta_wid = m_SimGeo->rec_wid() / (double) (m_SimGeo->num_nodes_wid() - 1);
+    // position of datum plane
     int datum_op = m_SimGeo->datum();
 
-    unsigned int node_count = 0;
+    m_SimGeo->m_nodes.resize(m_SimGeo->nn());
+    for (int i = 0; i < m_SimGeo->nn(); i++)
+        m_SimGeo->m_nodes[i].fill(0.0);
+
     for (int i = 0; i < m_SimGeo->num_nodes_wid(); i++) {
         for (int j = 0; j < m_SimGeo->num_nodes_len(); j++) {
-
-            if (node_count == m_SimGeo->nn())
-                break;
-
-            double x = 0, y = 0, z = 0;
+            double x = 0.0, y = 0.0, z = 0.0;
             switch (datum_op) {
                 default:
                 case 1:             // xy plane
@@ -154,68 +162,58 @@ void PreProcessorImpl::initCoord() {
                     z = -(double) i * delta_wid;
                     break;
             }
-
-            m_SimGeo->m_dof(node_count * 3)     = x;
-            m_SimGeo->m_dof(node_count * 3 + 1) = y;
-            m_SimGeo->m_dof(node_count * 3 + 2) = z;
-
-            m_SimGeo->map_nodes(i,j) = node_count + 1;
-            node_count++;
+            int index = i * m_SimGeo->num_nodes_len() + j;
+            assert(index >= 0 && index <= m_SimGeo->nn());
+            m_SimGeo->m_nodes[index][0] = x;
+            m_SimGeo->m_nodes[index][1] = y;
+            m_SimGeo->m_nodes[index][2] = z;
         }
     }
+    assert(m_SimGeo->m_nodes.size() == m_SimGeo->nn());
 }
 
 // initialize connectivity (meshing)
-void PreProcessorImpl::initConn() {
+void PreProcessorImpl::buildMesh() {
+    int num_wid = m_SimGeo->num_nodes_wid();
+    int num_len = m_SimGeo->num_nodes_len();
 
-    unsigned int element_count = 0;
-    int local_n1, local_n2, local_n3;
-    int xpos, ypos;
-    for (int i = 0; i < (m_SimGeo->num_nodes_wid() - 1) * 2; i++) {
-        for (int j = 0; j < (m_SimGeo->num_nodes_len() - 1); j++) {
-            if (i%2 == 0) {         // odd row
-                ypos = j;
-                xpos = (i+1)/2 + (i+1)%2 - 1;
-                local_n1 = m_SimGeo->map_nodes(xpos,ypos);
-                local_n2 = local_n1 + 1;
-                local_n3 = local_n2 + m_SimGeo->num_nodes_len();
-            }
-            else {                  // even row
-                ypos = j + 1;
-                xpos = (i+1)/2 + (i+1)%2;
-                local_n1 = m_SimGeo->map_nodes(xpos,ypos);
-                local_n2 = local_n1 - 1;
-                local_n3 = local_n2 - m_SimGeo->num_nodes_len();
-            }
-            m_SimGeo->m_conn(element_count, 0) = local_n1;
-            m_SimGeo->m_conn(element_count, 1) = local_n2;
-            m_SimGeo->m_conn(element_count, 2) = local_n3;
-            element_count++;
+    m_SimGeo->m_mesh.resize(m_SimGeo->nel());
+    for (int i = 0; i < m_SimGeo->nel(); i++)
+        m_SimGeo->m_mesh[i].fill((int)0);
+
+    for (int i = 0; i < num_wid-1; i++) {
+        for (int j = 0; j < num_len-1; j++) {
+            int el1 = 2 * ((num_len-1) * i + j);
+            int el2 = el1 + 1;
+            assert(el1 < m_SimGeo->nel() && el2 < m_SimGeo->nel());
+            m_SimGeo->m_mesh[el1] << i*num_len+j+1, i*num_len+j+2, (i+1)*num_len+j+2;
+            m_SimGeo->m_mesh[el2] << (i+1)*num_len+j+2, (i+1)*num_len+j+1, i*num_len+j+1;
         }
     }
+    assert(m_SimGeo->m_mesh.size() == m_SimGeo->nel());
 }
 
 // initialize element list
-void PreProcessorImpl::initGeoList() {
+void PreProcessorImpl::buildGeoList() {
 
     // build node list
     for (unsigned int i = 0; i < m_SimGeo->nn(); i++) {
-        Node temp(i+1, m_SimGeo->m_dof(3*i), m_SimGeo->m_dof(3*i+1), m_SimGeo->m_dof(3*i+2));
-        m_SimGeo->m_nodeList.push_back(temp);
+        Node temp(i+1, &m_SimGeo->m_nodes[i]);
+        m_SimGeo->m_nodeList.emplace_back(temp);
     }
     assert(m_SimGeo->m_nodeList.size() == m_SimGeo->nn());
 
     // build element list
     for (unsigned int i = 0; i < m_SimGeo->nel(); i++) {
         // pointers to 3 node object
-        Node* pn1 = &m_SimGeo->m_nodeList[m_SimGeo->m_conn(i,0)-1];
-        Node* pn2 = &m_SimGeo->m_nodeList[m_SimGeo->m_conn(i,1)-1];
-        Node* pn3 = &m_SimGeo->m_nodeList[m_SimGeo->m_conn(i,2)-1];
+        Node* pn1 = &m_SimGeo->m_nodeList[m_SimGeo->m_mesh[i][0]-1];
+        Node* pn2 = &m_SimGeo->m_nodeList[m_SimGeo->m_mesh[i][1]-1];
+        Node* pn3 = &m_SimGeo->m_nodeList[m_SimGeo->m_mesh[i][2]-1];
 
         Element temp(i+1, pn1, pn2, pn3);
 
-        temp.find_nearby_element(*m_SimGeo);
-        m_SimGeo->m_elementList.push_back(temp);
+        temp.find_nearby_element(m_SimGeo->nel(), m_SimGeo->m_mesh);
+        m_SimGeo->m_elementList.emplace_back(temp);
     }
     assert(m_SimGeo->m_elementList.size() == m_SimGeo->nel());
 
@@ -231,13 +229,13 @@ void PreProcessorImpl::initGeoList() {
             Edge* tempEdge = m_SimGeo->m_elementList[i].get_edge(j);
             if (tempEdge != nullptr && !tempEdge->check_visited()) {
                 tempEdge->mark_visited();
-                m_SimGeo->m_edgeList.push_back(tempEdge);
+                m_SimGeo->m_edgeList.emplace_back(tempEdge);
             }
 
             Hinge* tempHinge = m_SimGeo->m_elementList[i].get_hinge(j);
             if (tempHinge != nullptr && !tempHinge->check_visited()) {
                 tempHinge->mark_visited();
-                m_SimGeo->m_hingeList.push_back(tempHinge);
+                m_SimGeo->m_hingeList.emplace_back(tempHinge);
             }
         }
     }

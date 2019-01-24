@@ -28,8 +28,8 @@ Shearing::Shearing(Element* ptr, double E, double nu, double area, double clen) 
 }
 
 void Shearing::initValues() {
-    m_e1 = m_element->get_node(1)->get_xyz() - m_element->get_node(2)->get_xyz();
-    m_e2 = m_element->get_node(3)->get_xyz() - m_element->get_node(2)->get_xyz();
+    m_e1 = *(m_element->get_node(1)->get_xyz()) - *(m_element->get_node(2)->get_xyz());
+    m_e2 = *(m_element->get_node(3)->get_xyz()) - *(m_element->get_node(2)->get_xyz());
 
     m_ne1 = m_e1.norm();
     m_ne2 = m_e2.norm();

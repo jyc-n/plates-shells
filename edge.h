@@ -7,9 +7,12 @@ class Node;
 
 class Edge {
 public:
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
     // constructor
     Edge();
+    // destructor
+    ~Edge();
 
     // modifiers
     void mark_visited();

@@ -20,8 +20,8 @@ Boundary::~Boundary() {
 void Boundary::initBC() {
     getSets();
     configBC();
-    buildBCinfo();
-    getSpecifiedDof();
+    //buildBCinfo();
+    findDirichletDofs();
 }
 
 // by default, rectangular plate
@@ -56,8 +56,8 @@ void Boundary::getSets() {
 // configure the boundary conditions
 void Boundary::configBC() {
 
-    m_disp.resize(m_SimGeo->nn() * m_SimGeo->ndof(), true);
-    m_fext = Eigen::VectorXd::Zero(m_SimGeo->nn() * m_SimGeo->ndof());
+    m_disp.resize(m_SimGeo->nn() * m_SimGeo->nsd(), true);
+    m_fext = Eigen::VectorXd::Zero(m_SimGeo->nn() * m_SimGeo->nsd());
 
     /*
      *  Uniaxial loading
@@ -84,10 +84,10 @@ void Boundary::configBC() {
      *   Bending under gravity
      *
      */
-    m_sets[1]->m_free = false;          // clamp bottom edge
-    m_sets[1]->m_typeBC = 3;
+    m_sets[0]->m_free = false;          // clamp left edge
+    m_sets[0]->m_typeBC = 3;
 
-    for (int i = 0; i < m_SimGeo->nn() * m_SimGeo->ndof(); i++) {
+    for (int i = 0; i < m_SimGeo->nn() * m_SimGeo->nsd(); i++) {
         if (i % 3 == 2)
             m_fext(i) = - m_SimGeo->m_mass(i) * m_SimPar->gconst();
     }
@@ -161,26 +161,31 @@ void Boundary::buildBCinfo() {
     }
 }
 
-void Boundary::getSpecifiedDof() {
-    /*
-    for (int i = 0; i < m_disp.size(); i++) {
-        if ( !m_disp[i] )
-            m_specifiedDof.push_back(i);
-    }*/
+void Boundary::findDirichletDofs() {
+
 
     // Hanging cloth corner
     for (int i = 0; i < 6; i++)
-        m_specifiedDof.push_back(i);
+        m_dirichletDofs.push_back(i);
     for (int i = m_SimGeo->num_nodes_len()*3; i < m_SimGeo->num_nodes_len()*3+6; i++)
-        m_specifiedDof.push_back(i);
-/*
+        m_dirichletDofs.push_back(i);
+    /*
+    // clamped bottom edge
+    for (int i = 1; i <= m_SimGeo->num_nodes_len() * 2; i++) {
+        for (int j = 0; j < 3; j++)
+            m_dirichletDofs.push_back(3*(i-1)+j);
+    }
+
     // Hanging cloth middle
         int mid = m_SimGeo->num_nodes_len() / 2;
         for (int i = mid; i < mid+6; i++)
-            m_specifiedDof.push_back(i);
+            m_dirichletDofs.push_back(i);
     */
+    //for (auto p = m_dirichletDofs.begin(); p != m_dirichletDofs.end(); p++)
+    //    std::cout << *p << '\n';
+}
 
-
-    m_numTotal = m_SimGeo->nn() * m_SimGeo->ndof();
-    m_numFree = m_numTotal - (int) m_specifiedDof.size();
+bool Boundary::inDirichletBC(int index) {
+    auto iter = find(m_dirichletDofs.begin(), m_dirichletDofs.end(), index);
+    return !(iter == m_dirichletDofs.end());
 }

@@ -1,13 +1,13 @@
 rec_len = 0.1                 ! length of the rectangular domain
 rec_wid = 0.1                 ! width of the rectangular domain
-num_nodes_len = 5           ! number of nodes along the length
-num_nodes_wid = 5          ! number of nodes along the width
+num_nodes_len = 3           ! number of nodes along the length
+num_nodes_wid = 3          ! number of nodes along the width
 datum_plane = 1             ! initial datum plane 1-xy plane, 2-xz plane, 3-yz plane
 
 dof = 3                     ! degree of freedom
 nen = 3                     ! number of nodes per element (triangular mesh)
 dt = 1e-3                   ! step size
-nst = 1000                   ! total number of time steps (in dynamic solver); OR total number of increment (in static solver)
+nst = 3                   ! total number of time steps (in dynamic solver); OR total number of increment (in static solver)
 iter_lim = 10                ! maximum number of iterations allowed per time step
 ctol = 1e-1                 ! scaling factor multiplied to tolerance criteria (dynamic); OR absolute convergence criteria (static)
 
@@ -18,7 +18,7 @@ thk = 1e-3                  ! thickness
 vis = 0                     ! viscosity
 gconst = 9.81               ! gravitational acceleration constant
 
-solver_op = 1               ! solver option 0-static, 1-dynamic
-outop = 1                   ! output option 0-no output, 1-write output
+solver_op = 1               ! solver option 0-quasistatic, 1-dynamic
+outop = 0                   ! output option 0-no output, 1-write output
 out_freq = 10                ! write output every (#) steps; -1-only output last step, 1-every step
 info_style = 1              ! console output style 0-progress bar+log file, 1-print on console

@@ -14,7 +14,7 @@
 Stretching::Stretching(Edge* ptr, double E, double D) {
     m_edge = ptr;
 
-    m_ne0 = m_edge->get_node(2)->get_xyz() - m_edge->get_node(1)->get_xyz();
+    m_ne0 = *(m_edge->get_node(2)->get_xyz()) - *(m_edge->get_node(1)->get_xyz());
     m_len = m_ne0.norm();
     m_ne0 = m_ne0 / m_len;
 

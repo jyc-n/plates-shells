@@ -1,8 +1,7 @@
 #ifndef PLATES_SHELLS_GEOMETRY_H
 #define PLATES_SHELLS_GEOMETRY_H
 
-#include <vector>
-#include <Eigen/Dense>
+#include "type_alias.h"
 
 class Parameters;
 class Node;
@@ -18,7 +17,7 @@ public:
 
     // modifier
     void set_datum(const int var);
-    void set_ndof(const int var);
+    void set_nsd(const int var);
     void set_nen(const int var);
     void set_rec_len(const double var);
     void set_rec_wid(const double var);
@@ -29,12 +28,11 @@ public:
     void set_nedge(const unsigned int var);
     void set_nhinge(const unsigned int var);
 
-    void buildGeo();
-    void calcMass();
+    void findMassVector();
 
     // accessor
     int           datum() const;
-    int           ndof() const;
+    int           nsd() const;
     int           nen() const;
     double        rec_len() const;
     double        rec_wid() const;
@@ -52,12 +50,11 @@ public:
     // public geometry variables
     double m_mi;                          // mass per node
 
-    Eigen::MatrixXi m_conn;               // connectivity matrix     (nel x nen)
-    Eigen::MatrixXd m_coord;              // coordinates matrix      (nn  x nsd)
-    Eigen::VectorXd m_dof;                // degree of freedom x1, y1, (z1), x2, y2, (z2), ... as a vector
-    Eigen::MatrixXi map_nodes;            // map of nodes, for verification purpose
-    Eigen::VectorXd m_mass;               // nodal mass vector, mx1, my1, mz1, mx2, my2, mz2, ...
+    VectorNodes m_nodes;   // coordinates       (nn  x nsd)
+    VectorMesh m_mesh;     // connectivity      (nel x nen)
 
+    VectorN m_mass;               // nodal mass vector, mx1, my1, mz1, mx2, my2, mz2, ...
+    
     std::vector<Node>    m_nodeList;
     std::vector<Element> m_elementList;
     std::vector<Edge*>   m_edgeList;
@@ -67,7 +64,7 @@ private:
 
     // geometry parameters
     int             m_datum;                      // initial datum plane
-    int             m_ndof;                       // degree of freedom
+    int             m_nsd;                        // degree of freedom per node
     int             m_nen;                        // number of nodes per element
     double          m_rec_len;                    // length of the rectangular domain
     double          m_rec_wid;                    // width of the rectangular domain
@@ -85,7 +82,7 @@ private:
 
 // inline implementations for short functions
 inline void Geometry::set_datum(const int var)                   { m_datum = var; }
-inline void Geometry::set_ndof(const int var)                    { m_ndof = var; }
+inline void Geometry::set_nsd(const int var)                     { m_nsd = var; }
 inline void Geometry::set_nen(const int var)                     { m_nen = var; }
 inline void Geometry::set_rec_len(const double var)              { m_rec_len = var; }
 inline void Geometry::set_rec_wid(const double var)              { m_rec_wid = var; }
@@ -97,7 +94,7 @@ inline void Geometry::set_nedge(const unsigned int var)          { m_nedge = var
 inline void Geometry::set_nhinge(const unsigned int var)         { m_nhinge = var; }
 
 inline int           Geometry::datum() const                     { return m_datum; }
-inline int           Geometry::ndof() const                      { return m_ndof; }
+inline int           Geometry::nsd() const                       { return m_nsd; }
 inline int           Geometry::nen() const                       { return m_nen; }
 inline double        Geometry::rec_len() const                   { return m_rec_len; }
 inline double        Geometry::rec_wid() const                   { return m_rec_wid; }

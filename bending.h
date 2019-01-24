@@ -17,6 +17,8 @@ class Hinge;
 
 class Bending {
 public:
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
     Bending(Hinge* ptr);
 
     void initValues();

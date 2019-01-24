@@ -1,7 +1,6 @@
 #include <iostream>
 #include <cmath>
 #include <algorithm>
-#include "geometry.h"
 #include "element.h"
 #include "node.h"
 #include "edge.h"
@@ -11,7 +10,10 @@ Element::Element()
         : m_num_el(0),
           m_num_n1(0),
           m_num_n2(0),
-          m_num_n3(0)
+          m_num_n3(0),
+          m_node1(nullptr),
+          m_node2(nullptr),
+          m_node3(nullptr)
 {
     for (int &i : m_adj_element)
         i = 0;
@@ -47,21 +49,22 @@ Element::~Element()
 {}
 
 void Element::calculate_area() {
-    Eigen::Vector3d dir12 = (*m_node2).get_xyz() - (*m_node1).get_xyz();
-    Eigen::Vector3d dir23 = (*m_node3).get_xyz() - (*m_node2).get_xyz();
+    Eigen::Vector3d dir12 = *((*m_node2).get_xyz()) - *((*m_node1).get_xyz());
+    Eigen::Vector3d dir23 = *((*m_node3).get_xyz()) - *((*m_node2).get_xyz());
     m_area = 0.5 * (dir12.cross(dir23)).norm();
 }
 
 void Element::calculate_phi0() {
-    Eigen::Vector3d dir12 = (*m_node1).get_xyz() - (*m_node2).get_xyz();
-    Eigen::Vector3d dir23 = (*m_node3).get_xyz() - (*m_node2).get_xyz();
+    Eigen::Vector3d dir12 = *((*m_node1).get_xyz()) - *((*m_node2).get_xyz());
+    Eigen::Vector3d dir23 = *((*m_node3).get_xyz()) - *((*m_node2).get_xyz());
     dir12 = dir12 / dir12.norm();
     dir23 = dir23 / dir23.norm();
     m_phi0 = acos(dir12.dot(dir23));
 }
 
-void Element::find_nearby_element(Geometry& Geo) {
-    for (int i = 0; i < Geo.nel(); i++) {    // looking at itself in the element list
+// FIXME: implement a more efficient algorithm
+void Element::find_nearby_element(int nel, const VectorMesh& mesh) {
+    for (int i = 0; i < nel; i++) {    // looking at itself in the element list
         if (m_num_el == i+1) {
             continue;
         }
@@ -70,12 +73,12 @@ void Element::find_nearby_element(Geometry& Geo) {
         bool N2_OVERLAP = false;
         bool N3_OVERLAP = false;
 
-        for (int j = 0; j < Geo.ndof(); j++) {
-            if (m_num_n1 == Geo.m_conn(i,0) || m_num_n1 == Geo.m_conn(i,1) || m_num_n1 == Geo.m_conn(i,2))
+        for (int j = 0; j < 3; j++) {       // always triangular element
+            if (m_num_n1 == mesh[i][0] || m_num_n1 == mesh[i][1] || m_num_n1 == mesh[i][2])
                 N1_OVERLAP = true;
-            if (m_num_n2 == Geo.m_conn(i,0) || m_num_n2 == Geo.m_conn(i,1) || m_num_n2 == Geo.m_conn(i,2))
+            if (m_num_n2 == mesh[i][0] || m_num_n2 == mesh[i][1] || m_num_n2 == mesh[i][2])
                 N2_OVERLAP = true;
-            if (m_num_n3 == Geo.m_conn(i,0) || m_num_n3 == Geo.m_conn(i,1) || m_num_n3 == Geo.m_conn(i,2))
+            if (m_num_n3 == mesh[i][0] || m_num_n3 == mesh[i][1] || m_num_n3 == mesh[i][2])
                 N3_OVERLAP = true;
         }
 

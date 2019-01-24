@@ -8,6 +8,7 @@ class Geometry;
 class Parameters {
 public:
     Parameters();
+    ~Parameters();
 
     // modifier
     void link_geo(Geometry* geo);

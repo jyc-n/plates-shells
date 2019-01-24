@@ -20,7 +20,7 @@ public:
     // modifier
     void calculate_phi0();
     void calculate_area();
-    void find_nearby_element(Geometry& Geo);
+    void find_nearby_element(int nel, const VectorMesh& mesh);
     void find_edges(std::vector<Element>& l_element);
     void find_hinges(std::vector<Element>& l_element);
 

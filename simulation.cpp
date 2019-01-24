@@ -31,7 +31,7 @@ void Simulation::pre_process() {
 
 void Simulation::solve() {
     if (m_SimPar->solver_op())
-        m_SolverImpl->Solve();
+        m_SolverImpl->dynamic();
     else
-        m_SolverImpl->staticSolve();
+        m_SolverImpl->quasistatic();
 }

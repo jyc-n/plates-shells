@@ -14,6 +14,8 @@ class Element;
 
 class Shearing {
 public:
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
     Shearing(Element* ptr, double E, double nu, double area, double clen);
     void initValues();
     void locShear(Eigen::VectorXd& loc_f, Eigen::MatrixXd& loc_j);

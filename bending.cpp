@@ -27,11 +27,11 @@
 Bending::Bending(Hinge* ptr) {
     m_hinge = ptr;
 
-    m_e0 = m_hinge->get_node(1)->get_xyz() - m_hinge->get_node(0)->get_xyz();
-    m_e1 = m_hinge->get_node(2)->get_xyz() - m_hinge->get_node(0)->get_xyz();
-    m_e2 = m_hinge->get_node(3)->get_xyz() - m_hinge->get_node(0)->get_xyz();
-    m_e3 = m_hinge->get_node(2)->get_xyz() - m_hinge->get_node(1)->get_xyz();
-    m_e4 = m_hinge->get_node(3)->get_xyz() - m_hinge->get_node(1)->get_xyz();
+    m_e0 = *(m_hinge->get_node(1)->get_xyz()) - *(m_hinge->get_node(0)->get_xyz());
+    m_e1 = *(m_hinge->get_node(2)->get_xyz()) - *(m_hinge->get_node(0)->get_xyz());
+    m_e2 = *(m_hinge->get_node(3)->get_xyz()) - *(m_hinge->get_node(0)->get_xyz());
+    m_e3 = *(m_hinge->get_node(2)->get_xyz()) - *(m_hinge->get_node(1)->get_xyz());
+    m_e4 = *(m_hinge->get_node(3)->get_xyz()) - *(m_hinge->get_node(1)->get_xyz());
     initValues();
 }
 
@@ -121,7 +121,7 @@ void Bending::grad(Eigen::VectorXd& gradTheta) {
 
 void Bending::hess(Eigen::MatrixXd& hessTheta) {
     Eigen::Matrix3d M331 = m_cosA3 / (m_h3 * m_h3) * m_m3 * m_nn1.transpose();
-    Eigen::Matrix3d M311 = m_cosA3 / (m_h3 * m_h1) * m_m1 * m_nn1.transpose();
+    Eigen::Matrix3d M311 = m_cosA3 / (m_h3 * m_h1) * m_m1 * m_nn1.transpose(); //FIXME: never used?
     Eigen::Matrix3d M131 = m_cosA1 / (m_h1 * m_h3) * m_m3 * m_nn1.transpose();
     Eigen::Matrix3d M3011 = m_cosA3 / (m_h3 * m_h01) * m_m01 * m_nn1.transpose();
     Eigen::Matrix3d M111 = m_cosA1 / (m_h1 * m_h1) * m_m1 * m_nn1.transpose();

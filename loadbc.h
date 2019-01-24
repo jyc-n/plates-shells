@@ -25,13 +25,12 @@ public:
     void configBC();
     void fixDir(int num);
     void buildBCinfo();
-    void getSpecifiedDof();
+    void findDirichletDofs();
+    bool inDirichletBC(int index);
 
     // public variables that will be used by solver
-    int m_numTotal;
-    int m_numFree;
-    std::vector<int>  m_specifiedDof;               // list of specified dof
-    Eigen::VectorXd m_fext;                         // external force vector
+    std::vector<int>  m_dirichletDofs;               // list of dofs in Dirichlet BC
+    Eigen::VectorXd m_fext;                          // external force vector
 
 private:
     Parameters* m_SimPar;

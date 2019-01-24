@@ -3,8 +3,7 @@
 #include <fstream>
 #include <string>
 #include <algorithm>
-#include <Eigen/Dense>
-#include <Eigen/Sparse>
+#include <cassert>
 
 #include "solver.h"
 #include "parameters.h"
@@ -29,357 +28,236 @@ SolverImpl::SolverImpl(Parameters* SimPar, Geometry* SimGeo, Boundary* SimBC) {
 void SolverImpl::initSolver() {
     DYNAMIC_SOLVER = m_SimPar->solver_op();
     WRITE_OUTPUT = m_SimPar->outop();
+
+    m_numTotal = m_SimGeo->nn() * m_SimGeo->nsd();
+    m_numDirichlet = (int) m_SimBC->m_dirichletDofs.size();
+    m_numNeumann = m_numTotal - m_numDirichlet;
+    
     m_tol = m_SimGeo->m_mi * m_SimPar->gconst() * m_SimPar->ctol();
     m_incRatio = 1.0 / ((double) m_SimPar->nst());
+
+    findMappingVectors();
 }
 
 // ========================================= //
 //            Main solver function           //
 // ========================================= //
 
-void SolverImpl::staticSolve() {
+// TODO: implement Newmark-beta method
+// Time stepping using backward Euler
+bool SolverImpl::step(const int ist, VectorNodes& x, VectorNodes& x_new, VectorNodes& vel) {
+    std::cout << "--------Step " << ist << "--------" << std::endl;
 
-    analyticalStatic();
+    // apply Newton-Raphson Method
+    for (int niter = 0; niter < m_SimPar->iter_lim(); niter++) {
+        Timer t;
 
-    // dof vector at t_n and t_{n+1}
-    Eigen::VectorXd dof(m_SimGeo->nn() * m_SimGeo->ndof());
-    Eigen::VectorXd dof_new(m_SimGeo->nn() * m_SimGeo->ndof());
-    dof = m_SimGeo->m_dof;
+        VectorN rhs(m_numNeumann); rhs.fill(0.0);
+        SparseEntries entries_full;
 
-    // additional dof vector for Newton's method
-    Eigen::VectorXd dof_old(m_SimGeo->nn() * m_SimGeo->ndof());
+        //Timer t1;
+        // calculate derivatives of energy functions
+        VectorN dEdq(m_numTotal); dEdq.fill(0.0);
+        findDEnergy(dEdq, entries_full);
+        //std::cout << t1.elapsed() << '\t';
 
-    Timer t;
-    Timer t_all(true);
+        // calculate residual vector
+        findResidual(vel, x, x_new, dEdq, rhs);
 
-    for (int ist = 1; ist <= m_SimPar->nst(); ist++) {
+        // display residual
+        double error = rhs.norm();
+        std::cout << "iter" << niter+1 << '\t' << "error = " << error << '\t';
 
-        double fextRatio = (ist+1) * m_incRatio;
-
-        // initial guess
-        dof_new = dof;
-        dof_old = dof;
-
-        std::cout << "--------Increment " << ist << "--------" << std::endl;
-        std::cout << "#iter " << '\t' << "norm of residual" << '\t' << "time" << std::endl;
-
-        // convergence flag
-        bool CONVERGED = false;
-        double error = 0.0;
-
-        // apply Newton-Raphson Method
-        for (int niter = 0; niter < m_SimPar->iter_lim(); niter++) {
-
-            resetVariables();
-
-            std::cout << niter+1 << '\t';
-
-            t.start();
-
-            // calculate derivatives of energy functions
-            calcDEnergy(m_dEdq, m_ddEddq);
-
-            // calculate residual vector
-            updateResidual(dof, dof_new, fextRatio, m_dEdq, m_residual);
-
-            // calculate jacobian matrix
-            updateJacobian(m_ddEddq, m_jacobian);
-
-            // residual vector and jacobian matrix at dofs that are not specified
-
-            Eigen::VectorXd res_free = unconsVec(m_residual);
-            Eigen::MatrixXd jacobian_free = unconsMat(m_jacobian);
-
-            // solve for new dof vector
-            dof_new = calcDofnew(dof_old, res_free, jacobian_free);
-
-            // update coordinates for the nodes
-            updateNodes(dof_new);
-
-            // update for next iteration
-            dof_old = dof_new;
-
-            error = res_free.norm();
-
-            // display residual
-            std::cout << error << '\t' << t.elapsed() << " ms" << std::endl;
-
-            // convergence criteria
-            if (error < m_tol) {
-                std::cout << "Newton's method converges in " << niter + 1 << " iteration(s)" << std::endl;
-                CONVERGED = true;
-                break;
-            }
+        // check convergence
+        if (error < m_tol) {
+            // calculate new velocity vector
+            auto findVel = [&x, &x_new] (double dt, VectorNodes& vel) {
+                for (int i = 0; i < x.size(); i++)
+                    vel[i] = (x_new[i] - x[i]) / dt;
+            };
+            findVel(m_SimPar->dt(), vel);
+            // save current nodal position for next step
+            for (int i = 0; i < m_SimGeo->nn(); i++)
+                x[i] = x_new[i];
+            // display iteration time
+            std::cout << "t_iter = " << t.elapsed() << " ms" << std::endl;
+            return true;
         }
 
-        dof = dof_new;
+        // calculate jacobian matrix
+        SpMatrix jacobian(m_numNeumann, m_numNeumann);
+        findJacobian(entries_full, jacobian);
 
-        if (WRITE_OUTPUT) {
-            if (ist % m_SimPar->out_freq() != 0)
-                continue;
-            if (m_SimPar->out_freq() == -1)
-                if (ist != m_SimPar->nst())
-                    continue;
+        // solve for new dof vector
+        findDofnew(rhs, jacobian, x_new);
 
-            // output files
-            std::string filepath = "/Users/chenjingyu/Dropbox/Research/Codes/plates-shells/results/";
-            std::string filename;
-            char buffer[20] = {0};
-            sprintf(buffer, "result%05d.txt", ist);
-            filename.assign(buffer);
-            std::ofstream myfile((filepath+filename).c_str());
-            for (int k = 0; k < m_SimGeo->nn(); k++) {
-                myfile << std::setprecision(8) << std::fixed
-                       << dof(3*k) << '\t'
-                       << dof(3*k+1) << '\t'
-                       << dof(3*k+2) << std::endl;
-            }
-        }
-
-        if (!CONVERGED) {
-            std::cerr << "Solver did not converge in " << m_SimPar->iter_lim()
-                      << " iterations at step " << ist << std::endl;
-            throw "Cannot converge! Program terminated";
-        }
+        // display iteration time
+        std::cout << "t_iter = " << t.elapsed() << " ms" << std::endl;
     }
-    std::cout << "---------------------------" << std::endl;
-    std::cout << "Simulation completed" << std::endl;
-    std::cout << "Total time used " << t_all.elapsed(true) << " seconds" << std::endl;
+    return false;
 }
 
-
-// TODO: implement Newmark-beta method
-void SolverImpl::Solve() {
-
-    // dof vector at t_n and t_{n+1}
-    Eigen::VectorXd dof(m_SimGeo->nn() * m_SimGeo->ndof());
-    Eigen::VectorXd dof_new(m_SimGeo->nn() * m_SimGeo->ndof());
-    dof = m_SimGeo->m_dof;
-
-    // additional dof vector for Newton's method
-    Eigen::VectorXd dof_old(m_SimGeo->nn() * m_SimGeo->ndof());
-
-    // velocity vector
-    Eigen::VectorXd vel = Eigen::VectorXd::Zero(m_SimGeo->nn() * m_SimGeo->ndof());
-
-    Timer t;
+void SolverImpl::dynamic() {
     Timer t_all(true);
 
+    // vector of nodal position t_{n+1}
+    VectorNodes nodes_curr(m_SimGeo->nn());
+    assert(nodes_curr.size() == m_SimGeo->m_nodes.size());
+
+    // initial guess
+    for (int i = 0; i < m_SimGeo->nn(); i++)
+        nodes_curr[i] = m_SimGeo->m_nodes[i];
+
+    //vector of nodal velocity
+    VectorNodes vel(m_SimGeo->nn());
+    for (int i = 0; i < m_SimGeo->nn(); i++)
+        vel[i].fill(0.0);
+    
     for (int ist = 1; ist <= m_SimPar->nst(); ist++) {
-
-        // initial guess
-        dof_new = dof;
-        dof_old = dof;
-
-        std::cout << "--------Step " << ist << "--------" << std::endl;
-        std::cout << "#iter " << '\t' << "norm of residual" << '\t' << "time" << std::endl;
-
-        // convergence flag
-        bool CONVERGED = false;
-
-        // apply Newton-Raphson Method
-        for (int niter = 0; niter < m_SimPar->iter_lim(); niter++) {
-
-            resetVariables();
-
-            std::cout << niter+1 << '\t';
-
-            t.start();
-
-            // calculate derivatives of energy functions
-            calcDEnergy(m_dEdq, m_ddEddq);
-
-            // add viscosity
-            calcViscous(dof, dof_new, m_dEdq, m_ddEddq);
-
-            // calculate residual vector
-            updateResidual(dof, dof_new, vel, m_dEdq, m_residual);
-
-            // calculate jacobian matrix
-            updateJacobian(m_ddEddq, m_jacobian);
-
-            // residual vector and jacobian matrix at dofs that are not specified
-            Eigen::VectorXd res_free = unconsVec(m_residual);
-            Eigen::MatrixXd jacobian_free = unconsMat(m_jacobian);
-
-            // solve for new dof vector
-            dof_new = calcDofnew(dof_old, res_free, jacobian_free);
-
-            // update coordinates for the nodes
-            updateNodes(dof_new);
-
-            // update for next iteration
-            dof_old = dof_new;
-
-            // display residual
-            std::cout << res_free.norm() << '\t' << t.elapsed() << " ms" << std::endl;
-
-            // convergence criteria
-            if (res_free.norm() < m_tol) {
-                std::cout << "Newton's method converges in " << niter + 1 << " iteration(s)" << std::endl;
-                CONVERGED = true;
-                break;
-            }
-        }
-
-        // calculate new velocity vector
-        vel = calcVel(m_SimPar->dt(), dof, dof_new);
-
-        dof = dof_new;
-
-        if (WRITE_OUTPUT) {
-            if (ist % m_SimPar->out_freq() != 0)
-                continue;
-            if (m_SimPar->out_freq() == -1)
-                if (ist != m_SimPar->nst())
-                    continue;
-
-            // output files
-            std::string filepath = "/Users/chenjingyu/Dropbox/Research/Codes/plates-shells/results/"
-                                 + std::to_string((int) (m_SimGeo->rec_len()/m_SimGeo->rec_wid()*10))
-                                 + "_" + std::to_string((int) (m_SimPar->thk()*1000)) + "/";
-            std::string filename;
-            char buffer[20] = {0};
-            sprintf(buffer, "result%05d.txt", ist);
-            filename.assign(buffer);
-            std::ofstream myfile((filepath+filename).c_str());
-            for (int k = 0; k < m_SimGeo->nn(); k++) {
-                myfile << std::setprecision(8) << std::fixed
-                       << dof(3*k) << '\t'
-                       << dof(3*k+1) << '\t'
-                       << dof(3*k+2) << std::endl;
-            }
-        }
-
-        if (!CONVERGED) {
+        // stepping
+        if (!step(ist, nodes_curr, m_SimGeo->m_nodes, vel)) {
             std::cerr << "Solver did not converge in " << m_SimPar->iter_lim()
-                      << " iterations at step " << ist << std::endl;
+                        << " iterations at step " << ist << std::endl;
             throw "Cannot converge! Program terminated";
         }
+        if (WRITE_OUTPUT)
+            writeToFiles(ist);
     }
     std::cout << "---------------------------" << std::endl;
     std::cout << "Simulation completed" << std::endl;
     std::cout << "Total time used " << t_all.elapsed(true) << " seconds" <<  std::endl;
 }
 
+void SolverImpl::quasistatic() {
+    // TODO: reimplement quasistatic
+}
+
+// write data to files
+void SolverImpl::writeToFiles(const int ist) {
+    if (ist % m_SimPar->out_freq() != 0)
+        return;
+    if (m_SimPar->out_freq() == -1)
+        if (ist != m_SimPar->nst())
+            return;
+
+    // output files
+    std::string filepath = "/Users/chenjingyu/Dropbox/Research/Codes/plates-shells/results/"
+                            + std::to_string((int) (m_SimGeo->rec_len()/m_SimGeo->rec_wid()*10))
+                            + "_" + std::to_string((int) (m_SimPar->thk()*1000)) + "/";
+    std::string filename;
+    char buffer[20] = {0};
+    sprintf(buffer, "result%05d.txt", ist);
+    filename.assign(buffer);
+    std::ofstream myfile((filepath+filename).c_str());
+    for (int k = 0; k < m_SimGeo->nn(); k++) {
+        myfile << std::setprecision(8) << std::fixed
+                << m_SimGeo->m_nodes[k][0] << '\t'
+                << m_SimGeo->m_nodes[k][1] << '\t'
+                << m_SimGeo->m_nodes[k][2] << std::endl;
+    }
+}
+
 // ========================================= //
 //       Implementation of subroutines       //
 // ========================================= //
 
-void SolverImpl::calcDEnergy(Eigen::VectorXd& dEdq, Eigen::MatrixXd& ddEddq) {
-
-    Eigen::VectorXd fstretch = Eigen::VectorXd::Zero(m_SimGeo->nn() * m_SimGeo->ndof());
-    Eigen::VectorXd fshear   = Eigen::VectorXd::Zero(m_SimGeo->nn() * m_SimGeo->ndof());
-    Eigen::VectorXd fbend    = Eigen::VectorXd::Zero(m_SimGeo->nn() * m_SimGeo->ndof());
-
-    Eigen::MatrixXd jstretch = Eigen::MatrixXd::Zero(m_SimGeo->nn() * m_SimGeo->ndof(), m_SimGeo->nn() * m_SimGeo->ndof());
-    Eigen::MatrixXd jshear   = Eigen::MatrixXd::Zero(m_SimGeo->nn() * m_SimGeo->ndof(), m_SimGeo->nn() * m_SimGeo->ndof());
-    Eigen::MatrixXd jbend    = Eigen::MatrixXd::Zero(m_SimGeo->nn() * m_SimGeo->ndof(), m_SimGeo->nn() * m_SimGeo->ndof());
-
-    calcStretch(fstretch, jstretch);
-    calcShear(fshear, jshear);
-    calcBend(fbend, jbend);
-
-    dEdq = fstretch + fshear + fbend;
-    ddEddq = jstretch + jshear + jbend;
-
-    /*
-    std::cout << "stretch" << std::endl;
-    std::cout << jstretch << std::endl;
-    std::cout << "shear" << std::endl;
-    std::cout << jshear << std::endl;
-    std::cout << "bend" << std::endl;
-    std::cout << jbend << std::endl;*/
-
+void SolverImpl::findDEnergy(VectorN& dEdq, SparseEntries& entries_full) {
+    DEStretch(dEdq, entries_full);
+    DEShear(dEdq, entries_full);
+    DEBend(dEdq, entries_full);
 }
 
-/*
+/*   TODO: static version will be replaced
  *    f_i = dE/dq - F_ext
- */
+
 void SolverImpl::updateResidual(Eigen::VectorXd& qn, Eigen::VectorXd& qnew, double ratio, Eigen::VectorXd& dEdq, Eigen::VectorXd& res_f) {
 
     double dt = m_SimPar->dt();
 
-    for (unsigned int i = 0; i < m_SimGeo->nn() * m_SimGeo->ndof(); i++)
+    for (unsigned int i = 0; i < m_SimGeo->nn() * m_SimGeo->nsd(); i++)
         res_f(i) = dEdq(i) - m_SimBC->m_fext(i) * ratio;
 }
+ */
 
 /*
  *    f_i = m_i * (q_i(t_n+1) - q_i(t_n)) / dt^2 - m_i * v(t_n) / dt + dE/dq - F_ext
  */
-void SolverImpl::updateResidual(Eigen::VectorXd& qn, Eigen::VectorXd& qnew, Eigen::VectorXd& vel, Eigen::VectorXd& dEdq, Eigen::VectorXd& res_f) {
-
+void SolverImpl::findResidual(const VectorNodes& vel, const VectorNodes& x, const VectorNodes& x_new, const VectorN& dEdq, VectorN& rhs) {
     double dt = m_SimPar->dt();
 
-    for (unsigned int i = 0; i < m_SimGeo->nn() * m_SimGeo->ndof(); i++)
-        res_f(i) = m_SimGeo->m_mass(i) * (qnew(i) - qn(i)) / pow(dt,2) - m_SimGeo->m_mass(i) * vel(i)/dt
-                   + dEdq(i) - m_SimBC->m_fext(i);
+    // FIXME: area for viscosity doesn't change?
+    double area = 0.5 * m_SimGeo->rec_len() * m_SimGeo->rec_wid()
+                / (m_SimGeo->num_nodes_len() * m_SimGeo->num_nodes_wid());
+
+    auto vis_f = [&area, &dt] (double nu, double qn, double qnew) {
+        return nu * area * (qnew - qn) / dt;
+    };
+
+    // TODO: add in viscosity
+    // only take the entries that are NOT in Dirichlet BC
+    // CAUTION: if Dirichlet BC is nonzero, need to consider the influence of the Dirichlet BC
+    // FIXME: adding Dirichlet influence
+    for (int i = 0; i < m_SimGeo->nn(); i++) {
+        for (int j = 0; j < m_SimGeo->nsd(); j++) {
+            // corresponding position in the full force vector
+            int pos = i * m_SimGeo->nsd() + j;
+            // check if this is in Neumann BC
+            int pos_dof = m_fullToDofs[pos];
+            if (pos_dof != -1) {
+                rhs(pos_dof) = m_SimGeo->m_mass(pos) * (x_new[i][j] - x[i][j]) / (dt*dt) 
+                               - m_SimGeo->m_mass(pos) * vel[i][j]/dt + dEdq(pos) - m_SimBC->m_fext(pos);
+            }
+        }
+    }
 }
 
 /*
  *    J_ij = m_i / dt^2 * delta_ij + d^2 E / dq_i dq_j
  */
-void SolverImpl::updateJacobian(Eigen::MatrixXd& ddEddq, Eigen::MatrixXd& mat_j) {
-
-    double dt = m_SimPar->dt();
-
-    for (int i = 0; i < m_SimGeo->nn() * m_SimGeo->ndof(); i++) {
-        for (int j = 0; j < m_SimGeo->nn() * m_SimGeo->ndof(); j++) {
-            mat_j(i, j) = ddEddq(i, j);
-        }
-        if (DYNAMIC_SOLVER)
-            mat_j(i, i) += m_SimGeo->m_mass(i) / pow(dt, 2);
+void SolverImpl::findJacobian(SparseEntries& entries_full, SpMatrix& jacobian) {
+    if (DYNAMIC_SOLVER) {
+        double dt = m_SimPar->dt();
+        for (int i = 0; i < m_numTotal; i++)
+            entries_full.emplace_back(Eigen::Triplet<double>(i, i, m_SimGeo->m_mass(i) / (dt*dt)));
     }
+    SparseEntries entries_dof;
+    for (int p = 0; p < entries_full.size(); p++) {
+        int ifull = entries_full[p].row(), jfull = entries_full[p].col();
+        int idof = m_fullToDofs[ifull], jdof = m_fullToDofs[jfull];
+        if (idof != -1 && jdof != -1)
+            entries_dof.emplace_back(Eigen::Triplet<double>(idof, jdof, entries_full[p].value()));
+    }
+    jacobian.setFromTriplets(entries_dof.begin(), entries_dof.end());
 }
-
-Eigen::VectorXd SolverImpl::calcVel(double dt, const Eigen::VectorXd& qcurr, const Eigen::VectorXd& qnew) {
-    return (qnew - qcurr) / dt;
-}
-
 
 /*
  *    q_{n+1} = q_n - J \ f
  */
-Eigen::VectorXd SolverImpl::calcDofnew(Eigen::VectorXd& qn, const Eigen::VectorXd& temp_f, const Eigen::MatrixXd& temp_j) {
+void SolverImpl::findDofnew(const VectorN& rhs, const SpMatrix& jacobian, VectorNodes& x_new) {
+    VectorN dq(m_numNeumann); dq.fill(0.0);
 
-    Eigen::VectorXd dq_free = Eigen::VectorXd::Zero(m_SimBC->m_numFree);
-    Eigen::VectorXd dq      = Eigen::VectorXd::Zero(m_SimBC->m_numTotal);
+    //Timer t1;
+    sparseSolver(jacobian, rhs, dq);
+    //std::cout << t1.elapsed() << '\t';
 
-    Timer t1;
-    //denseSolver(temp_j, temp_f, dq_free);
-    sparseSolver(temp_j, temp_f, dq_free);
-    std::cout << t1.elapsed() << '\t';
-
-    // TODO: implement inverse mapping function, O(1)
     // map the free part dof vector back to the full dof vector
-    for (int i = 0, j = 0; i < m_SimBC->m_numTotal && j < m_SimBC->m_numFree; i++) {
-        std::vector<int>::const_iterator it = find(m_SimBC->m_specifiedDof.begin(), m_SimBC->m_specifiedDof.end(), i);
-        if (it == m_SimBC->m_specifiedDof.end()) {
-            dq(i) = dq_free(j);
-            j++;
-        }
+    // CAUTION: if Dirichlet BC is nonzero, need to consider the motion of the Dirichlet BC
+    // FIXME: adding Dirichlet part
+    for (int i_dq = 0; i_dq < m_numNeumann; i_dq++) {
+        int iN = m_dofsToFull[i_dq] / m_SimGeo->nsd();
+        int jN = m_dofsToFull[i_dq] - iN * m_SimGeo->nsd();
+        x_new[iN][jN] -= dq(i_dq);
     }
-    return (qn - dq);
 }
 
 // ========================================= //
 //              Solver functions             //
 // ========================================= //
 
-void SolverImpl::denseSolver(const Eigen::MatrixXd& A, const Eigen::VectorXd& b, Eigen::VectorXd& x) {
-    x = A.llt().solve(b);
-}
-
-void SolverImpl::sparseSolver(const Eigen::MatrixXd& A, const Eigen::VectorXd& b, Eigen::VectorXd& x) {
-    // definition numerical error
-    double epsilon = 1e-16;
-    double refVal = 1.0;
-
-    Eigen::SparseMatrix<double> As;
-    As = A.sparseView(refVal, epsilon);
-
-    Eigen::ConjugateGradient<Eigen::SparseMatrix<double>, Eigen::Upper> CGsolver;
-    CGsolver.compute(As);
+// TODO: change to a more efficient solver
+void SolverImpl::sparseSolver(const SpMatrix& A, const VectorN& b, VectorN& x) {
+    Eigen::ConjugateGradient<SpMatrix, Eigen::Upper> CGsolver;
+    CGsolver.compute(A);
     if (CGsolver.info() != Eigen::Success)
         throw "decomposition failed";
 
@@ -392,182 +270,112 @@ void SolverImpl::sparseSolver(const Eigen::MatrixXd& A, const Eigen::VectorXd& b
 //          Other helper functions           //
 // ========================================= //
 
-// TODO: may not need to create a full residual vector and jacobian matrix, (N - nDirichlet) * ndof should be good
-void SolverImpl::resetVariables() {
-    m_dEdq = Eigen::VectorXd::Zero(m_SimGeo->nn() * m_SimGeo->ndof());
-    m_ddEddq = Eigen::MatrixXd::Zero(m_SimGeo->nn() * m_SimGeo->ndof(), m_SimGeo->nn() * m_SimGeo->ndof());
-    m_residual = Eigen::VectorXd::Zero(m_SimGeo->nn() * m_SimGeo->ndof());
-    m_jacobian = Eigen::MatrixXd::Zero(m_SimGeo->nn() * m_SimGeo->ndof(), m_SimGeo->nn() * m_SimGeo->ndof());
-}
-
-// TODO: implement a function to find the indices in the reduced system in O(1)
-
-Eigen::VectorXd SolverImpl::unconsVec(const Eigen::VectorXd& vec) {
-
-    Eigen::VectorXd vec_free = Eigen::VectorXd::Zero(m_SimBC->m_numFree);
-
-    std::vector<int>::const_iterator p = m_SimBC->m_specifiedDof.begin();
-    for (int i = 0, j = 0; i < m_SimBC->m_numTotal && p != m_SimBC->m_specifiedDof.end(); i++) {
-        if (i == *p) {
-            if (p != m_SimBC->m_specifiedDof.end()-1)
-                p++;
-            continue;
+// find mapping vectors before the time loop starts
+void SolverImpl::findMappingVectors() {
+    m_fullToDofs.resize(m_numTotal, -1);
+    for (int index = 0; index < m_numTotal; index++) {
+        if (!m_SimBC->inDirichletBC(index)) {
+            m_dofsToFull.push_back(index);
+            m_fullToDofs[index] = (int) (m_dofsToFull.size()-1);
         }
-        else {
-            vec_free(j) = vec(i);
-            j++;
-        }
-    }
-    return vec_free;
-}
-
-Eigen::MatrixXd SolverImpl::unconsMat(const Eigen::MatrixXd& mat) {
-
-    Eigen::MatrixXd mat_free = Eigen::MatrixXd::Zero(m_SimBC->m_numFree, m_SimBC->m_numFree);
-
-    for (int i1 = 0, i2 = 0, j2 = 0; i1 < m_SimBC->m_numTotal; i1++) {
-        std::vector<int>::const_iterator pi = find(m_SimBC->m_specifiedDof.begin(), m_SimBC->m_specifiedDof.end(), i1);
-
-        // check if i1 is not fixed
-        if (pi == m_SimBC->m_specifiedDof.end()) {
-
-            for (int j1 = 0; j1 < m_SimBC->m_numTotal; j1++) {
-                std::vector<int>::const_iterator pj = find(m_SimBC->m_specifiedDof.begin(), m_SimBC->m_specifiedDof.end(), j1);
-
-                // check if j1 is not fixed
-                if (pj == m_SimBC->m_specifiedDof.end()) {
-                    mat_free(i2, j2) = mat(i1, j1);
-                    j2++;
-                }
-            }
-            i2++;
-            j2 = 0;
-        }
-    }
-    return mat_free;
-}
-
-void SolverImpl::updateNodes(Eigen::VectorXd &qnew){
-    for (int i = 0; i < m_SimGeo->nn(); i++) {
-        double xpos = qnew(3*i);
-        double ypos = qnew(3*i+1);
-        double zpos = qnew(3*i+2);
-        m_SimGeo->m_nodeList[i].set_xyz(xpos, ypos, zpos);
     }
 }
 
 // stretch energy for each element
-void SolverImpl::calcStretch(Eigen::VectorXd& dEdq, Eigen::MatrixXd& ddEddq){
+void SolverImpl::DEStretch(VectorN& dEdq, SparseEntries& entries_full) {
 
     // loop over the edge list
     for (std::vector<Edge*>::iterator iedge = m_SimGeo->m_edgeList.begin(); iedge != m_SimGeo->m_edgeList.end(); iedge++) {
 
         // local stretch force: fx1, fy1, fz1, fx2, fy2, fz2
         Eigen::VectorXd loc_f = Eigen::VectorXd::Zero(6);
-
         // local jacobian matrix
         Eigen::MatrixXd loc_j = Eigen::MatrixXd::Zero(6, 6);
 
         Stretching EStretch(*iedge, m_SimPar->E_modulus(), m_SimPar->thk());
-
         EStretch.locStretch(loc_f, loc_j);
 
+        // TODO: combine these
         // local node number corresponds to global node number
         unsigned int n1 = (*iedge)->get_node_num(1);
         unsigned int n2 = (*iedge)->get_node_num(2);
-
-        // stretch force for local node1
-        dEdq(3*(n1-1))   += loc_f(0);
-        dEdq(3*(n1-1)+1) += loc_f(1);
-        dEdq(3*(n1-1)+2) += loc_f(2);
-
-        // stretch force for local node2
-        dEdq(3*(n2-1))   += loc_f(3);
-        dEdq(3*(n2-1)+1) += loc_f(4);
-        dEdq(3*(n2-1)+2) += loc_f(5);
-
-        // update jacobian
         unsigned int nx1 = 3*(n1-1);
         unsigned int nx2 = 3*(n2-1);
 
-        for (int i = 0; i < m_SimGeo->ndof(); i++) {
-            for (int j = 0; j < m_SimGeo->ndof(); j++) {
-                ddEddq(nx1+i, nx1+j) += loc_j(i, j);
-                ddEddq(nx1+i, nx2+j) += loc_j(i, j+m_SimGeo->ndof());
-                ddEddq(nx2+i, nx1+j) += loc_j(i+m_SimGeo->ndof(), j);
-                ddEddq(nx2+i, nx2+j) += loc_j(i+m_SimGeo->ndof(), j+m_SimGeo->ndof());
+        // stretching force
+        for (int p = 0; p < 3; p++) {
+            dEdq(nx1+p) += loc_f(p);
+            dEdq(nx2+p) += loc_f(p+3);
+        }
+
+        // stretching jacobian
+        for (int i = 0; i < 3; i++) {
+            for (int j = 0; j < 3; j++) {
+                entries_full.emplace_back(Eigen::Triplet<double>(nx1+i, nx1+j, loc_j(i,j)));
+                entries_full.emplace_back(Eigen::Triplet<double>(nx1+i, nx2+j, loc_j(i,j+3)));
+                entries_full.emplace_back(Eigen::Triplet<double>(nx2+i, nx1+j, loc_j(i+3,j)));
+                entries_full.emplace_back(Eigen::Triplet<double>(nx2+i, nx2+j, loc_j(i+3,j+3)));
             }
         }
     }
 }
 
 // shear energy for each element
-void SolverImpl::calcShear(Eigen::VectorXd &dEdq, Eigen::MatrixXd &ddEddq){
+void SolverImpl::DEShear(VectorN& dEdq, SparseEntries& entries_full) {
 
+    // loop over element list
     for (std::vector<Element>::iterator iel = m_SimGeo->m_elementList.begin(); iel != m_SimGeo->m_elementList.end(); iel++) {
 
         // local shearing force: fx1, fy1, fz1, fx2, fy2, fz2, fx3, fy3, fz3
         Eigen::VectorXd loc_f = Eigen::VectorXd::Zero(9);
-
         // local jacobian matrix
         Eigen::MatrixXd loc_j = Eigen::MatrixXd::Zero(9, 9);
 
         Shearing EShear(&(*iel), m_SimPar->E_modulus(), m_SimPar->nu(), (*iel).get_area(), m_SimPar->thk());
-
         EShear.locShear(loc_f, loc_j);
 
+        // TODO: combine these
         // local node number corresponds to global node number
         unsigned int n1 = (*iel).get_node_num(1);
         unsigned int n2 = (*iel).get_node_num(2);
         unsigned int n3 = (*iel).get_node_num(3);
-
-        // shearing force for local node1
-        dEdq(3*(n1-1))   += loc_f(0);
-        dEdq(3*(n1-1)+1) += loc_f(1);
-        dEdq(3*(n1-1)+2) += loc_f(2);
-
-        // shearing force for local node2
-        dEdq(3*(n2-1))   += loc_f(3);
-        dEdq(3*(n2-1)+1) += loc_f(4);
-        dEdq(3*(n2-1)+2) += loc_f(5);
-
-        // shearing force for local node3
-        dEdq(3*(n3-1))   += loc_f(6);
-        dEdq(3*(n3-1)+1) += loc_f(7);
-        dEdq(3*(n3-1)+2) += loc_f(8);
-
-        // update jacobian
         unsigned int nx1 = 3*(n1-1);
         unsigned int nx2 = 3*(n2-1);
         unsigned int nx3 = 3*(n3-1);
 
-        for (int i = 0; i < m_SimGeo->ndof(); i++) {
-            for (int j = 0; j < m_SimGeo->ndof(); j++) {
+        // shearing force
+        for (int p = 0; p < 3; p++) {
+            dEdq(nx1+p) += loc_f(p);
+            dEdq(nx2+p) += loc_f(p+3);
+            dEdq(nx3+p) += loc_f(p+6);
+        }
 
-                ddEddq(nx1+i, nx1+j) += loc_j(i, j);
-                ddEddq(nx1+i, nx2+j) += loc_j(i, j+m_SimGeo->ndof());
-                ddEddq(nx1+i, nx3+j) += loc_j(i, j+m_SimGeo->ndof()*2);
+        // shearing jacobian
+        for (int i = 0; i < 3; i++) {
+            for (int j = 0; j < 3; j++) {
+                entries_full.emplace_back(Eigen::Triplet<double>(nx1+i, nx1+j, loc_j(i,j)));
+                entries_full.emplace_back(Eigen::Triplet<double>(nx1+i, nx2+j, loc_j(i,j+3)));
+                entries_full.emplace_back(Eigen::Triplet<double>(nx1+i, nx3+j, loc_j(i,j+6)));
 
-                ddEddq(nx2+i, nx1+j) += loc_j(i+m_SimGeo->ndof(), j);
-                ddEddq(nx2+i, nx2+j) += loc_j(i+m_SimGeo->ndof(), j+m_SimGeo->ndof());
-                ddEddq(nx2+i, nx3+j) += loc_j(i+m_SimGeo->ndof(), j+m_SimGeo->ndof()*2);
+                entries_full.emplace_back(Eigen::Triplet<double>(nx2+i, nx1+j, loc_j(i+3,j)));
+                entries_full.emplace_back(Eigen::Triplet<double>(nx2+i, nx2+j, loc_j(i+3,j+3)));
+                entries_full.emplace_back(Eigen::Triplet<double>(nx2+i, nx3+j, loc_j(i+3,j+6)));
 
-                ddEddq(nx3+i, nx1+j) += loc_j(i+m_SimGeo->ndof()*2, j);
-                ddEddq(nx3+i, nx2+j) += loc_j(i+m_SimGeo->ndof()*2, j+m_SimGeo->ndof());
-                ddEddq(nx3+i, nx3+j) += loc_j(i+m_SimGeo->ndof()*2, j+m_SimGeo->ndof()*2);
+                entries_full.emplace_back(Eigen::Triplet<double>(nx3+i, nx1+j, loc_j(i+6,j)));
+                entries_full.emplace_back(Eigen::Triplet<double>(nx3+i, nx2+j, loc_j(i+6,j+3)));
+                entries_full.emplace_back(Eigen::Triplet<double>(nx3+i, nx3+j, loc_j(i+6,j+6)));
             }
         }
     }
 }
 
-void SolverImpl::calcBend(Eigen::VectorXd &dEdq, Eigen::MatrixXd &ddEddq){
+void SolverImpl::DEBend(VectorN& dEdq, SparseEntries& entries_full) {
 
     // loop over the hinge list
     for (std::vector<Hinge*>::iterator ihinge = m_SimGeo->m_hingeList.begin(); ihinge != m_SimGeo->m_hingeList.end(); ihinge++) {
 
         // local bending force: fx0, fy0, fz0, fx1, fy1, fz1, fx2, fy2, fz2, fx3, fy3, fz3
         Eigen::VectorXd loc_f = Eigen::VectorXd::Zero(12);
-
         // local jacobian matrix
         Eigen::MatrixXd loc_j = Eigen::MatrixXd::Zero(12, 12);
 
@@ -576,63 +384,48 @@ void SolverImpl::calcBend(Eigen::VectorXd &dEdq, Eigen::MatrixXd &ddEddq){
 
         // bending energy calculation
         Bending Ebend(*ihinge);
-
         Ebend.locBend(loc_f, loc_j);
 
+        // TODO: combine these
         // local node number corresponds to global node number
         unsigned int n0 = (*ihinge)->get_node_num(0);
         unsigned int n1 = (*ihinge)->get_node_num(1);
         unsigned int n2 = (*ihinge)->get_node_num(2);
         unsigned int n3 = (*ihinge)->get_node_num(3);
-
-        // bending force for local node1
-        dEdq(3*(n0-1))   += loc_f(0);
-        dEdq(3*(n0-1)+1) += loc_f(1);
-        dEdq(3*(n0-1)+2) += loc_f(2);
-
-        // bending force for local node1
-        dEdq(3*(n1-1))   += loc_f(3);
-        dEdq(3*(n1-1)+1) += loc_f(4);
-        dEdq(3*(n1-1)+2) += loc_f(5);
-
-        // bending force for local node2
-        dEdq(3*(n2-1))   += loc_f(6);
-        dEdq(3*(n2-1)+1) += loc_f(7);
-        dEdq(3*(n2-1)+2) += loc_f(8);
-
-        // bending force for local node3
-        dEdq(3*(n3-1))   += loc_f(9);
-        dEdq(3*(n3-1)+1) += loc_f(10);
-        dEdq(3*(n3-1)+2) += loc_f(11);
-
-        // update jacobian
         unsigned int nx0 = 3*(n0-1);
         unsigned int nx1 = 3*(n1-1);
         unsigned int nx2 = 3*(n2-1);
         unsigned int nx3 = 3*(n3-1);
 
-        for (int k = 0; k < m_SimGeo->ndof(); k++) {
-            for (int j = 0; j < m_SimGeo->ndof(); j++) {
+        // bending force
+        for (int p = 0; p < 3; p++) {
+            dEdq(nx0+p) += loc_f(p);
+            dEdq(nx1+p) += loc_f(p+3);
+            dEdq(nx2+p) += loc_f(p+6);
+            dEdq(nx3+p) += loc_f(p+9);
+        }
 
-                ddEddq(nx0+k, nx0+j) += loc_j(k, j);
-                ddEddq(nx0+k, nx1+j) += loc_j(k, j+m_SimGeo->ndof());
-                ddEddq(nx0+k, nx2+j) += loc_j(k, j+m_SimGeo->ndof()*2);
-                ddEddq(nx0+k, nx3+j) += loc_j(k, j+m_SimGeo->ndof()*3);
+        for (int i = 0; i < 3; i++) {
+            for (int j = 0; j < 3; j++) {
+                entries_full.emplace_back(Eigen::Triplet<double>(nx0+i, nx0+j, loc_j(i,j)));
+                entries_full.emplace_back(Eigen::Triplet<double>(nx0+i, nx1+j, loc_j(i,j+3)));
+                entries_full.emplace_back(Eigen::Triplet<double>(nx0+i, nx2+j, loc_j(i,j+6)));
+                entries_full.emplace_back(Eigen::Triplet<double>(nx0+i, nx3+j, loc_j(i,j+9)));
 
-                ddEddq(nx1+k, nx0+j) += loc_j(k+m_SimGeo->ndof(), j);
-                ddEddq(nx1+k, nx1+j) += loc_j(k+m_SimGeo->ndof(), j+m_SimGeo->ndof());
-                ddEddq(nx1+k, nx2+j) += loc_j(k+m_SimGeo->ndof(), j+m_SimGeo->ndof()*2);
-                ddEddq(nx1+k, nx3+j) += loc_j(k+m_SimGeo->ndof(), j+m_SimGeo->ndof()*3);
+                entries_full.emplace_back(Eigen::Triplet<double>(nx1+i, nx0+j, loc_j(i+3,j)));
+                entries_full.emplace_back(Eigen::Triplet<double>(nx1+i, nx1+j, loc_j(i+3,j+3)));
+                entries_full.emplace_back(Eigen::Triplet<double>(nx1+i, nx2+j, loc_j(i+3,j+6)));
+                entries_full.emplace_back(Eigen::Triplet<double>(nx1+i, nx3+j, loc_j(i+3,j+9)));
 
-                ddEddq(nx2+k, nx0+j) += loc_j(k+m_SimGeo->ndof()*2, j);
-                ddEddq(nx2+k, nx1+j) += loc_j(k+m_SimGeo->ndof()*2, j+m_SimGeo->ndof());
-                ddEddq(nx2+k, nx2+j) += loc_j(k+m_SimGeo->ndof()*2, j+m_SimGeo->ndof()*2);
-                ddEddq(nx2+k, nx3+j) += loc_j(k+m_SimGeo->ndof()*2, j+m_SimGeo->ndof()*3);
+                entries_full.emplace_back(Eigen::Triplet<double>(nx2+i, nx0+j, loc_j(i+6,j)));
+                entries_full.emplace_back(Eigen::Triplet<double>(nx2+i, nx1+j, loc_j(i+6,j+3)));
+                entries_full.emplace_back(Eigen::Triplet<double>(nx2+i, nx2+j, loc_j(i+6,j+6)));
+                entries_full.emplace_back(Eigen::Triplet<double>(nx2+i, nx3+j, loc_j(i+6,j+9)));
 
-                ddEddq(nx3+k, nx0+j) += loc_j(k+m_SimGeo->ndof()*3, j);
-                ddEddq(nx3+k, nx1+j) += loc_j(k+m_SimGeo->ndof()*3, j+m_SimGeo->ndof());
-                ddEddq(nx3+k, nx2+j) += loc_j(k+m_SimGeo->ndof()*3, j+m_SimGeo->ndof()*2);
-                ddEddq(nx3+k, nx3+j) += loc_j(k+m_SimGeo->ndof()*3, j+m_SimGeo->ndof()*3);
+                entries_full.emplace_back(Eigen::Triplet<double>(nx3+i, nx0+j, loc_j(i+9,j)));
+                entries_full.emplace_back(Eigen::Triplet<double>(nx3+i, nx1+j, loc_j(i+9,j+3)));
+                entries_full.emplace_back(Eigen::Triplet<double>(nx3+i, nx2+j, loc_j(i+9,j+6)));
+                entries_full.emplace_back(Eigen::Triplet<double>(nx3+i, nx3+j, loc_j(i+9,j+9)));
             }
         }
     }

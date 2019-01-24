@@ -15,9 +15,10 @@ public:
 
     // subroutines
     void readInput();
-    void initCoord();
-    void initConn();
-    void initGeoList();
+    void readGeoFile();
+    void buildNodes();
+    void buildMesh();
+    void buildGeoList();
 
 private:
     Parameters* m_SimPar;

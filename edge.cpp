@@ -7,6 +7,9 @@ Edge::Edge()
     m_len0(0), VISITED(false)
 {}
 
+Edge::~Edge()
+{}
+
 void Edge::mark_visited() {
     VISITED = true;
 }
@@ -21,7 +24,7 @@ void Edge::find_node(Node &n1, Node &n2) {
 }
 
 void Edge::find_originVal() {
-    m_eVec = m_node1->get_xyz() - m_node2->get_xyz();
+    m_eVec = *(m_node1->get_xyz()) - *(m_node2->get_xyz());
     m_len0 = m_eVec.norm();
 }
 

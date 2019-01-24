@@ -11,7 +11,10 @@
 
 #include <Eigen/Dense>
 
-Geometry::Geometry(Parameters* SimPar) {
+Geometry::Geometry(Parameters* SimPar)
+    : m_datum(0), m_nsd(0), m_nen(0), m_rec_len(0), m_rec_wid(0), m_num_nodes_len(0), m_num_nodes_wid(0),
+      m_nn(0), m_nel(0), m_nedge(0), m_nhinge(0)
+{
     m_SimPar  = SimPar;
 }
 
@@ -22,16 +25,8 @@ Geometry::~Geometry() {
         delete *ihinge;
 }
 
-void Geometry::buildGeo() {
-    m_coord       = Eigen::MatrixXd::Zero(m_nn, m_ndof);
-    m_conn        = Eigen::MatrixXi::Zero(m_nel, m_nen);
-    m_dof         = Eigen::VectorXd::Zero(m_nn * m_ndof);
-    map_nodes     = Eigen::MatrixXi::Zero(m_num_nodes_wid, m_num_nodes_len);
-}
-
-void Geometry::calcMass() {
-    m_mass = Eigen::VectorXd::Zero(m_nn * m_ndof);
-
+void Geometry::findMassVector() {
+    m_mass = Eigen::VectorXd::Zero(m_nn * m_nsd);
 
     // Total mass per small rectangle (2 triangular elements)
     m_mi = (m_rec_len * m_rec_wid * m_SimPar->thk() * m_SimPar->rho())
@@ -45,21 +40,21 @@ void Geometry::calcMass() {
 
             // corner nodes
             if ((i == 0 || i == m_num_nodes_len - 1) && (j == 0 || j == m_num_nodes_wid - 1)) {
-                m_mass(k * m_ndof) = m_mi / 4.0;
-                m_mass(k * m_ndof + 1) = m_mi / 4.0;
-                m_mass(k * m_ndof + 2) = m_mi / 4.0;
+                m_mass(k * m_nsd) = m_mi / 4.0;
+                m_mass(k * m_nsd + 1) = m_mi / 4.0;
+                m_mass(k * m_nsd + 2) = m_mi / 4.0;
             }
-                // edge nodes
+            // edge nodes
             else if ((i == 0 || i == m_num_nodes_len - 1) || (j == 0 || j == m_num_nodes_wid - 1)) {
-                m_mass(k * m_ndof) = m_mi / 2.0;
-                m_mass(k * m_ndof + 1) = m_mi / 2.0;
-                m_mass(k * m_ndof + 2) = m_mi / 2.0;
+                m_mass(k * m_nsd) = m_mi / 2.0;
+                m_mass(k * m_nsd + 1) = m_mi / 2.0;
+                m_mass(k * m_nsd + 2) = m_mi / 2.0;
             }
-                // middle nodes
+            // middle nodes
             else {
-                m_mass(k * m_ndof) = m_mi;
-                m_mass(k * m_ndof + 1) = m_mi;
-                m_mass(k * m_ndof + 2) = m_mi;
+                m_mass(k * m_nsd) = m_mi;
+                m_mass(k * m_nsd + 1) = m_mi;
+                m_mass(k * m_nsd + 2) = m_mi;
             }
         }
     }
@@ -100,13 +95,10 @@ void Geometry::printGeo() {
     std::ofstream myfile((filepath+filename).c_str());
 
     for (int i = 0; i < m_nel; i++) {
-        //std::cout << i+1 << '\t';
         myfile << i+1 << '\t';
         for (int j = 0; j < m_nen; j++) {
-            //std::cout << m_conn(i,j) << '\t';
-            myfile << m_conn(i,j) << '\t';
+            myfile << m_mesh[i][j] << '\t';
         }
-        //std::cout << std::endl;
         myfile << std::endl;
     }
 }

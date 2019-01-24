@@ -17,6 +17,8 @@ class Edge;
 
 class Stretching {
 public:
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
     Stretching(Edge* ptr, double E, double D);
 
     void locStretch(Eigen::VectorXd& loc_f, Eigen::MatrixXd& loc_j);
