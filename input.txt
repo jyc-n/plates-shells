@@ -1,7 +1,7 @@
 rec_len = 0.1                 ! length of the rectangular domain
 rec_wid = 0.1                 ! width of the rectangular domain
-num_nodes_len = 50           ! number of nodes along the length
-num_nodes_wid = 50          ! number of nodes along the width
+num_nodes_len = 10           ! number of nodes along the length
+num_nodes_wid = 10          ! number of nodes along the width
 datum_plane = 1             ! initial datum plane 1-xy plane, 2-xz plane, 3-yz plane
 
 dof = 3                     ! degree of freedom

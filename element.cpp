@@ -5,35 +5,12 @@
 #include "edge.h"
 #include "hinge.h"
 
-Element::Element()
-        : m_num_el(0),
-          m_num_n1(0),
-          m_num_n2(0),
-          m_num_n3(0),
-          m_node1(nullptr),
-          m_node2(nullptr),
-          m_node3(nullptr)
-{
-    for (int &i : m_adj_element)
-        i = 0;
-    for (int &i : m_edgeIndex)
-        i = 0;
-    for (auto &i : m_edges)
-        i = nullptr;
-    for (auto &i : m_hinges)
-        i = nullptr;
-}
-
 Element::Element(const unsigned int num_el, Node* n1, Node* n2, Node* n3)
         : m_num_el(num_el),
           m_node1(n1),
           m_node2(n2),
           m_node3(n3)
 {
-    m_num_n1 = (*m_node1).get_num();
-    m_num_n2 = (*m_node2).get_num();
-    m_num_n3 = (*m_node3).get_num();
-
     calculate_area();
     calculate_phi0();
 
@@ -41,10 +18,6 @@ Element::Element(const unsigned int num_el, Node* n1, Node* n2, Node* n3)
         i = 0;
     for (int &i : m_edgeIndex)
         i = 0;
-    for (auto &i : m_edges)
-        i = nullptr;
-    for (auto &i : m_hinges)
-        i = nullptr;
 }
 
 // NOTE: dynamically allocated Hinge and Edge classes are destroyed in Geometry destructor
@@ -89,13 +62,13 @@ void Element::find_edge_index() {
     }
 }
 
-void Element::find_adjacent_element(int index, int num_element) {
+void Element::find_adjacent_element(const int index, const int num_element) {
     // store the number of element that share the edge with given index
     m_adj_element[get_which_edge(index)] = num_element;
 }
 
 // construct the edge object and return the pointer to the edge
-Edge* Element::build_edges(int index) {
+Edge* Element::build_edges(const int index) {
     // find the local number of edge
     int local_number = get_which_edge(index);
     // build the edge with given index
@@ -125,13 +98,13 @@ Edge* Element::build_edges(int index) {
             break;
     }
 
-    m_edges[local_number] = new Edge(n1, n2);
+    Edge* this_edge = new Edge(n1, n2);
 //    std::cout << n1->get_num() << '\t' << n2->get_num() << '\n';
-    return m_edges[local_number];
+    return this_edge;
 }
 
 // construct the hinge object and return the pointer to the hinge
-Hinge* Element::build_hinges(int index, Element* adj_element) {
+Hinge* Element::build_hinges(const int index, Element* adj_element) {
     // find the local number of hinge (the overlapped edge)
     int local_number = get_which_edge(index);
     // build the hinge
@@ -179,22 +152,22 @@ Hinge* Element::build_hinges(int index, Element* adj_element) {
             break;
     }
 
-    m_hinges[local_number] = new Hinge(n0, n1, n2, n3, this, adj_element);
+    Hinge* this_hinge = new Hinge(n0, n1, n2, n3, this, adj_element);
 //    std::cout << m_hinges[local_number]->get_node(0)->get_num() << '\t'
 //              << m_hinges[local_number]->get_node(1)->get_num() << '\t'
 //              << m_hinges[local_number]->get_node(2)->get_num() << '\t'
 //              << m_hinges[local_number]->get_node(3)->get_num() << '\n';
-    return m_hinges[local_number];
+    return this_hinge;
 }
 
-unsigned int Element::get_node_num(const int num) const {
+unsigned int Element::get_node_num(int num) const {
     switch (num) {
         case 1:
-            return m_num_n1;
+            return m_node1->get_num();
         case 2:
-            return m_num_n2;
+            return m_node2->get_num();
         case 3:
-            return m_num_n3;
+            return m_node3->get_num();
         default:
             std::cerr << "Local number of node can only be 1, 2, 3" << std::endl;
             exit(1);
@@ -215,7 +188,7 @@ int Element::get_edge_index(int num) const {
     }
 }
 
-Node* Element::get_node(const int num) const {
+Node* Element::get_node(int num) const {
     switch (num) {
         case 1:
             return m_node1;
