@@ -1,36 +1,18 @@
 #include <iostream>
+#include <Eigen/Dense>
 #include "node.h"
 #include "edge.h"
 
-Edge::Edge()
-  : m_node1(nullptr), m_node2(nullptr),
-    m_len0(0), VISITED(false)
-{}
-
-Edge::~Edge()
-{}
-
-void Edge::mark_visited() {
-    VISITED = true;
-}
-
-void Edge::reset_visited() {
-    VISITED = false;
-}
-
-void Edge::find_node(Node &n1, Node &n2) {
-    m_node1 = &n1;
-    m_node2 = &n2;
-}
-
-void Edge::find_originVal() {
-    m_eVec = *(m_node1->get_xyz()) - *(m_node2->get_xyz());
+Edge::Edge(Node* n1, Node* n2)
+  : m_node1(n1), m_node2(n2),
+    m_len0(0), m_k(1)
+{
+    Eigen::Vector3d m_eVec = *(m_node1->get_xyz()) - *(m_node2->get_xyz());
     m_len0 = m_eVec.norm();
 }
 
-bool Edge::check_visited() const {
-    return VISITED;
-}
+Edge::~Edge()
+{}
 
 Node* Edge::get_node(int num) const {
     switch (num) {

@@ -10,21 +10,16 @@ class Hinge {
 public:
 
     // constructor
-    Hinge();
+    Hinge(Node* n0, Node* n1, Node* n2, Node* n3, Element* el1, Element* el2);
 
-    // modifiers
-    void mark_visited();
-    void reset_visited();
-    void find_element(Element& el1, Element& el2);
-    void find_node(Node& n0, Node& n1, Node& n2, Node& n3);
-    void find_originVal();
+    // modifier
+    void nodes_order_check();
 
     // accessor
-    bool check_visited() const;
     Node* get_node(int num) const;
     unsigned int get_node_num(const int num) const;
+    double get_psi0() const;
 
-    double m_psi0;
     double m_const;
     double m_k;
 
@@ -37,7 +32,7 @@ private:
     Node* m_node2;
     Node* m_node3;
 
-    bool VISITED;
+    double m_psi0;
 };
 
 #endif //PLATES_SHELLS_HINGE_H

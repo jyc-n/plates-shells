@@ -1,8 +1,10 @@
 #include <iostream>
 #include <iomanip>
 #include <fstream>
+#include <algorithm>
 #include <string>
 #include <cassert>
+#include <unordered_map>
 #include "pre_processor.h"
 #include "parameters.h"
 #include "geometry.h"
@@ -38,7 +40,8 @@ void PreProcessorImpl::PreProcess() {
     std::cout << "seeding completed" << std::endl;
     buildMesh();
     std::cout << "meshing completed\nbuilding node, element, edge, hinge lists (this may take a while)" << std::endl;
-    buildGeoList();
+    buildNodeElementList();
+    buildEdgeHingeList();
     std::cout << "all lists building completed" << std::endl;
     m_SimGeo->findMassVector();
     std::cout << "mass calculated completed" << std::endl;
@@ -193,8 +196,8 @@ void PreProcessorImpl::buildMesh() {
     assert(m_SimGeo->m_mesh.size() == m_SimGeo->nel());
 }
 
-// initialize element list
-void PreProcessorImpl::buildGeoList() {
+// initialize node and element lists
+void PreProcessorImpl::buildNodeElementList() {
 
     // build node list
     for (unsigned int i = 0; i < m_SimGeo->nn(); i++) {
@@ -211,34 +214,67 @@ void PreProcessorImpl::buildGeoList() {
         Node* pn3 = &m_SimGeo->m_nodeList[m_SimGeo->m_mesh[i][2]-1];
 
         Element temp(i+1, pn1, pn2, pn3);
-
-        temp.find_nearby_element(m_SimGeo->nel(), m_SimGeo->m_mesh);
         m_SimGeo->m_elementList.emplace_back(temp);
     }
     assert(m_SimGeo->m_elementList.size() == m_SimGeo->nel());
+}
 
-    // find all edges and hinges
-    for (unsigned int i = 0; i < m_SimGeo->nel(); i++) {
-        m_SimGeo->m_elementList[i].find_edges(m_SimGeo->m_elementList);
-        m_SimGeo->m_elementList[i].find_hinges(m_SimGeo->m_elementList);
+// initialize edge and hinge lists
+void PreProcessorImpl::buildEdgeHingeList() {
+    std::unordered_multimap<int, int> edgeHashTable;
+    std::vector<int> edgeIndex;
+    // use open hash table to store edge indices and the adjacent elements
+    // use an additional vector to store all the keys (edge indices) of the hash table
+    for (auto &iel : m_SimGeo->m_elementList) {
+        // find and save all edge indices     
+        iel.find_edge_index();
+        for (int iedge = 0; iedge < 3; iedge++) {
+            edgeHashTable.emplace(iel.get_edge_index(iedge), iel.get_element_num());
+            edgeIndex.push_back(iel.get_edge_index(iedge));
+        }
+        /*
+        std::cout << (*iel).get_element_num() << '\n';
+        std::cout << (*iel).get_node_num(1) << '\t' << (*iel).get_node_num(2) << '\t' << (*iel).get_edge_index(0) << '\n';
+        std::cout << (*iel).get_node_num(2) << '\t' << (*iel).get_node_num(3) << '\t' << (*iel).get_edge_index(1) << '\n';
+        std::cout << (*iel).get_node_num(1) << '\t' << (*iel).get_node_num(3) << '\t' << (*iel).get_edge_index(2) << "\n\n";
+        */
     }
+    // remove the repeated keys
+    std::sort(edgeIndex.begin(), edgeIndex.end());
+    auto last = std::unique(edgeIndex.begin(), edgeIndex.end());
+    edgeIndex.erase(last, edgeIndex.end());
+    
+    // traverse the non-empty buckets of the hash table
+    for (int &key : edgeIndex) {
+        //std::cout << "key is " << *key << '\n';
 
-    // build edge list
-    for (unsigned int i = 0; i < m_SimGeo->nel(); i++) {
-        for (int j = 1; j <= 3; j++) {
-            Edge* tempEdge = m_SimGeo->m_elementList[i].get_edge(j);
-            if (tempEdge != nullptr && !tempEdge->check_visited()) {
-                tempEdge->mark_visited();
-                m_SimGeo->m_edgeList.emplace_back(tempEdge);
-            }
+        // store {#element1, #element2}
+        Eigen::Vector2i edgeInfo;
+        edgeInfo.fill(-1);
 
-            Hinge* tempHinge = m_SimGeo->m_elementList[i].get_hinge(j);
-            if (tempHinge != nullptr && !tempHinge->check_visited()) {
-                tempHinge->mark_visited();
-                m_SimGeo->m_hingeList.emplace_back(tempHinge);
-            }
+        // locate the bucket with given key
+        auto bucket_range = edgeHashTable.equal_range(key);
+        int i = 0;
+        for (auto p = bucket_range.first; p != bucket_range.second; p++, i++) {
+            edgeInfo[i] = p->second;
+            //std::cout << "Key:[" << p->first << "] Value:[" << p->second << "]\n";
+        }
+        // #element1 must have actual element number
+        // #element2 can be -1 (which means the edge isn't shared by 2 elements. It's an edge)
+        assert(edgeInfo[0] != -1);
+        // first, build the edge and store the pointer to the list
+        Element* this_element = &m_SimGeo->m_elementList[edgeInfo[0]-1];
+        this_element->find_adjacent_element(key, edgeInfo[1]);
+        m_SimGeo->m_edgeList.emplace_back(this_element->build_edges(key));
+        
+        // if this is a hinge, build the hinge and store the pointer to the list
+        if (edgeInfo[1] != -1) {
+            Element* adj_element = &m_SimGeo->m_elementList[edgeInfo[1]-1];
+            adj_element->find_adjacent_element(key, edgeInfo[0]);
+            m_SimGeo->m_hingeList.emplace_back(this_element->build_hinges(key, adj_element));
         }
     }
+    // NOTE: edge/hinge number check only works for structured rectangular mesh
     assert(m_SimGeo->edgeNumCheck());
     assert(m_SimGeo->hingeNumCheck());
 }

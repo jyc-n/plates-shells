@@ -101,11 +101,11 @@ void Bending::psi() {
 }
 
 void Bending::zeta() {
-    m_zeta = 2.0 * m_hinge->m_k * (m_psi - m_hinge->m_psi0) * (1 + pow(m_psi, 2));
+    m_zeta = 2.0 * m_hinge->m_k * (m_psi - m_hinge->get_psi0()) * (1 + pow(m_psi, 2));
 }
 
 void Bending::xi() {
-    m_xi = m_hinge->m_k * (1 + pow(m_psi, 2)) * (2 * (m_psi - m_hinge->m_psi0) * m_psi + (1 + pow(m_psi, 2)));
+    m_xi = m_hinge->m_k * (1 + pow(m_psi, 2)) * (2 * (m_psi - m_hinge->get_psi0()) * m_psi + (1 + pow(m_psi, 2)));
 }
 
 Eigen::Matrix3d Bending::s(Eigen::Matrix3d &mat) {
@@ -121,7 +121,7 @@ void Bending::grad(Eigen::VectorXd& gradTheta) {
 
 void Bending::hess(Eigen::MatrixXd& hessTheta) {
     Eigen::Matrix3d M331 = m_cosA3 / (m_h3 * m_h3) * m_m3 * m_nn1.transpose();
-    Eigen::Matrix3d M311 = m_cosA3 / (m_h3 * m_h1) * m_m1 * m_nn1.transpose(); //FIXME: never used?
+    Eigen::Matrix3d M311 = m_cosA3 / (m_h3 * m_h1) * m_m1 * m_nn1.transpose();
     Eigen::Matrix3d M131 = m_cosA1 / (m_h1 * m_h3) * m_m3 * m_nn1.transpose();
     Eigen::Matrix3d M3011 = m_cosA3 / (m_h3 * m_h01) * m_m01 * m_nn1.transpose();
     Eigen::Matrix3d M111 = m_cosA1 / (m_h1 * m_h1) * m_m1 * m_nn1.transpose();
@@ -145,7 +145,7 @@ void Bending::hess(Eigen::MatrixXd& hessTheta) {
     Eigen::Matrix3d N202 = 1 / (m_h02 * m_h02) * m_nn2 * m_m02.transpose();
 
     hessTheta.block(0,0, 3,3) = s(M331) - B1 + s(M442) - B2;
-    hessTheta.block(0,3, 3,3) = M331 + M131.transpose() + B1 + M422 + M242.transpose() + B2;
+    hessTheta.block(0,3, 3,3) = M311 + M131.transpose() + B1 + M422 + M242.transpose() + B2;
     hessTheta.block(0,6, 3,3) = M3011 - N13;
     hessTheta.block(0,9, 3,3) = M4022 - N24;
     hessTheta.block(3,3, 3,3) = s(M111) - B1 + s(M222) - B2;

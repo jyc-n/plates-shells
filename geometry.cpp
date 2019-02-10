@@ -9,8 +9,6 @@
 #include "edge.h"
 #include "hinge.h"
 
-#include <Eigen/Dense>
-
 Geometry::Geometry(Parameters* SimPar)
     : m_datum(0), m_nsd(0), m_nen(0), m_rec_len(0), m_rec_wid(0), m_num_nodes_len(0), m_num_nodes_wid(0),
       m_nn(0), m_nel(0), m_nedge(0), m_nhinge(0)
@@ -85,10 +83,6 @@ void Geometry::printGeo() {
         std::cout << i+1 << '\t';
         std::cout << std::setprecision(8) << std::fixed << m_dof(3*i) << '\t' << m_dof(3*i+1) << '\t' << m_dof(3*i+2) << std::endl;
     }
-    std::cout << "----DOF Vector----" << '\n';
-    std::cout << m_dof << std::endl;
-    std::cout << "----Map of Nodes----" << '\n';
-    std::cout << map_nodes << std::endl;
     std::cout << "----List of Elements----" << '\n';*/
     std::string filepath = m_SimPar->outputPath();
     std::string filename = "connectivity.txt";

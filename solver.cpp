@@ -45,6 +45,7 @@ void SolverImpl::initSolver() {
 
 // TODO: implement Newmark-beta method
 // Time stepping using backward Euler
+// FIXME: should consider the acceleration!
 bool SolverImpl::step(const int ist, VectorNodes& x, VectorNodes& x_new, VectorNodes& vel) {
     std::cout << "--------Step " << ist << "--------" << std::endl;
 
@@ -185,15 +186,15 @@ void SolverImpl::updateResidual(Eigen::VectorXd& qn, Eigen::VectorXd& qnew, doub
 void SolverImpl::findResidual(const VectorNodes& vel, const VectorNodes& x, const VectorNodes& x_new, const VectorN& dEdq, VectorN& rhs) {
     double dt = m_SimPar->dt();
 
-    // FIXME: area for viscosity doesn't change?
+    // TODO: better model of viscous damping
+    double nu = m_SimPar->vis();
     double area = 0.5 * m_SimGeo->rec_len() * m_SimGeo->rec_wid()
-                / (m_SimGeo->num_nodes_len() * m_SimGeo->num_nodes_wid());
+                  / (m_SimGeo->num_nodes_len() * m_SimGeo->num_nodes_wid());
 
-    auto vis_f = [&area, &dt] (double nu, double qn, double qnew) {
-        return nu * area * (qnew - qn) / dt;
+    auto vis = [&dt, &nu, &area] (double qnew, double qn) {
+        return nu * area* (qnew - qn) / dt;
     };
 
-    // TODO: add in viscosity
     // only take the entries that are NOT in Dirichlet BC
     // CAUTION: if Dirichlet BC is nonzero, need to consider the influence of the Dirichlet BC
     // FIXME: adding Dirichlet influence
@@ -205,7 +206,8 @@ void SolverImpl::findResidual(const VectorNodes& vel, const VectorNodes& x, cons
             int pos_dof = m_fullToDofs[pos];
             if (pos_dof != -1) {
                 rhs(pos_dof) = m_SimGeo->m_mass(pos) * (x_new[i][j] - x[i][j]) / (dt*dt) 
-                               - m_SimGeo->m_mass(pos) * vel[i][j]/dt + dEdq(pos) - m_SimBC->m_fext(pos);
+                               - m_SimGeo->m_mass(pos) * vel[i][j]/dt + vis(x_new[i][j], x[i][j])
+                               + dEdq(pos) - m_SimBC->m_fext(pos);
             }
         }
     }
@@ -217,8 +219,17 @@ void SolverImpl::findResidual(const VectorNodes& vel, const VectorNodes& x, cons
 void SolverImpl::findJacobian(SparseEntries& entries_full, SpMatrix& jacobian) {
     if (DYNAMIC_SOLVER) {
         double dt = m_SimPar->dt();
-        for (int i = 0; i < m_numTotal; i++)
-            entries_full.emplace_back(Eigen::Triplet<double>(i, i, m_SimGeo->m_mass(i) / (dt*dt)));
+        // TODO: better model of viscous damping
+        double nu = m_SimPar->vis();
+        double area = 0.5 * m_SimGeo->rec_len() * m_SimGeo->rec_wid()
+                      / (m_SimGeo->num_nodes_len() * m_SimGeo->num_nodes_wid());
+        for (int i = 0; i < m_numTotal; i++) {
+            // inertia term
+            double inertia = m_SimGeo->m_mass(i) / (dt*dt);
+            // viscous term
+            double viscous = nu * area / dt;
+            entries_full.emplace_back(Eigen::Triplet<double>(i, i, inertia + viscous));
+        }
     }
     SparseEntries entries_dof;
     for (int p = 0; p < entries_full.size(); p++) {
@@ -429,16 +440,6 @@ void SolverImpl::DEBend(VectorN& dEdq, SparseEntries& entries_full) {
             }
         }
     }
-}
-
-void SolverImpl::calcViscous(const Eigen::VectorXd &qn, const Eigen::VectorXd &qnew, Eigen::VectorXd &dEdq,
-                             Eigen::MatrixXd &ddEddq) {
-    double area = 0.5 * m_SimGeo->rec_len() * m_SimGeo->rec_wid()
-                    / (m_SimGeo->num_nodes_len() * m_SimGeo->num_nodes_wid());
-    Eigen::VectorXd vis_f = m_SimPar->vis() * area * (qnew - qn) / m_SimPar->dt();
-    Eigen::MatrixXd vis_j = Eigen::MatrixXd::Identity(3*m_SimGeo->nn(), 3*m_SimGeo->nn());
-    dEdq += vis_f;
-    ddEddq += vis_j;
 }
 
 void SolverImpl::analyticalStatic() {

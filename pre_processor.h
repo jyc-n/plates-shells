@@ -13,14 +13,16 @@ public:
     // main pre-processing function
     void PreProcess();
 
+private:
+
     // subroutines
     void readInput();
     void readGeoFile();
     void buildNodes();
     void buildMesh();
-    void buildGeoList();
+    void buildNodeElementList();
+    void buildEdgeHingeList();
 
-private:
     Parameters* m_SimPar;
     Geometry*   m_SimGeo;
 };

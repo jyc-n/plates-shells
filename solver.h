@@ -58,7 +58,6 @@ private:
     void DEStretch(VectorN& dEdq, SparseEntries& entries_full);
     void DEShear  (VectorN& dEdq, SparseEntries& entries_full);
     void DEBend   (VectorN& dEdq, SparseEntries& entries_full);
-    void calcViscous(const Eigen::VectorXd& qn, const Eigen::VectorXd& qnew, Eigen::VectorXd& dEdq, Eigen::MatrixXd& ddEddq);
 
     void analyticalStatic();
 };

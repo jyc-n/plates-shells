@@ -1,37 +1,19 @@
 #include <iostream>
 #include <cmath>
+#include <algorithm>
+#include <iostream>
 #include "node.h"
 #include "element.h"
 #include "hinge.h"
 
-Hinge::Hinge()
- : m_el1(nullptr), m_el2(nullptr),
-   m_node0(nullptr), m_node1(nullptr),
-   m_node2(nullptr), m_node3(nullptr),
-   VISITED(false)
-{}
+Hinge::Hinge(Node* n0, Node* n1, Node* n2, Node* n3, Element* el1, Element* el2)
+ : m_node0(n0), m_node1(n1),
+   m_node2(n2), m_node3(n3),
+   m_el1(el1), m_el2(el2),
+   m_k(1), m_const(1)
+{
+    nodes_order_check();
 
-void Hinge::mark_visited() {
-    VISITED = true;
-}
-
-void Hinge::reset_visited() {
-    VISITED = false;
-}
-
-void Hinge::find_element(Element& el1, Element& el2) {
-    m_el1 = &el1;
-    m_el2 = &el2;
-}
-
-void Hinge::find_node(Node& n0, Node& n1, Node& n2, Node& n3) {
-    m_node0 = &n0;
-    m_node1 = &n1;
-    m_node2 = &n2;
-    m_node3 = &n3;
-}
-
-void Hinge::find_originVal(){
     Eigen::Vector3d ve0 = *(m_node1->get_xyz()) - *(m_node0->get_xyz());
     double e0 = ve0.norm();
     double a0 = m_el1->get_area() + m_el2->get_area();
@@ -41,8 +23,20 @@ void Hinge::find_originVal(){
     m_psi0 = 0;
 }
 
-bool Hinge::check_visited() const {
-    return VISITED;
+// unify the surface normal directions
+// TODO: this should guarantee all directions to be the same
+void Hinge::nodes_order_check() {
+    Eigen::Vector3d e0 = *(m_node1->get_xyz()) - *(m_node0->get_xyz());
+    Eigen::Vector3d e3 = *(m_node2->get_xyz()) - *(m_node1->get_xyz());
+    Eigen::Vector3d e4 = *(m_node3->get_xyz()) - *(m_node1->get_xyz());
+
+    Eigen::Vector3d n1 = e0.cross(e3);
+    n1 = n1 / (n1.norm());
+    Eigen::Vector3d n2 = -e0.cross(e4);
+    n2 = n2 / (n2.norm());
+
+    if (n1.dot(n2) < 0)
+        std::swap(m_node0, m_node1);
 }
 
 Node* Hinge::get_node(int num) const {
@@ -77,3 +71,6 @@ unsigned int Hinge::get_node_num(const int num) const {
     }
 }
 
+double Hinge::get_psi0() const {
+    return m_psi0;
+}
