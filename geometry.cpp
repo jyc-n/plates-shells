@@ -75,15 +75,18 @@ void Geometry::findMassVector() {
 
 }
 
-// print geometric information and generate connectivity file
-void Geometry::printGeo() {
-    /*
-    std::cout << "----List of Nodes----" << '\n';
+// print geometric information
+void Geometry::printMesh() {
     for (int i = 0; i < m_nn; i++) {
-        std::cout << i+1 << '\t';
-        std::cout << std::setprecision(8) << std::fixed << m_dof(3*i) << '\t' << m_dof(3*i+1) << '\t' << m_dof(3*i+2) << std::endl;
+        for (int j = 0; j < 3; j++) {
+            std::cout << m_nodes[i][j] << '\t';
+        }
+        std::cout << std::endl;
     }
-    std::cout << "----List of Elements----" << '\n';*/
+}
+
+// generate connectivity file
+void Geometry::writeConnectivity() {
     std::string filepath = m_SimPar->outputPath();
     std::string filename = "connectivity.txt";
     std::ofstream myfile((filepath+filename).c_str());

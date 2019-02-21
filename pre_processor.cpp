@@ -2,6 +2,7 @@
 #include <iomanip>
 #include <fstream>
 #include <algorithm>
+#include <cmath>
 #include <string>
 #include <cassert>
 #include <unordered_map>
@@ -30,13 +31,35 @@ PreProcessorImpl::PreProcessorImpl(Parameters* SimPar, Geometry* SimGeo) {
 }
 
 // main pre-processor function
-void PreProcessorImpl::PreProcess() {
+void PreProcessorImpl::PreProcess(
+                    const bool AR_FLAG, const bool K_FLAG,
+                    int num_len, int num_wid,
+                    double k_s, double k_sh, double k_b
+                    ) {
     // read input file
     readInput();
+    // overried aspect ratio
+    if (AR_FLAG) {
+        m_SimGeo->set_num_nodes_len(num_len);
+        m_SimGeo->set_num_nodes_wid(num_wid);
+    }
+    // override material constants
+    if (K_FLAG) {
+        m_SimPar->set_kstretch(k_s);
+        m_SimPar->set_kshear(k_sh);
+        m_SimPar->set_kbend(k_b);
+    }
+    m_SimPar->find_fullOutputPath();
+
+    m_SimGeo->set_nn();
+    m_SimGeo->set_nel();
+    m_SimGeo->set_nhinge();
+    m_SimGeo->set_nedge();
+
     m_SimPar->print_parameters();
 
     std::cout << "input file read, preprocessor starts" << std::endl;
-    buildNodes();
+    buildNodes(AR_FLAG);
     std::cout << "seeding completed" << std::endl;
     buildMesh();
     std::cout << "meshing completed\nbuilding node, element, edge, hinge lists (this may take a while)" << std::endl;
@@ -45,7 +68,7 @@ void PreProcessorImpl::PreProcess() {
     std::cout << "all lists building completed" << std::endl;
     m_SimGeo->findMassVector();
     std::cout << "mass calculated completed" << std::endl;
-    m_SimGeo->printGeo();
+    m_SimGeo->writeConnectivity();
     std::cout << "connectivity file written, preprocessing completed\n" << std::endl;
 }
 
@@ -67,9 +90,13 @@ void PreProcessorImpl::readInput() {
         getline(input_file,line);
         if (line.length() != 0) {
             trim(line);
+            if (line.empty())
+                continue;
 
             std::string name_var = line.substr(0,line.find('='));
             std::string value_var = line.substr(line.find('=')+1);
+
+            // TODO: use switch!! hash the string
 
             if (name_var == "rec_len")
                 m_SimGeo->set_rec_len(std::stod(value_var));             // length of the rectangular domain
@@ -79,10 +106,14 @@ void PreProcessorImpl::readInput() {
                 m_SimGeo->set_num_nodes_len(std::stoul(value_var));      // number of nodes along the length
             else if (name_var == "num_nodes_wid")
                 m_SimGeo->set_num_nodes_wid(std::stoul(value_var));      // number of nodes along the width
+            else if (name_var == "dx")
+                m_SimGeo->set_dx(std::stod(value_var));                  // spatial step size
             else if (name_var == "datum_plane")
-                m_SimGeo->set_datum(std::stoi(value_var));               // degree of freedom
+                m_SimGeo->set_datum(std::stoi(value_var));               // datum plane
+            else if (name_var == "angle")
+                m_SimGeo->set_angle(std::stod(value_var));               // rotation about origin
             else if (name_var == "dof")
-                m_SimGeo->set_nsd(std::stoi(value_var));                // degree of freedom
+                m_SimGeo->set_nsd(std::stoi(value_var));                 // 2D or 3D
             else if (name_var == "nen")
                 m_SimGeo->set_nen(std::stoi(value_var));                 // number of nodes per element
             else if (name_var == "dt")
@@ -119,11 +150,6 @@ void PreProcessorImpl::readInput() {
     m_SimPar->set_kshear();
     m_SimPar->set_kbend();
 
-    m_SimGeo->set_nn(m_SimGeo->num_nodes_len() * m_SimGeo->num_nodes_wid());
-    m_SimGeo->set_nel(2 * (m_SimGeo->num_nodes_len()-1) * (m_SimGeo->num_nodes_wid()-1));
-    m_SimGeo->set_nhinge((3 * m_SimGeo->nel() - 2 * (m_SimGeo->num_nodes_len() + m_SimGeo->num_nodes_wid() - 2)) / 2);
-    m_SimGeo->set_nedge(3 * m_SimGeo->nel() - m_SimGeo->nhinge());
-
     input_file.close();
 }
 
@@ -133,12 +159,27 @@ void PreProcessorImpl::readGeoFile() {
 }
 
 // initialize coordinates (seeding)
-void PreProcessorImpl::buildNodes() {
-    // increment along length/width
-    double delta_len = m_SimGeo->rec_len() / (double) (m_SimGeo->num_nodes_len() - 1);
-    double delta_wid = m_SimGeo->rec_wid() / (double) (m_SimGeo->num_nodes_wid() - 1);
+void PreProcessorImpl::buildNodes(bool AR_FLAG) {
+    double dx1 = 0, dx2 = 0;
+
+    if (AR_FLAG) {
+        dx1 = m_SimGeo->dx();
+        dx2 = m_SimGeo->dx();
+    }
+    else {
+        // increment along length/width
+        dx1 = m_SimGeo->rec_len() / (double) (m_SimGeo->num_nodes_len() - 1);
+        dx2 = m_SimGeo->rec_wid() / (double) (m_SimGeo->num_nodes_wid() - 1);
+    }
+
     // position of datum plane
     int datum_op = m_SimGeo->datum();
+
+    // rotation of the plane (2D rotation matrix)
+    //    [ T1   -T2 ]  [ q1 ]   =   [ T1 * q1 - T2 * q2 ]
+    //    [ T2    T1 ]  [ q2 ]       [ T2 * q1 + T1 * q2 ]
+    double T1 = cos(m_SimGeo->angle() * M_PI / 180.0);
+    double T2 = sin(m_SimGeo->angle() * M_PI / 180.0);
 
     m_SimGeo->m_nodes.resize(m_SimGeo->nn());
     for (int i = 0; i < m_SimGeo->nn(); i++)
@@ -146,23 +187,28 @@ void PreProcessorImpl::buildNodes() {
 
     for (int i = 0; i < m_SimGeo->num_nodes_wid(); i++) {
         for (int j = 0; j < m_SimGeo->num_nodes_len(); j++) {
+            // coordinates in rotated plane
+            double q1 = (double) j * dx1;
+            double q2 = (double) i * dx2;
+
+            // coordinates in physical plane
             double x = 0.0, y = 0.0, z = 0.0;
             switch (datum_op) {
                 default:
                 case 1:             // xy plane
-                    x = (double) j * delta_len;
-                    y = (double) i * delta_wid;
+                    x = T1 * q1 - T2 * q2;
+                    y = T2 * q1 + T1 * q2;
                     z = 0.0;
                     break;
                 case 2:             // xz plane
-                    x = (double) j * delta_len;
+                    x = T1 * q1 - T2 * q2;
                     y = 0.0;
-                    z = -(double) i * delta_wid;
+                    z = T2 * q1 + T1 * q2;
                     break;
                 case 3:             // yz plane
                     x = 0.0;
-                    y = (double) j * delta_len;
-                    z = -(double) i * delta_wid;
+                    y = T1 * q1 - T2 * q2;
+                    z = T2 * q1 + T1 * q2;
                     break;
             }
             int index = i * m_SimGeo->num_nodes_len() + j;
@@ -259,9 +305,11 @@ void PreProcessorImpl::buildEdgeHingeList() {
             edgeInfo[i] = p->second;
             //std::cout << "Key:[" << p->first << "] Value:[" << p->second << "]\n";
         }
+
         // #element1 must have actual element number
         // #element2 can be -1 (which means the edge isn't shared by 2 elements. It's an edge)
         assert(edgeInfo[0] != -1);
+        
         // first, build the edge and store the pointer to the list
         Element* this_element = &m_SimGeo->m_elementList[edgeInfo[0]-1];
         this_element->find_adjacent_element(key, edgeInfo[1]);

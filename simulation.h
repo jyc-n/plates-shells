@@ -15,7 +15,11 @@ public:
     Simulation();
     ~Simulation();
 
-    void pre_process();
+    void pre_process(
+                    const bool AR_FLAG, const bool K_FLAG,
+                    int num_len, int num_wid,
+                    double k_s, double k_sh, double k_b
+                    );
     void solve();
 
 private:

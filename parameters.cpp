@@ -6,8 +6,8 @@
 // default constructor
 Parameters::Parameters() {
     m_SimGeo = nullptr;
-    m_inputPath = "/Users/chenjingyu/Dropbox/Research/Codes/plates-shells/";
-    m_outputPath = "/Users/chenjingyu/Dropbox/Research/Codes/plates-shells/results/";
+    m_inputPath = "./";
+    m_outputPath = "./results/";
 }
 
 // destructor
@@ -31,8 +31,14 @@ void Parameters::set_thk(const double var)                  { thk_ = var; }
 void Parameters::set_vis(const double var)                  { vis_ = var; }
 void Parameters::set_gconst(const double var)               { gconst_ = var; }
 void Parameters::set_kstretch()                             { ks_ = E_modulus_ * thk_; }
+void Parameters::set_kstretch(const double var)             { ks_ = var; }
 void Parameters::set_kshear()                               { ksh_ = E_modulus_ * thk_; }
+void Parameters::set_kshear(const double var)               { ksh_ = var; }
 void Parameters::set_kbend()                                { kb_ = E_modulus_ * pow(thk_,3) / (24.0 * (1 - pow(nu_,2))); }
+void Parameters::set_kbend(const double var)                { kb_ = var; }
+void Parameters::find_fullOutputPath() {
+    m_outputPath = m_outputPath + std::to_string(m_SimGeo->num_nodes_len()) + "_" + std::to_string(m_SimGeo->num_nodes_wid()) + "/";
+}
 
 // accessors
 std::string   Parameters::inputPath()  const    { return m_inputPath; }

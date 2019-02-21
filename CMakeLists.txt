@@ -1,7 +1,27 @@
+# version requirement
 cmake_minimum_required(VERSION 3.9)
+
+# project name
 project(plates_shells)
 
+# all source codes
+aux_source_directory(${PROJECT_SOURCE_DIR} srcs)
+
+# include directories, and header files
 include_directories(/usr/local/include)
+include_directories(${PROJECT_SOURCE_DIR}/include)
+
+# compiler settings
 set(CMAKE_CXX_STANDARD 11)
 
-add_executable(plates_shells main.cpp pre_processor.h pre_processor.cpp parameters.cpp parameters.h geometry.cpp geometry.h solver.cpp solver.h element.cpp element.h node.h stretching.cpp stretching.h shearing.cpp shearing.h bending.cpp bending.h utilities.h hinge.cpp hinge.h simulation.cpp simulation.h loadbc.cpp loadbc.h edge.cpp edge.h type_alias.h)
+if(${CMAKE_SYSTEM_NAME} MATCHES Darwin)
+    message("Building on Mac OS")
+elseif(${CMAKE_SYSTEM_NAME} MATCHES Linux)
+    message("Building on Linux Ubuntu")
+endif()
+
+# generate executable file
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR})
+add_executable(plates_shells ${srcs})
+
+# link libraries

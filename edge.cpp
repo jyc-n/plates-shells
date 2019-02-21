@@ -4,8 +4,8 @@
 #include "edge.h"
 
 Edge::Edge(Node* n1, Node* n2)
-  : m_node1(n1), m_node2(n2),
-    m_len0(0), m_k(1)
+  : m_k(1),
+    m_node1(n1), m_node2(n2), m_len0(0)
 {
     Eigen::Vector3d m_eVec = *(m_node1->get_xyz()) - *(m_node2->get_xyz());
     m_len0 = m_eVec.norm();

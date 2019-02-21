@@ -3,7 +3,6 @@
 
 #include <vector>
 #include <Eigen/Dense>
-#include "geometry.h"
 
 class Node;
 class Edge;

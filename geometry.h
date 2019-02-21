@@ -23,10 +23,12 @@ public:
     void set_rec_wid(const double var);
     void set_num_nodes_len(const unsigned int var);
     void set_num_nodes_wid(const unsigned int var);
-    void set_nn(const unsigned int var);
-    void set_nel(const unsigned int var);
-    void set_nedge(const unsigned int var);
-    void set_nhinge(const unsigned int var);
+    void set_dx(const double var);
+    void set_angle(const double var);
+    void set_nn();
+    void set_nel();
+    void set_nedge();
+    void set_nhinge();
 
     void findMassVector();
 
@@ -38,6 +40,8 @@ public:
     double        rec_wid() const;
     unsigned int  num_nodes_len() const;
     unsigned int  num_nodes_wid() const;
+    double        dx() const;
+    double        angle() const;
     unsigned int  nn() const;
     unsigned int  nel() const;
     unsigned int  nedge() const;
@@ -45,7 +49,8 @@ public:
 
     bool hingeNumCheck() const;
     bool edgeNumCheck() const;
-    void printGeo();
+    void printMesh();
+    void writeConnectivity();
 
     // public geometry variables
     double m_mi;                          // mass per node
@@ -68,6 +73,8 @@ private:
     int             m_nen;                        // number of nodes per element
     double          m_rec_len;                    // length of the rectangular domain
     double          m_rec_wid;                    // width of the rectangular domain
+    double          m_dx;                         // spatial discretization step size
+    double          m_angle;                      // rotation angle about origin
     unsigned int    m_num_nodes_len;              // number of nodes along the length
     unsigned int    m_num_nodes_wid;              // number of nodes along the width
     unsigned int    m_nn;                         // total number of nodes
@@ -88,10 +95,12 @@ inline void Geometry::set_rec_len(const double var)              { m_rec_len = v
 inline void Geometry::set_rec_wid(const double var)              { m_rec_wid = var; }
 inline void Geometry::set_num_nodes_len(const unsigned int var)  { m_num_nodes_len = var; }
 inline void Geometry::set_num_nodes_wid(const unsigned int var)  { m_num_nodes_wid = var; }
-inline void Geometry::set_nn(const unsigned int var)             { m_nn = var; }
-inline void Geometry::set_nel(const unsigned int var)            { m_nel = var; }
-inline void Geometry::set_nedge(const unsigned int var)          { m_nedge = var; }
-inline void Geometry::set_nhinge(const unsigned int var)         { m_nhinge = var; }
+inline void Geometry::set_dx(const double var)                   { m_dx = var; }
+inline void Geometry::set_angle(const double var)                { m_angle = var; }
+inline void Geometry::set_nn()             { m_nn = m_num_nodes_len * m_num_nodes_wid; }
+inline void Geometry::set_nel()            { m_nel = 2 * (m_num_nodes_len-1) * (m_num_nodes_wid-1); }
+inline void Geometry::set_nedge()          { m_nedge = 3 * m_nel - m_nhinge; }
+inline void Geometry::set_nhinge()         { m_nhinge = (3 * m_nel - 2 * (m_num_nodes_len + m_num_nodes_wid - 2)) / 2; }
 
 inline int           Geometry::datum() const                     { return m_datum; }
 inline int           Geometry::nsd() const                       { return m_nsd; }
@@ -100,6 +109,8 @@ inline double        Geometry::rec_len() const                   { return m_rec_
 inline double        Geometry::rec_wid() const                   { return m_rec_wid; }
 inline unsigned int  Geometry::num_nodes_len() const             { return m_num_nodes_len; }
 inline unsigned int  Geometry::num_nodes_wid() const             { return m_num_nodes_wid; }
+inline double Geometry::dx() const                               { return m_dx; }
+inline double Geometry::angle() const                            { return m_angle; }
 inline unsigned int  Geometry::nn() const                        { return m_nn; }
 inline unsigned int  Geometry::nel() const                       { return m_nel; }
 inline unsigned int  Geometry::nedge() const                     { return m_nedge; }

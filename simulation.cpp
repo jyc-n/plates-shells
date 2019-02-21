@@ -23,8 +23,10 @@ Simulation::~Simulation() {
     delete m_SolverImpl;
 }
 
-void Simulation::pre_process() {
-    m_PreProcessor->PreProcess();
+void Simulation::pre_process(const bool AR_FLAG, const bool K_FLAG,
+                             int num_len, int num_wid,
+                             double k_s, double k_sh, double k_b) {
+    m_PreProcessor->PreProcess(AR_FLAG, K_FLAG, num_len, num_wid, k_s, k_sh, k_b);
     m_SimBC->initBC();
     m_SolverImpl->initSolver();
 }

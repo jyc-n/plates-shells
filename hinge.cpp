@@ -7,10 +7,10 @@
 #include "hinge.h"
 
 Hinge::Hinge(Node* n0, Node* n1, Node* n2, Node* n3, Element* el1, Element* el2)
- : m_node0(n0), m_node1(n1),
-   m_node2(n2), m_node3(n3),
+ : m_const(1), m_k(1),
    m_el1(el1), m_el2(el2),
-   m_k(1), m_const(1)
+   m_node0(n0), m_node1(n1),
+   m_node2(n2), m_node3(n3)
 {
     nodes_order_check();
 

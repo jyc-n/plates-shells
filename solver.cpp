@@ -142,9 +142,7 @@ void SolverImpl::writeToFiles(const int ist) {
             return;
 
     // output files
-    std::string filepath = "/Users/chenjingyu/Dropbox/Research/Codes/plates-shells/results/"
-                            + std::to_string((int) (m_SimGeo->rec_len()/m_SimGeo->rec_wid()*10))
-                            + "_" + std::to_string((int) (m_SimPar->thk()*1000)) + "/";
+    std::string filepath = m_SimPar->outputPath();
     std::string filename;
     char buffer[20] = {0};
     sprintf(buffer, "result%05d.txt", ist);
@@ -180,9 +178,9 @@ void SolverImpl::updateResidual(Eigen::VectorXd& qn, Eigen::VectorXd& qnew, doub
 }
  */
 
-/*
- *    f_i = m_i * (q_i(t_n+1) - q_i(t_n)) / dt^2 - m_i * v(t_n) / dt + dE/dq - F_ext
- */
+//
+//  f_i = m_i * (q_i(t_n+1) - q_i(t_n)) / dt^2 - m_i * v(t_n) / dt + dE/dq - F_ext
+//
 void SolverImpl::findResidual(const VectorNodes& vel, const VectorNodes& x, const VectorNodes& x_new, const VectorN& dEdq, VectorN& rhs) {
     double dt = m_SimPar->dt();
 
@@ -213,9 +211,9 @@ void SolverImpl::findResidual(const VectorNodes& vel, const VectorNodes& x, cons
     }
 }
 
-/*
- *    J_ij = m_i / dt^2 * delta_ij + d^2 E / dq_i dq_j
- */
+//
+//  J_ij = m_i / dt^2 * delta_ij + d^2 E / dq_i dq_j
+//
 void SolverImpl::findJacobian(SparseEntries& entries_full, SpMatrix& jacobian) {
     if (DYNAMIC_SOLVER) {
         double dt = m_SimPar->dt();
@@ -241,9 +239,9 @@ void SolverImpl::findJacobian(SparseEntries& entries_full, SpMatrix& jacobian) {
     jacobian.setFromTriplets(entries_dof.begin(), entries_dof.end());
 }
 
-/*
- *    q_{n+1} = q_n - J \ f
- */
+//
+//  q_{n+1} = q_n - J \ f
+//
 void SolverImpl::findDofnew(const VectorN& rhs, const SpMatrix& jacobian, VectorNodes& x_new) {
     VectorN dq(m_numNeumann); dq.fill(0.0);
 
