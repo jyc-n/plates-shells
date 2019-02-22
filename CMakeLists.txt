@@ -5,7 +5,7 @@ cmake_minimum_required(VERSION 3.9)
 project(plates_shells)
 
 # all source codes
-aux_source_directory(${PROJECT_SOURCE_DIR} srcs)
+aux_source_directory(${PROJECT_SOURCE_DIR}/src srcs)
 
 # include directories, and header files
 include_directories(/usr/local/include)

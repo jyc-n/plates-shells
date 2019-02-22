@@ -275,6 +275,11 @@ void SolverImpl::sparseSolver(const SpMatrix& A, const VectorN& b, VectorN& x) {
         throw "solving failed";
 }
 
+// interface function run pardiso
+void SolverImpl::pardisoInterface(const SpMatrix& A, const VectorN& b, VectorN& x) {
+    //
+}
+
 // ========================================= //
 //          Other helper functions           //
 // ========================================= //

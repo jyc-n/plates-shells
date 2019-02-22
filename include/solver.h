@@ -52,6 +52,7 @@ private:
 
     // solver functions
     void sparseSolver(const SpMatrix& A, const VectorN& b, VectorN& x);
+    void pardisoInterface(const SpMatrix& A, const VectorN& b, VectorN& x);
 
     // helper functions
     void findMappingVectors();

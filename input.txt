@@ -14,7 +14,7 @@ angle = 0                  ! rotate plate about the origin in CCW direction for 
 dof = 3                     ! degree of freedom
 nen = 3                     ! number of nodes per element (triangular mesh)
 dt = 1e-3                   ! step size
-nst = 1000                   ! total number of time steps (in dynamic solver); OR total number of increment (in static solver)
+nst = 10                   ! total number of time steps (in dynamic solver); OR total number of increment (in static solver)
 iter_lim = 10                ! maximum number of iterations allowed per time step
 ctol = 1e-1                 ! scaling factor multiplied to tolerance criteria (dynamic); OR absolute convergence criteria (static)
 
