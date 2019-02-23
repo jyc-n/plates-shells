@@ -233,8 +233,16 @@ void SolverImpl::findJacobian(SparseEntries& entries_full, SpMatrix& jacobian) {
     for (int p = 0; p < entries_full.size(); p++) {
         int ifull = entries_full[p].row(), jfull = entries_full[p].col();
         int idof = m_fullToDofs[ifull], jdof = m_fullToDofs[jfull];
-        if (idof != -1 && jdof != -1)
+        if (idof != -1 && jdof != -1) {
+            // NOTE: 
+            // for Pardiso solver, only store the upper triangular part of jacobian!!
+            if (SOLVER_TYPE == 1) {
+                // skip the lower triangular part
+                if (idof > jdof)
+                    continue;
+            }
             entries_dof.emplace_back(Eigen::Triplet<double>(idof, jdof, entries_full[p].value()));
+        }
     }
     jacobian.setFromTriplets(entries_dof.begin(), entries_dof.end());
 }
@@ -242,11 +250,14 @@ void SolverImpl::findJacobian(SparseEntries& entries_full, SpMatrix& jacobian) {
 //
 //  q_{n+1} = q_n - J \ f
 //
-void SolverImpl::findDofnew(const VectorN& rhs, const SpMatrix& jacobian, VectorNodes& x_new) {
+void SolverImpl::findDofnew(const VectorN& rhs, SpMatrix& jacobian, VectorNodes& x_new) {
     VectorN dq(m_numNeumann); dq.fill(0.0);
 
     //Timer t1;
-    sparseSolver(jacobian, rhs, dq);
+    if (SOLVER_TYPE == 0)
+        sparseSolver(jacobian, rhs, dq);
+    else if (SOLVER_TYPE == 1)
+        pardisoInterface(jacobian, rhs, dq);
     //std::cout << t1.elapsed() << '\t';
 
     // map the free part dof vector back to the full dof vector
@@ -263,21 +274,187 @@ void SolverImpl::findDofnew(const VectorN& rhs, const SpMatrix& jacobian, Vector
 //              Solver functions             //
 // ========================================= //
 
-// TODO: change to a more efficient solver
-void SolverImpl::sparseSolver(const SpMatrix& A, const VectorN& b, VectorN& x) {
+// conjugate gradient solver from Eigen
+void SolverImpl::sparseSolver(const SpMatrix& A, const VectorN& rhs, VectorN& u) {
     Eigen::ConjugateGradient<SpMatrix, Eigen::Upper> CGsolver;
     CGsolver.compute(A);
     if (CGsolver.info() != Eigen::Success)
         throw "decomposition failed";
 
-    x = CGsolver.solve(b);
+    u = CGsolver.solve(rhs);
     if (CGsolver.info() != Eigen::Success)
         throw "solving failed";
 }
 
-// interface function run pardiso
-void SolverImpl::pardisoInterface(const SpMatrix& A, const VectorN& b, VectorN& x) {
-    //
+// Pardiso solver interface
+void SolverImpl::pardisoInterface(SpMatrix& A, const VectorN& rhs, VectorN& u) {
+    // transform the sparse matrix to compressed view
+    A.makeCompressed();
+
+    int n = m_numNeumann;
+    int nonzeros = A.nonZeros();
+    int innerSize = A.innerSize();
+    int outerSize = A.outerSize();
+
+    /* Matrix data. */
+    int* ia = new int[n+1];
+    int* ja = new int[nonzeros];
+    double* a = new double[nonzeros];
+
+    int      nnz = ia[n];
+    int      mtype = -2;        /* Real symmetric matrix */
+
+    /* RHS and solution vectors. */
+    double* b = new double[n];
+    double* x = new double[n];
+
+    // construct CRS info from Eigen
+    for (int i = 0; i < n+1; i++)
+        ia[i] = A.outerIndexPtr()[i];
+    
+    for (int i = 0; i < nonzeros; i++)
+        ja[i] = A.innerIndexPtr()[i];
+
+    for (int i = 0; i < nonzeros; i++)
+        a[i] = A.valuePtr()[i];
+
+    for (int i = 0; i < n; i++)
+        b[i] = rhs(i);
+
+
+    int      nrhs = 1;          /* Number of right hand sides. */
+
+    /* Internal solver memory pointer pt,                  */
+    /* 32-bit: int pt[64]; 64-bit: long int pt[64]         */
+    /* or void *pt[64] should be OK on both architectures  */ 
+    void    *pt[64]; 
+
+    /* Pardiso control parameters. */
+    int      iparm[64];
+    double   dparm[64];
+    int      maxfct, mnum, phase, error, msglvl, solver;
+
+    /* Number of processors. */
+    int      num_procs;
+
+    /* Auxiliary variables. */
+    char    *var;
+    int      i;
+
+    double   ddum;              /* Double dummy */
+    int      idum;              /* Integer dummy. */
+
+   
+    /* -------------------------------------------------------------------- */
+    /* ..  Setup Pardiso control parameters.                                */
+    /* -------------------------------------------------------------------- */
+    error = 0;
+    solver = 0; /* use sparse direct solver */
+    pardisoinit (pt,  &mtype, &solver, iparm, dparm, &error); 
+
+    if (error != 0) 
+    {
+        if (error == -10 )
+           throw "No license file found \n";
+        if (error == -11 )
+           throw "License is expired \n";
+        if (error == -12 )
+           throw "Wrong username or hostname \n";
+         exit(1); 
+    }
+    
+    /* Numbers of processors, value of OMP_NUM_THREADS */
+    var = getenv("OMP_NUM_THREADS");
+    if(var != NULL)
+        sscanf( var, "%d", &num_procs );
+    else {
+        throw "Set environment OMP_NUM_THREADS to 1";
+        exit(1);
+    }
+    iparm[2]  = num_procs;
+
+    maxfct = 1;		/* Maximum number of numerical factorizations.  */
+    mnum   = 1;         /* Which factorization to use. */
+    
+    msglvl = 0;         /* Print statistical information  */
+    error  = 0;         /* Initialize error flag */
+
+    /* -------------------------------------------------------------------- */
+    /* ..  Convert matrix from 0-based C-notation to Fortran 1-based        */
+    /*     notation.                                                        */
+    /* -------------------------------------------------------------------- */
+    for (i = 0; i < n+1; i++) {
+        ia[i] += 1;
+    }
+    for (i = 0; i < nnz; i++) {
+        ja[i] += 1;
+    }
+
+    /* -------------------------------------------------------------------- */
+    /* ..  Reordering and Symbolic Factorization.  This step also allocates */
+    /*     all memory that is necessary for the factorization.              */
+    /* -------------------------------------------------------------------- */
+    phase = 11; 
+
+    pardiso (pt, &maxfct, &mnum, &mtype, &phase,
+	         &n, a, ia, ja, &idum, &nrhs,
+             iparm, &msglvl, &ddum, &ddum, &error, dparm);
+    
+    if (error != 0) {
+        std::cout << "\nERROR during symbolic factorization: " << error << std::endl;
+        exit(11);
+    }
+   
+    /* -------------------------------------------------------------------- */
+    /* ..  Numerical factorization.                                         */
+    /* -------------------------------------------------------------------- */    
+    phase = 22;
+    iparm[32] = 1; /* compute determinant */
+
+    pardiso (pt, &maxfct, &mnum, &mtype, &phase,
+             &n, a, ia, ja, &idum, &nrhs,
+             iparm, &msglvl, &ddum, &ddum, &error,  dparm);
+   
+    if (error != 0) {
+        std::cout << "\nERROR during numerical factorization: " << error << std::endl;
+        exit(12);
+    }
+
+    /* -------------------------------------------------------------------- */    
+    /* ..  Back substitution and iterative refinement.                      */
+    /* -------------------------------------------------------------------- */    
+    phase = 33;
+
+    iparm[7] = 1;       /* Max numbers of iterative refinement steps. */
+   
+    pardiso (pt, &maxfct, &mnum, &mtype, &phase,
+             &n, a, ia, ja, &idum, &nrhs,
+             iparm, &msglvl, b, x, &error,  dparm);
+   
+    if (error != 0) {
+        std::cout << "\nERROR during solution: " << error << std::endl;
+        exit(13);
+    }
+    
+    // assign solutions
+    for (i = 0; i < n; i++) {
+        u(i) = x[i];
+    }
+
+    /* -------------------------------------------------------------------- */    
+    /* ..  Termination and release of memory.                               */
+    /* -------------------------------------------------------------------- */    
+    phase = -1;                 /* Release internal memory. */
+    
+    pardiso (pt, &maxfct, &mnum, &mtype, &phase,
+             &n, &ddum, ia, ja, &idum, &nrhs,
+             iparm, &msglvl, &ddum, &ddum, &error,  dparm);
+
+    delete [] ia;
+    delete [] ja;
+    delete [] a;
+    delete [] x;
+    delete [] b;
 }
 
 // ========================================= //

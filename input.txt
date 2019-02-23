@@ -1,8 +1,8 @@
 ! this part will not be used if run program with arguments
 rec_len = 0.1                 ! length of the rectangular domain
 rec_wid = 0.1                 ! width of the rectangular domain
-num_nodes_len = 10           ! number of nodes along the length
-num_nodes_wid = 10          ! number of nodes along the width
+num_nodes_len = 3           ! number of nodes along the length
+num_nodes_wid = 3          ! number of nodes along the width
 
 ! instead elements will have equal step size in 2 planar directions
 dx = 0.01                  ! spatial discretization step size
@@ -26,7 +26,7 @@ vis = 10                     ! viscosity
 gconst = 9.81               ! gravitational acceleration constant
 
 solver_op = 1               ! solver option 0-quasistatic, 1-dynamic
-outop = 1                   ! output option 0-no output, 1-write output
+outop = 0                   ! output option 0-no output, 1-write output
 out_freq = 1                ! write output every (#) steps; -1-only output last step, 1-every step
 info_style = 1              ! console output style 0-progress bar+log file, 1-print on console
 

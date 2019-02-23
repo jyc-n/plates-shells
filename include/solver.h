@@ -9,6 +9,14 @@ class Element;
 class Geometry;
 class Boundary;
 
+/* PARDISO prototype. */
+extern "C" void pardisoinit (void   *, int    *,   int *, int *, double *, int *);
+extern "C" void pardiso     (void   *, int    *,   int *, int *,    int *, int *, 
+                            double *, int    *,    int *, int *,   int *, int *,
+                            int *, double *, double *, int *, double *);
+
+const int SOLVER_TYPE = 1;      // 0 - Eigen CG solver, 1 - Pardiso (only works on linux)
+
 class SolverImpl {
 
 public:
@@ -48,11 +56,11 @@ private:
     void findDEnergy(VectorN& dEdq, SparseEntries& entries_full);
     void findResidual(const VectorNodes& vel, const VectorNodes& x, const VectorNodes& x_new, const VectorN& dEdq, VectorN& rhs);   // dynamic
     void findJacobian(SparseEntries& entries_full, SpMatrix& jacobian);
-    void findDofnew(const VectorN& rhs, const SpMatrix& jacobian, VectorNodes& x_new);
+    void findDofnew(const VectorN& rhs, SpMatrix& jacobian, VectorNodes& x_new);
 
     // solver functions
-    void sparseSolver(const SpMatrix& A, const VectorN& b, VectorN& x);
-    void pardisoInterface(const SpMatrix& A, const VectorN& b, VectorN& x);
+    void sparseSolver(const SpMatrix& A, const VectorN& rhs, VectorN& u);
+    void pardisoInterface(SpMatrix& A, const VectorN& rhs, VectorN& u);
 
     // helper functions
     void findMappingVectors();
