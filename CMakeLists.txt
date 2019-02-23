@@ -29,7 +29,7 @@ if(${CMAKE_SYSTEM_NAME} MATCHES Darwin)
                     /usr/local/Cellar/gcc/8.2.0/bin/
                     /opt/intel/compilers_and_libraries/mac/lib/)
 
-    target_link_libraries(pardiso_test pardiso600-MACOS-X86-64 ${LAPACK_LIBRARIE} iomp5)
+    target_link_libraries(plates_shells pardiso600-MACOS-X86-64 ${LAPACK_LIBRARIE} iomp5)
 
 # Linux Ubuntu
 elseif(${CMAKE_SYSTEM_NAME} MATCHES Linux)
@@ -50,5 +50,5 @@ elseif(${CMAKE_SYSTEM_NAME} MATCHES Linux)
     find_package(Threads REQUIRED)
     set(pthread ${CMAKE_THREAD_LIBS_INIT})
 
-    target_link_libraries(pardiso_test pardiso600-GNU720-X86-64 ${LAPACK_LIBRARIES} gfortran pthread)
+    target_link_libraries(plates_shells pardiso600-GNU720-X86-64 ${LAPACK_LIBRARIES} gfortran pthread)
 endif()
