@@ -4,6 +4,9 @@
 #include <string>
 #include <algorithm>
 #include <cassert>
+#include <cstdio>
+#include <cstdlib>
+#include <cmath>
 
 #include "solver.h"
 #include "parameters.h"
@@ -99,6 +102,11 @@ bool SolverImpl::step(const int ist, VectorNodes& x, VectorNodes& x_new, VectorN
 }
 
 void SolverImpl::dynamic() {
+    if (SOLVER_TYPE == 0)
+        std::cout << "Eigen CG solver will be used" << std::endl;
+    else if (SOLVER_TYPE == 1)
+        std::cout << "Pardiso solver will be used" << std::endl;
+    
     Timer t_all(true);
 
     // vector of nodal position t_{n+1}
@@ -293,27 +301,25 @@ void SolverImpl::pardisoInterface(SpMatrix& A, const VectorN& rhs, VectorN& u) {
 
     int n = m_numNeumann;
     int nonzeros = A.nonZeros();
-    int innerSize = A.innerSize();
-    int outerSize = A.outerSize();
+    // int innerSize = A.innerSize();
+    // int outerSize = A.outerSize();
 
     /* Matrix data. */
     int* ia = new int[n+1];
     int* ja = new int[nonzeros];
     double* a = new double[nonzeros];
 
-    int      nnz = ia[n];
-    int      mtype = -2;        /* Real symmetric matrix */
-
     /* RHS and solution vectors. */
     double* b = new double[n];
     double* x = new double[n];
 
-    // construct CRS info from Eigen
+    // Construct CRS info from Eigen
+    // Convert matrix from 0-based C-notation to Fortran 1-based notation
     for (int i = 0; i < n+1; i++)
-        ia[i] = A.outerIndexPtr()[i];
+        ia[i] = A.outerIndexPtr()[i] + 1;
     
     for (int i = 0; i < nonzeros; i++)
-        ja[i] = A.innerIndexPtr()[i];
+        ja[i] = A.innerIndexPtr()[i] + 1;
 
     for (int i = 0; i < nonzeros; i++)
         a[i] = A.valuePtr()[i];
@@ -322,6 +328,8 @@ void SolverImpl::pardisoInterface(SpMatrix& A, const VectorN& rhs, VectorN& u) {
         b[i] = rhs(i);
 
 
+    // int      nnz = ia[n];
+    int      mtype = -2;        /* Real symmetric matrix */
     int      nrhs = 1;          /* Number of right hand sides. */
 
     /* Internal solver memory pointer pt,                  */
@@ -355,12 +363,12 @@ void SolverImpl::pardisoInterface(SpMatrix& A, const VectorN& rhs, VectorN& u) {
     if (error != 0) 
     {
         if (error == -10 )
-           throw "No license file found \n";
+           printf("No license file found \n");
         if (error == -11 )
-           throw "License is expired \n";
+           printf("License is expired \n");
         if (error == -12 )
-           throw "Wrong username or hostname \n";
-         exit(1); 
+           printf("Wrong username or hostname \n");
+        exit(1);
     }
     
     /* Numbers of processors, value of OMP_NUM_THREADS */
@@ -368,7 +376,7 @@ void SolverImpl::pardisoInterface(SpMatrix& A, const VectorN& rhs, VectorN& u) {
     if(var != NULL)
         sscanf( var, "%d", &num_procs );
     else {
-        throw "Set environment OMP_NUM_THREADS to 1";
+        printf("Set environment OMP_NUM_THREADS to 1");
         exit(1);
     }
     iparm[2]  = num_procs;
@@ -379,30 +387,19 @@ void SolverImpl::pardisoInterface(SpMatrix& A, const VectorN& rhs, VectorN& u) {
     msglvl = 0;         /* Print statistical information  */
     error  = 0;         /* Initialize error flag */
 
-    /* -------------------------------------------------------------------- */
-    /* ..  Convert matrix from 0-based C-notation to Fortran 1-based        */
-    /*     notation.                                                        */
-    /* -------------------------------------------------------------------- */
-    for (i = 0; i < n+1; i++) {
-        ia[i] += 1;
-    }
-    for (i = 0; i < nnz; i++) {
-        ja[i] += 1;
-    }
-
-    /* -------------------------------------------------------------------- */
+    //* -------------------------------------------------------------------- */
     /* ..  Reordering and Symbolic Factorization.  This step also allocates */
     /*     all memory that is necessary for the factorization.              */
     /* -------------------------------------------------------------------- */
     phase = 11; 
 
     pardiso (pt, &maxfct, &mnum, &mtype, &phase,
-	         &n, a, ia, ja, &idum, &nrhs,
+	     &n, a, ia, ja, &idum, &nrhs,
              iparm, &msglvl, &ddum, &ddum, &error, dparm);
     
     if (error != 0) {
-        std::cout << "\nERROR during symbolic factorization: " << error << std::endl;
-        exit(11);
+        printf("\nERROR during symbolic factorization: %d", error);
+        exit(1);
     }
    
     /* -------------------------------------------------------------------- */
@@ -416,8 +413,8 @@ void SolverImpl::pardisoInterface(SpMatrix& A, const VectorN& rhs, VectorN& u) {
              iparm, &msglvl, &ddum, &ddum, &error,  dparm);
    
     if (error != 0) {
-        std::cout << "\nERROR during numerical factorization: " << error << std::endl;
-        exit(12);
+        printf("\nERROR during numerical factorization: %d", error);
+        exit(2);
     }
 
     /* -------------------------------------------------------------------- */    
@@ -432,11 +429,10 @@ void SolverImpl::pardisoInterface(SpMatrix& A, const VectorN& rhs, VectorN& u) {
              iparm, &msglvl, b, x, &error,  dparm);
    
     if (error != 0) {
-        std::cout << "\nERROR during solution: " << error << std::endl;
-        exit(13);
+        printf("\nERROR during solution: %d", error);
+        exit(3);
     }
     
-    // assign solutions
     for (i = 0; i < n; i++) {
         u(i) = x[i];
     }

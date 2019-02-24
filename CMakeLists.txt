@@ -13,6 +13,13 @@ include_directories(${PROJECT_SOURCE_DIR}/include)
 
 # compiler settings
 set(CMAKE_CXX_STANDARD 14)
+if(NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE Release)
+endif()
+
+# set(CMAKE_CXX_FLAGS "-Wall -Wextra")
+set(CMAKE_CXX_FLAGS_DEBUG "-g")
+set(CMAKE_CXX_FLAGS_RELEASE "-Ofast")
 
 # generate executable file
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR})

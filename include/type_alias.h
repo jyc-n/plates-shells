@@ -10,7 +10,7 @@
 using VectorNodes = std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> >;
 using VectorMesh = std::vector<Eigen::Vector3i, Eigen::aligned_allocator<Eigen::Vector3i> >;
 using VectorN = Eigen::VectorXd;
-using SpMatrix = Eigen::SparseMatrix<double>;
+using SpMatrix = Eigen::SparseMatrix<double, Eigen::RowMajor>;
 using SparseEntries = std::vector<Eigen::Triplet<double> >;
 
 #endif // TYPE_ALIAS_H
