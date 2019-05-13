@@ -15,7 +15,7 @@ extern "C" void pardiso     (void   *, int    *,   int *, int *,    int *, int *
                             double *, int    *,    int *, int *,   int *, int *,
                             int *, double *, double *, int *, double *);
 
-const int SOLVER_TYPE = 1;      // 0 - Eigen CG solver, 1 - Pardiso (only works on linux)
+const int SOLVER_TYPE = 1;      // 0 - Eigen CG solver, 1 - Pardiso
 
 class SolverImpl {
 

@@ -19,7 +19,7 @@ Stretching::Stretching(Edge* ptr, double E, double D) {
     m_ne0 = m_ne0 / m_len;
 
     // FIXME: implement inextensible cloth, remove *100
-    m_ks = E * M_PI/4.0 * pow(D, 2) / m_len;
+    m_ks = E * M_PI/4.0 * pow(D, 2) / m_len * 100;
 }
 
 // -----------------------------------------------------------------------

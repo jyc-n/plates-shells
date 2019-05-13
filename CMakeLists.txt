@@ -30,13 +30,22 @@ if(${CMAKE_SYSTEM_NAME} MATCHES Darwin)
     message("=====Building on Mac OS=====")
     # lapack
     find_package(LAPACK REQUIRED)
+    find_library(
+        PARADISO_LIB
+        NAMES libpardiso600-MACOS-X86-64 pardiso600-MACOS-X86-64
+        HINTS "${PROJECT_SOURCE_DIR}/lib"
+        NO_DEFAULT_PATH
+    )
+    message(STATUS "PARADISO_LIB: [${PARADISO_LIB}]")
+    find_library(
+        OMP_LIB
+        NAMES libiomp5 iomp5
+        HINTS "${PROJECT_SOURCE_DIR}/lib"
+        NO_DEFAULT_PATH
+    )
+    message(STATUS "OMP_LIB: [${OMP_LIB}]")
     # link libraries
-    link_directories(
-                    /usr/local/bin/
-                    /usr/local/Cellar/gcc/8.2.0/bin/
-                    /opt/intel/compilers_and_libraries/mac/lib/)
-
-    target_link_libraries(plates_shells pardiso600-MACOS-X86-64 ${LAPACK_LIBRARIE} iomp5)
+    target_link_libraries(plates_shells ${PARADISO_LIB} ${LAPACK_LIBRARIE} ${OMP_LIB})
 
 # Linux Ubuntu
 elseif(${CMAKE_SYSTEM_NAME} MATCHES Linux)

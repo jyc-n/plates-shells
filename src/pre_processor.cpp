@@ -7,6 +7,7 @@
 #include <cassert>
 #include <unordered_map>
 #include "pre_processor.h"
+#include "arguments.h"
 #include "parameters.h"
 #include "geometry.h"
 #include "node.h"
@@ -31,35 +32,32 @@ PreProcessorImpl::PreProcessorImpl(Parameters* SimPar, Geometry* SimGeo) {
 }
 
 // main pre-processor function
-void PreProcessorImpl::PreProcess(
-                    const bool AR_FLAG, const bool K_FLAG,
-                    int num_len, int num_wid,
-                    double k_s, double k_sh, double k_b
-                    ) {
+void PreProcessorImpl::PreProcess(Arguments t_args) {
     // read input file
     readInput();
-    // overried aspect ratio
-    if (AR_FLAG) {
-        m_SimGeo->set_num_nodes_len(num_len);
-        m_SimGeo->set_num_nodes_wid(num_wid);
+    // specify number of nodes
+    if (t_args.argc == NUMS) {
+        m_SimGeo->set_num_nodes_len(t_args.num_len);
+        m_SimGeo->set_num_nodes_wid(t_args.num_wid);
     }
-    // override material constants
-    if (K_FLAG) {
-        m_SimPar->set_kstretch(k_s);
-        m_SimPar->set_kshear(k_sh);
-        m_SimPar->set_kbend(k_b);
+    // specify number of nodes and dimensions
+    else if (t_args.argc == NUMS_DIMS) {
+        m_SimGeo->set_num_nodes_len(t_args.num_len);
+        m_SimGeo->set_num_nodes_wid(t_args.num_wid);
+        m_SimGeo->set_rec_len(t_args.len);
+        m_SimGeo->set_rec_wid(t_args.wid);
     }
-    m_SimPar->find_fullOutputPath();
+    m_SimPar->find_fullOutputPath(m_SimGeo->num_nodes_len(), m_SimGeo->num_nodes_wid());
 
     m_SimGeo->set_nn();
     m_SimGeo->set_nel();
     m_SimGeo->set_nhinge();
     m_SimGeo->set_nedge();
 
-    m_SimPar->print_parameters();
+    print_parameters();
 
     std::cout << "input file read, preprocessor starts" << std::endl;
-    buildNodes(AR_FLAG);
+    buildNodes(t_args.argc);
     std::cout << "seeding completed" << std::endl;
     buildMesh();
     std::cout << "meshing completed\nbuilding node, element, edge, hinge lists (this may take a while)" << std::endl;
@@ -159,18 +157,21 @@ void PreProcessorImpl::readGeoFile() {
 }
 
 // initialize coordinates (seeding)
-void PreProcessorImpl::buildNodes(bool AR_FLAG) {
+void PreProcessorImpl::buildNodes(int opt) {
     double dx1 = 0, dx2 = 0;
 
-    if (AR_FLAG) {
-        dx1 = m_SimGeo->dx();
-        dx2 = m_SimGeo->dx();
-    }
-    else {
-        // increment along length/width
-        dx1 = m_SimGeo->rec_len() / (double) (m_SimGeo->num_nodes_len() - 1);
-        dx2 = m_SimGeo->rec_wid() / (double) (m_SimGeo->num_nodes_wid() - 1);
-    }
+    // if (AR_FLAG) {
+    //     dx1 = m_SimGeo->dx();
+    //     dx2 = m_SimGeo->dx();
+    // }
+    // else {
+    //     // increment along length/width
+    //     dx1 = m_SimGeo->rec_len() / (double) (m_SimGeo->num_nodes_len() - 1);
+    //     dx2 = m_SimGeo->rec_wid() / (double) (m_SimGeo->num_nodes_wid() - 1);
+    // }
+    // increment along length/width
+    dx1 = m_SimGeo->rec_len() / (double) (m_SimGeo->num_nodes_len() - 1);
+    dx2 = m_SimGeo->rec_wid() / (double) (m_SimGeo->num_nodes_wid() - 1);
 
     // position of datum plane
     int datum_op = m_SimGeo->datum();
@@ -272,7 +273,7 @@ void PreProcessorImpl::buildEdgeHingeList() {
     // use open hash table to store edge indices and the adjacent elements
     // use an additional vector to store all the keys (edge indices) of the hash table
     for (auto &iel : m_SimGeo->m_elementList) {
-        // find and save all edge indices     
+        // find and save all edge indices
         iel.find_edge_index();
         for (int iedge = 0; iedge < 3; iedge++) {
             edgeHashTable.emplace(iel.get_edge_index(iedge), iel.get_element_num());
@@ -289,7 +290,7 @@ void PreProcessorImpl::buildEdgeHingeList() {
     std::sort(edgeIndex.begin(), edgeIndex.end());
     auto last = std::unique(edgeIndex.begin(), edgeIndex.end());
     edgeIndex.erase(last, edgeIndex.end());
-    
+
     // traverse the non-empty buckets of the hash table
     for (int &key : edgeIndex) {
         //std::cout << "key is " << *key << '\n';
@@ -309,12 +310,12 @@ void PreProcessorImpl::buildEdgeHingeList() {
         // #element1 must have actual element number
         // #element2 can be -1 (which means the edge isn't shared by 2 elements. It's an edge)
         assert(edgeInfo[0] != -1);
-        
+
         // first, build the edge and store the pointer to the list
         Element* this_element = &m_SimGeo->m_elementList[edgeInfo[0]-1];
         this_element->find_adjacent_element(key, edgeInfo[1]);
         m_SimGeo->m_edgeList.emplace_back(this_element->build_edges(key));
-        
+
         // if this is a hinge, build the hinge and store the pointer to the list
         if (edgeInfo[1] != -1) {
             Element* adj_element = &m_SimGeo->m_elementList[edgeInfo[1]-1];
@@ -325,6 +326,16 @@ void PreProcessorImpl::buildEdgeHingeList() {
     // NOTE: edge/hinge number check only works for structured rectangular mesh
     assert(m_SimGeo->edgeNumCheck());
     assert(m_SimGeo->hingeNumCheck());
+}
+
+void PreProcessorImpl::print_parameters() {
+    std::cout << "\n---------------------------------------" << std::endl;
+    std::cout << "\t\tList of parameters" << '\n';
+    std::cout << "\t\t# of Nodes:       " << m_SimGeo->nn() << '\n';
+    std::cout << "\t\t# of Elements:    " << m_SimGeo->nel() << '\n';
+    std::cout << "\t\tStep size:        " << m_SimPar->dt() << '\n';
+    std::cout << "\t\tTotal # of steps: " << m_SimPar->nst() << '\n';
+    std::cout << "---------------------------------------\n" << std::endl;
 }
 
 // ========================================= //

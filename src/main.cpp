@@ -1,40 +1,33 @@
 #include <iostream>
 #include <cstdlib>
+#include "arguments.h"
 #include "simulation.h"
 
 int main(int argc, char* argv[]) {
     try {
-        bool AR_OVERRIDE = false, K_OVERRIDE = false;
-        int num_len = 0, num_wid = 0;
-        double k_s = 0.0, k_sh = 0.0, k_b = 0.0;
+        Arguments t_args(argc);
+
         switch (argc) {
             // every parameters read from input.txt
-            case 1:
+            case DEFAULT:
                 break;
 
             // given #nodes along length and width
-            case 3:
-                num_len = atoi(argv[1]);
-                num_wid = atoi(argv[2]);
-                AR_OVERRIDE = true;
+            case NUMS:
+                t_args.getArgs(atoi(argv[1]), atoi(argv[2]));
                 break;
 
-            // given #nodes along length and width, and k_s k_sh k_b
-            case 6:
-                num_len = atoi(argv[1]);
-                num_wid = atoi(argv[2]);
-                k_s     = atof(argv[3]);
-                k_sh    = atof(argv[4]);
-                k_b     = atof(argv[5]);
-                AR_OVERRIDE = true;
-                K_OVERRIDE = true;
+            // given #nodes along length and width, and length,width
+            case NUMS_DIMS:
+                t_args.getArgs(atoi(argv[1]), atoi(argv[2]), atof(argv[3]), atof(argv[4]));
                 break;
         
             default:
                 throw "wrong arguments!";
         }
-        Simulation SimCase;
-        SimCase.pre_process(AR_OVERRIDE, K_OVERRIDE, num_len, num_wid, k_s, k_sh, k_b);
+
+        Simulation SimCase(t_args.inputPath, t_args.outputPath);
+        SimCase.pre_process(t_args);
         SimCase.solve();
     }
     catch (const char* msg) {

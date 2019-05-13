@@ -164,23 +164,45 @@ void Boundary::buildBCinfo() {
 void Boundary::findDirichletDofs() {
 
 
-    // Hanging cloth corner
-    for (int i = 0; i < 6; i++)
-        m_dirichletDofs.push_back(i);
-    for (int i = m_SimGeo->num_nodes_len()*3; i < m_SimGeo->num_nodes_len()*3+6; i++)
-        m_dirichletDofs.push_back(i);
-    /*
-    // clamped bottom edge
-    for (int i = 1; i <= m_SimGeo->num_nodes_len() * 2; i++) {
-        for (int j = 0; j < 3; j++)
-            m_dirichletDofs.push_back(3*(i-1)+j);
-    }
+    // // Hanging cloth corner
+    // for (int i = 0; i < 6; i++)
+    //     m_dirichletDofs.push_back(i);
+    // for (int i = m_SimGeo->num_nodes_len()*3; i < m_SimGeo->num_nodes_len()*3+6; i++)
+    //     m_dirichletDofs.push_back(i);
 
-    // Hanging cloth middle
-        int mid = m_SimGeo->num_nodes_len() / 2;
-        for (int i = mid; i < mid+6; i++)
-            m_dirichletDofs.push_back(i);
-    */
+    // Hanging corner node only
+    for (int i = 0; i < 3; i++)
+        m_dirichletDofs.push_back(i);
+
+    // Hanging two corners
+//    for (int i = 0; i < 3; i++) {
+//        m_dirichletDofs.push_back(i);
+//        m_dirichletDofs.push_back(i + 3*(m_SimGeo->num_nodes_len()-1));
+//    }
+    
+    // Middle
+    //  int mid = m_SimGeo->num_nodes_len() / 2;
+    //  int mid_dof = 3 * (m_SimGeo->num_nodes_len() * (mid-1) + mid - 1);
+    //  for (int i = 0; i < 18; i++) {
+    //      m_dirichletDofs.push_back(i+mid_dof - 6*m_SimGeo->num_nodes_len());
+    //      m_dirichletDofs.push_back(i+mid_dof - 3*m_SimGeo->num_nodes_len());
+    //      m_dirichletDofs.push_back(i+mid_dof);
+    //      m_dirichletDofs.push_back(i+mid_dof + 3*m_SimGeo->num_nodes_len());
+    //      m_dirichletDofs.push_back(i+mid_dof + 6*m_SimGeo->num_nodes_len());
+    //      m_dirichletDofs.push_back(i+mid_dof + 9*m_SimGeo->num_nodes_len());
+    //  }
+
+    // clamped bottom edge
+    // for (int i = 1; i <= m_SimGeo->num_nodes_len() * 2; i++) {
+    //     for (int j = 0; j < 3; j++)
+    //         m_dirichletDofs.push_back(3*(i-1)+j);
+    // }
+
+    // // Hanging cloth middle
+    //     int mid = m_SimGeo->num_nodes_len() / 2;
+    //     for (int i = mid; i < mid+6; i++)
+    //         m_dirichletDofs.push_back(i);
+    
     //for (auto p = m_dirichletDofs.begin(); p != m_dirichletDofs.end(); p++)
     //    std::cout << *p << '\n';
 }

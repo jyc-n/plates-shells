@@ -7,11 +7,10 @@ class Geometry;
 
 class Parameters {
 public:
-    Parameters();
+    Parameters(const std::string& t_input, const std::string& t_output);
     ~Parameters();
 
     // modifier
-    void link_geo(Geometry* geo);
     void set_outop(const bool var);
     void set_solver_op(const bool var);
     void set_info_style(const bool var);
@@ -32,7 +31,7 @@ public:
     void set_kshear(const double var);
     void set_kbend();
     void set_kbend(const double var);
-    void find_fullOutputPath();
+    void find_fullOutputPath(int t_nlen, int t_nwid);
 
     // accessor
     std::string   inputPath()  const;
@@ -54,9 +53,7 @@ public:
     double        kstretch() const;
     double        kshear() const;
     double        kbend() const;
-
-    // other functions
-    void print_parameters();
+    
 
 private:
 

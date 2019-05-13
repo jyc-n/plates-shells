@@ -1,13 +1,11 @@
 #include <iostream>
 #include <cmath>
 #include "parameters.h"
-#include "geometry.h"
 
 // default constructor
-Parameters::Parameters() {
-    m_SimGeo = nullptr;
-    m_inputPath = "./";
-    m_outputPath = "./results/";
+Parameters::Parameters(const std::string& t_input, const std::string& t_output) {
+    m_inputPath = t_input;
+    m_outputPath = t_output;
 }
 
 // destructor
@@ -15,7 +13,6 @@ Parameters::~Parameters()
 {}
 
 // modifiers
-void Parameters::link_geo(Geometry* geo)                    { m_SimGeo = geo; }
 void Parameters::set_outop(const bool var)                  { outop_ = var; }
 void Parameters::set_solver_op(const bool var)              { solver_op_ = var; }
 void Parameters::set_info_style(const bool var)             { info_style_ = var; }
@@ -36,8 +33,8 @@ void Parameters::set_kshear()                               { ksh_ = E_modulus_ 
 void Parameters::set_kshear(const double var)               { ksh_ = var; }
 void Parameters::set_kbend()                                { kb_ = E_modulus_ * pow(thk_,3) / (24.0 * (1 - pow(nu_,2))); }
 void Parameters::set_kbend(const double var)                { kb_ = var; }
-void Parameters::find_fullOutputPath() {
-    m_outputPath = m_outputPath + std::to_string(m_SimGeo->num_nodes_len()) + "_" + std::to_string(m_SimGeo->num_nodes_wid()) + "/";
+void Parameters::find_fullOutputPath(int t_nlen, int t_nwid) {
+    m_outputPath = m_outputPath + std::to_string(t_nlen) + "_" + std::to_string(t_nwid) + "/";
 }
 
 // accessors
@@ -59,13 +56,3 @@ double        Parameters::gconst() const        { return gconst_; }
 double        Parameters::kstretch() const      { return ks_; }
 double        Parameters::kshear() const        { return ksh_; }
 double        Parameters::kbend() const         { return kb_; }
-
-void Parameters::print_parameters() {
-    std::cout << "\n---------------------------------------" << std::endl;
-    std::cout << "\t\tList of parameters" << '\n';
-    std::cout << "\t\t# of Nodes:       " << m_SimGeo->nn() << '\n';
-    std::cout << "\t\t# of Elements:    " << m_SimGeo->nel() << '\n';
-    std::cout << "\t\tStep size:        " << dt_ << '\n';
-    std::cout << "\t\tTotal # of steps: " << nst_ << '\n';
-    std::cout << "---------------------------------------\n" << std::endl;
-}
