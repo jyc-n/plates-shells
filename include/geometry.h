@@ -31,6 +31,7 @@ public:
     void set_nhinge();
 
     void findMassVector();
+    void translateNodes(int dir, double amt);
 
     // accessor
     int           datum() const;

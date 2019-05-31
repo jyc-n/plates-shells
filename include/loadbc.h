@@ -7,11 +7,19 @@
 class Parameters;
 class Geometry;
 
+// TODO: add nonhomogeneous Dirichlet dofs options
 struct Sets {
-    bool m_free = true;         // false - BC applied to this set, true - no BC applied
-    int m_typeBC = 0;           // 0 - free, 1 - pinned in x, 2 - pinned in y, 3 - clamped, 4 - displacement applied (not implemented yet)
-    double m_force[3] = {0};    // force in x,y,z direction
-    std::vector<int> m_nodes;
+    Sets(bool type)
+        : m_type(type) ,m_fixed({false, false, false})
+    {}
+    void setFixed(bool x, bool y, bool z) {
+        m_fixed[0] = x;
+        m_fixed[1] = y;
+        m_fixed[2] = z;
+    }
+    bool m_type;                // true - force sets, false - displacement sets
+    std::vector<bool> m_fixed;  // true - fixed in 0-x, 1-y, 2-z
+    std::vector<int>  m_nodes;
 };
 
 class Boundary {
@@ -20,12 +28,10 @@ public:
     Boundary(Parameters* SimPar, Geometry* SimGeo);
     ~Boundary();
 
+    // initialize boundary conditions
     void initBC();
-    void getSets();
-    void configBC();
-    void fixDir(int num);
-    void buildBCinfo();
-    void findDirichletDofs();
+
+    // check if a given dof with given index is a Dirichlet dof
     bool inDirichletBC(int index);
 
     // public variables that will be used by solver
@@ -33,14 +39,14 @@ public:
     Eigen::VectorXd m_fext;                          // external force vector
 
 private:
+    void configForce(const Sets& t_set);
+    void configGravity();
+    void findDirichletDofs(const Sets& t_set);
+
     Parameters* m_SimPar;
     Geometry*   m_SimGeo;
 
-    int m_bounds;
-    bool m_2D;
-
-    std::vector<Sets*> m_sets;                      // node sets of different boundaries
-    std::vector<bool> m_disp;                       // true - free dofs, false - specified dofs
+    bool ENABLE_GRAVITY;
 };
 
 #endif //PLATES_SHELLS_LOADBC_H

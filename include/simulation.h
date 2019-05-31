@@ -16,7 +16,7 @@ public:
     Simulation(const std::string& t_input, const std::string& t_output);
     ~Simulation();
 
-    void pre_process(Arguments t_args);
+    void pre_process(const Arguments& t_args);
     void solve();
 
 private:

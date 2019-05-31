@@ -23,7 +23,7 @@ Simulation::~Simulation() {
     delete m_SolverImpl;
 }
 
-void Simulation::pre_process(Arguments t_args) {
+void Simulation::pre_process(const Arguments& t_args) {
     m_PreProcessor->PreProcess(t_args);
     m_SimBC->initBC();
     m_SolverImpl->initSolver();

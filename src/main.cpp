@@ -6,7 +6,6 @@
 int main(int argc, char* argv[]) {
     try {
         Arguments t_args(argc);
-
         switch (argc) {
             // every parameters read from input.txt
             case DEFAULT:

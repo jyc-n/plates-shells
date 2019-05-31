@@ -72,14 +72,32 @@ void Geometry::findMassVector() {
         }
     }
     */
-
 }
 
-// print geometric information
+// move nodes in given direction for amt
+void Geometry::translateNodes(int dir, double amt) {
+    if (dir != 0 && dir != 1 && dir != 2)
+        throw "wrong direction!";
+
+    for (int i = 0; i < m_nn; i++) {
+        m_nodes[i][dir] += amt;
+    }
+}
+
+// print geometric information, do not use if there are a lot of nodes/elements
 void Geometry::printMesh() {
+    std::cout << "-----Nodes-----" << std::endl;
     for (int i = 0; i < m_nn; i++) {
         for (int j = 0; j < 3; j++) {
             std::cout << m_nodes[i][j] << '\t';
+        }
+        std::cout << std::endl;
+    }
+    std::cout << "-----Elements-----" << std::endl;
+    for (int i = 0; i < m_nel; i++) {
+        std::cout << i+1 << '\t';
+        for (int j = 0; j < m_nen; j++) {
+            std::cout << m_mesh[i][j] << '\t';
         }
         std::cout << std::endl;
     }

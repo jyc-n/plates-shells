@@ -57,9 +57,6 @@ public:
 
 private:
 
-    // pointer to the geometry class
-    Geometry* m_SimGeo;
-
     // parameters
     bool            outop_;                      // output option
     bool            solver_op_;                  // solver option

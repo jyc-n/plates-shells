@@ -25,12 +25,12 @@ public:
 };
 
 inline Arguments::Arguments(int t_argc)
-    : argc(t_argc), num_len(0), num_wid(0), len(0.0), wid(0.0) {
-    // std::string inputPath = "/home/sci04/Codes/plates-shells/";
-    // std::string outputPath = "/home/sci04/Codes/plates-shells/results/";
-    std::string inputPath = "/Users/chenjingyu/Dropbox/Research/Codes/plates-shells/";
-    std::string outputPath = "/Users/chenjingyu/Dropbox/Research/Codes/plates-shells/results/";
-}
+    : argc(t_argc), num_len(0), num_wid(0), len(0.0), wid(0.0),
+    //   inputPath("/Users/chenjingyu/Dropbox/Research/Codes/plates-shells/"),
+    //   outputPath("/Users/chenjingyu/Dropbox/Research/Codes/plates-shells/results/refine/")
+      inputPath("/home/sci04/Codes/plates-shells/"),
+      outputPath("/home/sci04/Codes/plates-shells/results/refine/")
+{}
 
 inline void Arguments::getArgs(int t_nl, int t_nw, double t_l, double t_w) {
     num_len = t_nl;
