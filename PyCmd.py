@@ -119,8 +119,8 @@ if __name__ == "__main__":
 
         # run single simulation
         elif cmd == 'srun':
-            nLen = 10
-            nWid = 10
+            nLen = 20
+            nWid = 20
             runSingleProcess(nLen, nWid)
 
         # run multiple simulations
@@ -130,7 +130,8 @@ if __name__ == "__main__":
         # perform mesh refinement test
         elif cmd == 'refine':
             # list_nSide = [10]
-            list_nSide = [25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75]
+            # list_nSide = [25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75]
+            list_nSide = [21, 26, 31, 36, 41, 46, 51, 56, 61, 66, 71, 76]
             runRefine(list_nSide, list_nSide)
 
         else:

@@ -30,6 +30,7 @@ if(${CMAKE_SYSTEM_NAME} MATCHES Darwin)
     message("=====Building on Mac OS=====")
     # lapack
     find_package(LAPACK REQUIRED)
+    # Pardiso
     find_library(
         PARADISO_LIB
         NAMES libpardiso600-MACOS-X86-64 pardiso600-MACOS-X86-64
@@ -57,6 +58,14 @@ elseif(${CMAKE_SYSTEM_NAME} MATCHES Linux)
                     /usr/lib/gcc/x86_64-linux-gnu/7.3.0)
     # lapack
     find_package(LAPACK REQUIRED)
+    # Pardiso
+    find_library(
+        PARADISO_LIB
+        NAMES libpardiso600-GNU720-X86-64 pardiso600-GNU720-X86-64
+        HINTS "${PROJECT_SOURCE_DIR}/lib"
+        NO_DEFAULT_PATH
+    )
+    message(STATUS "PARADISO_LIB: [${PARADISO_LIB}]")
     # OpenMP
     find_package(OpenMP REQUIRED)
     if (OPENMP_FOUND)
@@ -66,5 +75,5 @@ elseif(${CMAKE_SYSTEM_NAME} MATCHES Linux)
     find_package(Threads REQUIRED)
     set(pthread ${CMAKE_THREAD_LIBS_INIT})
 
-    target_link_libraries(plates_shells pardiso600-GNU720-X86-64 ${LAPACK_LIBRARIES} gfortran pthread)
+    target_link_libraries(plates_shells ${PARADISO_LIB} ${LAPACK_LIBRARIES} gfortran pthread)
 endif()

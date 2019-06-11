@@ -37,8 +37,8 @@ void PreProcessorImpl::PreProcess(Arguments t_args) {
     readInput();
     // specify number of nodes
     if (t_args.argc == NUMS) {
-        m_SimGeo->set_num_nodes_len(t_args.num_len+1);      //! only used when edge is clamped
-        // m_SimGeo->set_num_nodes_len(t_args.num_len);
+        // m_SimGeo->set_num_nodes_len(t_args.num_len+1);      //! only used when edge is clamped
+        m_SimGeo->set_num_nodes_len(t_args.num_len);
         m_SimGeo->set_num_nodes_wid(t_args.num_wid);
     }
     // specify number of nodes and dimensions
@@ -48,7 +48,8 @@ void PreProcessorImpl::PreProcess(Arguments t_args) {
         m_SimGeo->set_rec_len(t_args.len);
         m_SimGeo->set_rec_wid(t_args.wid);
     }
-    m_SimPar->find_fullOutputPath(m_SimGeo->num_nodes_len()-1, m_SimGeo->num_nodes_wid()); // ! only -1 when clamped
+    // m_SimPar->find_fullOutputPath(m_SimGeo->num_nodes_len()-1, m_SimGeo->num_nodes_wid()); // ! only -1 when clamped
+    m_SimPar->find_fullOutputPath(m_SimGeo->num_nodes_len(), m_SimGeo->num_nodes_wid());
 
     m_SimGeo->set_nn();
     m_SimGeo->set_nel();
@@ -174,7 +175,7 @@ void PreProcessorImpl::buildNodes(int opt) {
     dx1 = m_SimGeo->rec_len() / (double) (m_SimGeo->num_nodes_len() - 1);
     dx2 = m_SimGeo->rec_wid() / (double) (m_SimGeo->num_nodes_wid() - 1);
     // ! only use the following for clamped case
-    dx1 = dx2;
+    // dx1 = dx2;
 
     // position of datum plane
     int datum_op = m_SimGeo->datum();
@@ -222,7 +223,7 @@ void PreProcessorImpl::buildNodes(int opt) {
             m_SimGeo->m_nodes[index][2] = z;
         }
     }
-    m_SimGeo->translateNodes(0, -dx1); //! only used when clamped!
+    // m_SimGeo->translateNodes(0, -dx1); //! only used when clamped!
     assert(m_SimGeo->m_nodes.size() == m_SimGeo->nn());
 }
 

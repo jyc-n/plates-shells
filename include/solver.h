@@ -25,9 +25,10 @@ public:
     void initSolver();
 
     // main solver function
+    bool increment(const int ist, VectorNodes& x, VectorNodes& x_new);
     bool step(const int ist, VectorNodes& x, VectorNodes& x_new, VectorNodes& vel);
     void dynamic();
-    void quasistatic();
+    void statics();
     void writeToFiles(const int ist);
 
 private:
@@ -54,7 +55,10 @@ private:
 
     // subroutine
     void findDEnergy(VectorN& dEdq, SparseEntries& entries_full);
-    void findResidual(const VectorNodes& vel, const VectorNodes& x, const VectorNodes& x_new, const VectorN& dEdq, VectorN& rhs);   // dynamic
+    // static
+    void findResidual(const int ist, const VectorNodes& x, const VectorNodes& x_new, const VectorN& dEdq, VectorN& rhs);
+    // dynamic
+    void findResidual(const VectorNodes& vel, const VectorNodes& x, const VectorNodes& x_new, const VectorN& dEdq, VectorN& rhs);
     void findJacobian(SparseEntries& entries_full, SpMatrix& jacobian);
     void findDofnew(const VectorN& rhs, SpMatrix& jacobian, VectorNodes& x_new);
 
@@ -67,8 +71,6 @@ private:
     void DEStretch(VectorN& dEdq, SparseEntries& entries_full);
     void DEShear  (VectorN& dEdq, SparseEntries& entries_full);
     void DEBend   (VectorN& dEdq, SparseEntries& entries_full);
-
-    void analyticalStatic();
 };
 
 #endif //PLATES_SHELLS_SOLVER_H

@@ -42,13 +42,67 @@ void SolverImpl::initSolver() {
     findMappingVectors();
 }
 
-// ========================================= //
-//            Main solver function           //
-// ========================================= //
+//* ========================================= //
+//*            Main solver function           //
+//* ========================================= //
+
+// Dynamic/quasistatic Simulation
+void SolverImpl::dynamic() {
+
+    // vector of nodal position t_{n+1}
+    VectorNodes nodes_curr(m_SimGeo->nn());
+    assert(nodes_curr.size() == m_SimGeo->m_nodes.size());
+
+    // initial guess
+    for (int i = 0; i < m_SimGeo->nn(); i++)
+        nodes_curr[i] = m_SimGeo->m_nodes[i];
+
+    //vector of nodal velocity
+    VectorNodes vel(m_SimGeo->nn());
+    for (int i = 0; i < m_SimGeo->nn(); i++)
+        vel[i].fill(0.0);
+    
+    //*------time stepping---------
+    for (int ist = 1; ist <= m_SimPar->nst(); ist++) {
+        if (!step(ist, nodes_curr, m_SimGeo->m_nodes, vel)) {
+            std::cerr << "Solver did not converge in " << m_SimPar->iter_lim()
+                        << " iterations at step " << ist << std::endl;
+            throw "Cannot converge! Program terminated";
+        }
+        if (WRITE_OUTPUT)
+            writeToFiles(ist);
+    }
+    //*----------------------------
+}
+
+// Static Simulation
+void SolverImpl::statics() {
+
+    // vector of nodal position t_{n+1}
+    VectorNodes nodes_curr(m_SimGeo->nn());
+    assert(nodes_curr.size() == m_SimGeo->m_nodes.size());
+
+    // initial guess
+    for (int i = 0; i < m_SimGeo->nn(); i++)
+        nodes_curr[i] = m_SimGeo->m_nodes[i];
+    
+    //*------increment---------
+    for (int ist = 1; ist <= m_SimPar->nst(); ist++) {
+        if (!increment(ist, nodes_curr, m_SimGeo->m_nodes)) {
+            std::cerr << "Solver did not converge in " << m_SimPar->iter_lim()
+                      << " iterations at increment " << ist << std::endl;
+            throw "Cannot converge! Program terminated";
+        }
+        if (WRITE_OUTPUT)
+            writeToFiles(ist);
+    }
+    //*------------------------
+}
 
 // TODO: implement Newmark-beta method
+// TODO: should consider the acceleration!
+
 // Time stepping using backward Euler
-// FIXME: should consider the acceleration!
 bool SolverImpl::step(const int ist, VectorNodes& x, VectorNodes& x_new, VectorNodes& vel) {
     std::cout << "--------Step " << ist << "--------" << std::endl;
 
@@ -101,44 +155,49 @@ bool SolverImpl::step(const int ist, VectorNodes& x, VectorNodes& x_new, VectorN
     return false;
 }
 
-void SolverImpl::dynamic() {
-    if (SOLVER_TYPE == 0)
-        std::cout << "Eigen CG solver will be used" << std::endl;
-    else if (SOLVER_TYPE == 1)
-        std::cout << "Pardiso solver will be used" << std::endl;
-    
-    Timer t_all(true);
+// Static load increment
+bool SolverImpl::increment(const int ist, VectorNodes& x, VectorNodes& x_new) {
+    std::cout << "--------Increment " << ist << "--------" << std::endl;
 
-    // vector of nodal position t_{n+1}
-    VectorNodes nodes_curr(m_SimGeo->nn());
-    assert(nodes_curr.size() == m_SimGeo->m_nodes.size());
+    // apply Newton-Raphson Method
+    for (int niter = 0; niter < m_SimPar->iter_lim(); niter++) {
+        Timer t;
 
-    // initial guess
-    for (int i = 0; i < m_SimGeo->nn(); i++)
-        nodes_curr[i] = m_SimGeo->m_nodes[i];
+        VectorN rhs(m_numNeumann); rhs.fill(0.0);
+        SparseEntries entries_full;
 
-    //vector of nodal velocity
-    VectorNodes vel(m_SimGeo->nn());
-    for (int i = 0; i < m_SimGeo->nn(); i++)
-        vel[i].fill(0.0);
-    
-    for (int ist = 1; ist <= m_SimPar->nst(); ist++) {
-        // stepping
-        if (!step(ist, nodes_curr, m_SimGeo->m_nodes, vel)) {
-            std::cerr << "Solver did not converge in " << m_SimPar->iter_lim()
-                        << " iterations at step " << ist << std::endl;
-            throw "Cannot converge! Program terminated";
+        // calculate derivatives of energy functions
+        VectorN dEdq(m_numTotal); dEdq.fill(0.0);
+        findDEnergy(dEdq, entries_full);
+
+        // calculate residual vector
+        findResidual(ist, x, x_new, dEdq, rhs);
+
+        // display residual
+        double error = rhs.norm();
+        std::cout << "iter" << niter+1 << '\t' << "error = " << error << '\t';
+
+        // check convergence
+        if (error < m_tol) {
+            // save current nodal position for next step
+            for (int i = 0; i < m_SimGeo->nn(); i++)
+                x[i] = x_new[i];
+            // display iteration time
+            std::cout << "t_iter = " << t.elapsed() << " ms" << std::endl;
+            return true;
         }
-        if (WRITE_OUTPUT)
-            writeToFiles(ist);
-    }
-    std::cout << "---------------------------" << std::endl;
-    std::cout << "Simulation completed" << std::endl;
-    std::cout << "Total time used " << t_all.elapsed(true) << " seconds" <<  std::endl;
-}
 
-void SolverImpl::quasistatic() {
-    // TODO: reimplement quasistatic
+        // calculate jacobian matrix
+        SpMatrix jacobian(m_numNeumann, m_numNeumann);
+        findJacobian(entries_full, jacobian);
+
+        // solve for new dof vector
+        findDofnew(rhs, jacobian, x_new);
+
+        // display iteration time
+        std::cout << "t_iter = " << t.elapsed() << " ms" << std::endl;
+    }
+    return false;
 }
 
 // write data to files
@@ -164,9 +223,9 @@ void SolverImpl::writeToFiles(const int ist) {
     }
 }
 
-// ========================================= //
-//       Implementation of subroutines       //
-// ========================================= //
+//* ========================================= //
+//*       Implementation of subroutines       //
+//* ========================================= //
 
 void SolverImpl::findDEnergy(VectorN& dEdq, SparseEntries& entries_full) {
     DEStretch(dEdq, entries_full);
@@ -174,19 +233,29 @@ void SolverImpl::findDEnergy(VectorN& dEdq, SparseEntries& entries_full) {
     DEBend(dEdq, entries_full);
 }
 
-/*   TODO: static version will be replaced
- *    f_i = dE/dq - F_ext
-
-void SolverImpl::updateResidual(Eigen::VectorXd& qn, Eigen::VectorXd& qnew, double ratio, Eigen::VectorXd& dEdq, Eigen::VectorXd& res_f) {
-
+//  Static version
+//  f_i = dE/dq - F_ext
+//
+void SolverImpl::findResidual(const int ist, const VectorNodes& x, const VectorNodes& x_new, const VectorN& dEdq, VectorN& rhs) {
     double dt = m_SimPar->dt();
 
-    for (unsigned int i = 0; i < m_SimGeo->nn() * m_SimGeo->nsd(); i++)
-        res_f(i) = dEdq(i) - m_SimBC->m_fext(i) * ratio;
+    // only take the entries that are NOT in Dirichlet BC
+    // CAUTION: if Dirichlet BC is nonzero, need to consider the influence of the Dirichlet BC
+    // TODO: adding Dirichlet influence
+    for (int i = 0; i < m_SimGeo->nn(); i++) {
+        for (int j = 0; j < m_SimGeo->nsd(); j++) {
+            // corresponding position in the full force vector
+            int pos = i * m_SimGeo->nsd() + j;
+            // check if this is in Neumann BC
+            int pos_dof = m_fullToDofs[pos];
+            if (pos_dof != -1) {
+                rhs(pos_dof) = dEdq(pos) - m_SimBC->m_fext(pos) * double(ist)/double(m_SimPar->nst());
+            }
+        }
+    }
 }
- */
 
-//
+//  Dynamic version
 //  f_i = m_i * (q_i(t_n+1) - q_i(t_n)) / dt^2 - m_i * v(t_n) / dt + dE/dq - F_ext
 //
 void SolverImpl::findResidual(const VectorNodes& vel, const VectorNodes& x, const VectorNodes& x_new, const VectorN& dEdq, VectorN& rhs) {
@@ -203,7 +272,7 @@ void SolverImpl::findResidual(const VectorNodes& vel, const VectorNodes& x, cons
 
     // only take the entries that are NOT in Dirichlet BC
     // CAUTION: if Dirichlet BC is nonzero, need to consider the influence of the Dirichlet BC
-    // FIXME: adding Dirichlet influence
+    // TODO: adding Dirichlet influence
     for (int i = 0; i < m_SimGeo->nn(); i++) {
         for (int j = 0; j < m_SimGeo->nsd(); j++) {
             // corresponding position in the full force vector
@@ -270,7 +339,7 @@ void SolverImpl::findDofnew(const VectorN& rhs, SpMatrix& jacobian, VectorNodes&
 
     // map the free part dof vector back to the full dof vector
     // CAUTION: if Dirichlet BC is nonzero, need to consider the motion of the Dirichlet BC
-    // FIXME: adding Dirichlet part
+    // TODO: adding Dirichlet part
     for (int i_dq = 0; i_dq < m_numNeumann; i_dq++) {
         int iN = m_dofsToFull[i_dq] / m_SimGeo->nsd();
         int jN = m_dofsToFull[i_dq] - iN * m_SimGeo->nsd();
@@ -616,20 +685,4 @@ void SolverImpl::DEBend(VectorN& dEdq, SparseEntries& entries_full) {
             }
         }
     }
-}
-
-void SolverImpl::analyticalStatic() {
-    int nl = m_SimGeo->num_nodes_len();
-    double b = m_SimGeo->rec_wid();
-    double l = m_SimGeo->rec_len() * double(nl-1)/double(nl);
-    double h = m_SimPar->thk();
-    double g = 9.81;
-    double E = m_SimPar->E_modulus();
-    double rho = m_SimPar->rho();
-
-    double mtotal = b*l*h*rho;
-    double w = mtotal*g/b;
-    double I = 1.0/12.0 * b * pow(h,3);
-    double ymax = - w*pow(l,4)/(8.0*E*I);
-    std::cout << ymax << std::endl;
 }

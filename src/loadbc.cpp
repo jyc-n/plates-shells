@@ -1,4 +1,5 @@
 #include <iostream>
+#include <algorithm>
 #include "loadbc.h"
 #include "parameters.h"
 #include "geometry.h"
@@ -45,19 +46,19 @@ void Boundary::initBC() {
     //* ----------------------------
     //! Note: when using clamped bc, need to modify the number of nodes!
     // clamped edge 1
-    Sets edge1(false);
-    edge1.setFixed(true, true, true);
-    for (int num = 1; num < m_SimGeo->nn(); num += m_SimGeo->num_nodes_len()) {
-        edge1.m_nodes.push_back(num);
-        edge1.m_nodes.push_back(num+1);
-    }
-    findDirichletDofs(edge1);
+    // Sets edge1(false);
+    // edge1.setFixed(true, true, true);
+    // for (int num = 1; num < m_SimGeo->nn(); num += m_SimGeo->num_nodes_len()) {
+    //     edge1.m_nodes.push_back(num);
+    //     edge1.m_nodes.push_back(num+1);
+    // }
+    // findDirichletDofs(edge1);
     //* ----------------------------
 
     //* ----------------------------
     //*   simply supported plate
     //* ----------------------------
-    // // pinned edge 1
+    // pinned edge 1
     // Sets edge1(false);
     // edge1.setFixed(true, true, true);
     // for (int num = 1; num < m_SimGeo->nn(); num += m_SimGeo->num_nodes_len()) {
@@ -65,19 +66,40 @@ void Boundary::initBC() {
     // }
     // findDirichletDofs(edge1);
 
-    // // pinned edge 3
+    // pinned edge 3
     // Sets edge3(false);
-    // edge1.setFixed(true, true, true);
+    // edge3.setFixed(false, true, true);
     // for (int num = m_SimGeo->num_nodes_len(); num <= m_SimGeo->nn(); num += m_SimGeo->num_nodes_len()) {
     //     edge3.m_nodes.push_back(num);
     // }
+    // findDirichletDofs(edge3);
+
+    // apply force on the entire plate
+    // Sets t_surf(true);
+    // double p = - double(1)/double(m_SimGeo->nn());
+    // t_surf.setForce(0, 0, p);
+    // for (int num = 1; num <= m_SimGeo->nn(); num++) {
+    //     t_surf.m_nodes.push_back(num);
+    // }
+    // configForce(t_surf);
     //* ----------------------------
+
+    //* ---------------------------- 
+    //*      2-element bending
+    //* ----------------------------
+    // pinned 1,3,4
+    // Sets corners(false);
+    // corners.setFixed(true, true, true);
+    // corners.m_nodes.push_back(1);
+    // corners.m_nodes.push_back(3);
+    // corners.m_nodes.push_back(4);
+    // findDirichletDofs(corners);
 
     //* ----------------------------
     //*      hanging 1 corner
     //* ----------------------------
-    // for (int i = 0; i < 3; i++)
-    //     m_dirichletDofs.push_back(i);
+    for (int i = 0; i < 3; i++)
+        m_dirichletDofs.push_back(i);
 
     //* ----------------------------
     //*      hanging 2 corners
@@ -100,11 +122,18 @@ void Boundary::initBC() {
     //      m_dirichletDofs.push_back(i+mid_dof + 6*m_SimGeo->num_nodes_len());
     //      m_dirichletDofs.push_back(i+mid_dof + 9*m_SimGeo->num_nodes_len());
     //  }
+
+    //* sort the array for Dirichlet dofs
+    std::sort(m_dirichletDofs.begin(), m_dirichletDofs.end());
 }
 
 // configure external force
 void Boundary::configForce(const Sets& t_set) {
-    // TODO: implement concentrated force
+    for (auto inode = t_set.m_nodes.begin(); inode != t_set.m_nodes.end(); inode++) {
+        for (int dir = 0; dir <= 2; dir++) {
+            m_fext(m_SimGeo->nsd()*(*inode-1) + dir) = t_set.m_force[dir];
+        }
+    }
 }
 
 // enable gravity
