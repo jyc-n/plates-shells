@@ -10,6 +10,7 @@ aux_source_directory(${PROJECT_SOURCE_DIR}/src srcs)
 # include directories, and header files
 include_directories(/usr/local/include)
 include_directories(${PROJECT_SOURCE_DIR}/include)
+include_directories("${CMAKE_CURRENT_SOURCE_DIR}/include")
 
 # compiler settings
 set(CMAKE_CXX_STANDARD 14)
