@@ -41,15 +41,10 @@ void Bending::initValues() {
     m_cosA3 = -m_e0.dot(m_e3) / (m_e0.norm() * m_e3.norm());
     m_cosA4 = -m_e0.dot(m_e4) / (m_e0.norm() * m_e4.norm());
 
-    double alpha1 = acos(m_cosA1);
-    double alpha2 = acos(m_cosA2);
-    double alpha3 = acos(m_cosA3);
-    double alpha4 = acos(m_cosA4);
-
-    m_sinA1 = sin(alpha1);
-    m_sinA2 = sin(alpha2);
-    m_sinA3 = sin(alpha3);
-    m_sinA4 = sin(alpha4);
+    m_sinA1 = (m_e0.cross(m_e1)).norm() / (m_e0.norm() * m_e1.norm());
+    m_sinA2 = (m_e0.cross(m_e2)).norm() / (m_e0.norm() * m_e2.norm());
+    m_sinA3 = (-m_e0.cross(m_e3)).norm() / (m_e0.norm() * m_e3.norm());
+    m_sinA4 = (-m_e0.cross(m_e4)).norm() / (m_e0.norm() * m_e4.norm());
 
     m_nn1 = m_e0.cross(m_e3);
     m_nn1 = m_nn1 / (m_nn1.norm());
@@ -57,10 +52,10 @@ void Bending::initValues() {
     m_nn2 = m_nn2 / (m_nn2.norm());
 
     m_m1 = (m_nn1).cross(m_e1 / m_e1.norm());
-    m_m2 = (m_e2 / m_e2.norm()).cross(m_nn2);
-    m_m3 = (m_e3 / m_e3.norm()).cross(m_nn1);
-    m_m4 = (m_e4 / m_e4.norm()).cross(m_nn2);
-    m_m01 = (m_e0 / m_e0.norm()).cross(m_nn1);
+    m_m2 = -(m_nn2).cross(m_e2 / m_e2.norm());
+    m_m3 = -(m_nn1).cross(m_e3 / m_e3.norm());
+    m_m4 = (m_nn2).cross(m_e4 / m_e4.norm());
+    m_m01 = -(m_nn1).cross(m_e0 / m_e0.norm());
     m_m02 = (m_nn2).cross(m_e0 / m_e0.norm());
 
     m_h1 = m_e0.norm() * m_sinA1;
@@ -155,9 +150,9 @@ void Bending::hess(Eigen::MatrixXd& hessTheta) {
     hessTheta.block(9,9, 3,3) = -s(N202);
 
     // symmetric matrix
-    hessTheta.block(3,0, 3,3) = hessTheta.block(0,3, 3,3);
-    hessTheta.block(6,0, 3,3) = hessTheta.block(0,6, 3,3);
-    hessTheta.block(9,0, 3,3) = hessTheta.block(0,9, 3,3);
-    hessTheta.block(6,3, 3,3) = hessTheta.block(3,6, 3,3);
-    hessTheta.block(9,3, 3,3) = hessTheta.block(9,6, 3,3);
+    hessTheta.block(3,0, 3,3) = (hessTheta.block(0,3, 3,3)).transpose();
+    hessTheta.block(6,0, 3,3) = (hessTheta.block(0,6, 3,3)).transpose();
+    hessTheta.block(9,0, 3,3) = (hessTheta.block(0,9, 3,3)).transpose();
+    hessTheta.block(6,3, 3,3) = (hessTheta.block(3,6, 3,3)).transpose();
+    hessTheta.block(9,3, 3,3) = (hessTheta.block(3,9, 3,3)).transpose();
 }

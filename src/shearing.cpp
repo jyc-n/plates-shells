@@ -97,7 +97,7 @@ void Shearing::hess(Eigen::VectorXd& gradPhi, Eigen::MatrixXd& hessPhi) {
     hessPhi.block(3,3, 3,3) = ( 1 / m_h1 * (- N1 + N2 * cos(m_phi) + M22) + 1 / pow(m_h1, 2) * K12 * (R2 - C2 * gradPhi.segment(3, 3).transpose()) )
                               - hessPhi.block(0,3, 3,3);
 
-    hessPhi.block(6,6, 3,3) = - 1 / m_h1 * (- N1 * cos(m_phi) + M33) + 1 / pow(m_h1, 2) * K12 * (R2 + C2 * gradPhi.segment(6, 3).transpose());
+    hessPhi.block(6,6, 3,3) = - 1 / m_h1 * (- N2 * cos(m_phi) + M33) + 1 / pow(m_h1, 2) * K12 * (R2 + C2 * gradPhi.segment(6, 3).transpose());
     hessPhi.block(3,6, 3,3) = - hessPhi.block(6,6, 3,3) - hessPhi.block(0,6, 3,3);
 
     // symmetric matrix
