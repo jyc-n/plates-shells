@@ -32,6 +32,12 @@ struct Sets {
 class Boundary {
 
 public:
+    enum {
+        X_DIR,
+        Y_DIR,
+        Z_DIR
+    };
+
     Boundary(Parameters* SimPar, Geometry* SimGeo);
     ~Boundary();
 
@@ -47,7 +53,7 @@ public:
 
 private:
     void configForce(const Sets& t_set);
-    void configGravity();
+    void configGravity(const int dir);
     void findDirichletDofs(const Sets& t_set);
 
     Parameters* m_SimPar;

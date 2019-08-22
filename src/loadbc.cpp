@@ -38,7 +38,7 @@ void Boundary::initBC() {
     //* ----------------------------
     // gravity
     if (ENABLE_GRAVITY) {
-        configGravity();
+        configGravity(Z_DIR);
     }
 
     //* ----------------------------
@@ -95,11 +95,26 @@ void Boundary::initBC() {
     // corners.m_nodes.push_back(4);
     // findDirichletDofs(corners);
 
+    //* ---------------------------- 
+    //*      uniaxial stretching
+    //* ----------------------------
+
+    // roller support edge 1
+    Sets edge1(false);
+    edge1.setFixed(true, false, true);
+    for (int num = 1; num < m_SimGeo->nn(); num += m_SimGeo->num_nodes_len()) {
+        edge1.m_nodes.push_back(num);
+    }
+    findDirichletDofs(edge1);
+    
+    // pinned corner
+    m_dirichletDofs.push_back(1);
+
     //* ----------------------------
     //*      hanging 1 corner
     //* ----------------------------
-    for (int i = 0; i < 3; i++)
-        m_dirichletDofs.push_back(i);
+    // for (int i = 0; i < 3; i++)
+    //     m_dirichletDofs.push_back(i);
 
     //* ----------------------------
     //*      hanging 2 corners
@@ -137,8 +152,8 @@ void Boundary::configForce(const Sets& t_set) {
 }
 
 // enable gravity
-void Boundary::configGravity() {
-    for (int i = 2; i < m_SimGeo->nn() * m_SimGeo->nsd(); i+=3) {
+void Boundary::configGravity(const int dir) {
+    for (int i = dir; i < m_SimGeo->nn() * m_SimGeo->nsd(); i+=3) {
         m_fext(i) = - m_SimGeo->m_mass(i) * m_SimPar->gconst();
     }
 }

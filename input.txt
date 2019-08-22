@@ -1,8 +1,8 @@
 ! this part will not be used if run program with arguments
 rec_len = 0.1                 ! length of the rectangular domain
 rec_wid = 0.1                ! width of the rectangular domain
-num_nodes_len = 10           ! number of nodes along the length
-num_nodes_wid = 10          ! number of nodes along the width
+num_nodes_len = 3           ! number of nodes along the length
+num_nodes_wid = 3          ! number of nodes along the width
 
 ! instead elements will have equal step size in 2 planar directions
 ! this is not usually used

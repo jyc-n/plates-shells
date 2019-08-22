@@ -1,11 +1,18 @@
 # version requirement
-cmake_minimum_required(VERSION 3.9)
+cmake_minimum_required(VERSION 3.10)
+
+# use gcc 9.2 for c++ 17
+set(CMAKE_C_COMPILER "gcc-9")
+set(CMAKE_CXX_COMPILER "g++-9")
 
 # project name
 project(plates_shells)
 
 # all source codes
 aux_source_directory(${PROJECT_SOURCE_DIR}/src srcs)
+file(GLOB source_files
+    "src/*.cpp"
+    "include/*.h")
 
 # include directories, and header files
 include_directories(/usr/local/include)
@@ -13,7 +20,7 @@ include_directories(${PROJECT_SOURCE_DIR}/include)
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}/include")
 
 # compiler settings
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release)
 endif()
@@ -24,7 +31,7 @@ set(CMAKE_CXX_FLAGS_RELEASE "-Ofast")
 
 # generate executable file
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR})
-add_executable(plates_shells ${srcs})
+add_executable(plates_shells ${source_files})
 
 # Mac OS
 if(${CMAKE_SYSTEM_NAME} MATCHES Darwin)
