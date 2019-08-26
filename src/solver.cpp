@@ -63,7 +63,12 @@ void SolverImpl::dynamic() {
         vel[i].fill(0.0);
     
     //*------time stepping---------
-    for (int ist = 1; ist <= m_SimPar->nst(); ist++) {
+    // stopped when |vel|<=1e-6
+    int ist = 0;
+    double vel_magnitude = 0;
+
+    do {
+        ist++;
         if (!step(ist, nodes_curr, m_SimGeo->m_nodes, vel)) {
             std::cerr << "Solver did not converge in " << m_SimPar->iter_lim()
                         << " iterations at step " << ist << std::endl;
@@ -71,7 +76,15 @@ void SolverImpl::dynamic() {
         }
         if (WRITE_OUTPUT)
             writeToFiles(ist);
+
+        vel_magnitude = 0;
+        for (int i = 0; i < m_SimGeo->nn(); i++) {
+            vel_magnitude += vel[i].dot(vel[i]);
+        }
+        vel_magnitude = sqrt(vel_magnitude);
+        std::cout << vel_magnitude << std::endl;
     }
+    while ( vel_magnitude > 1e-8 );
     //*----------------------------
 }
 

@@ -2,7 +2,7 @@
 #define PLATES_SHELLS_ARGUMENTS_H
 
 #include <string>
-#include <filesystem>
+// #include <filesystem>
 
 enum Opts {
     DEFAULT = 1,
@@ -28,7 +28,8 @@ public:
 inline Arguments::Arguments(int t_argc)
     : argc(t_argc), num_len(0), num_wid(0), len(0.0), wid(0.0)
 {
-    std::string tmp = std::filesystem::current_path().string();
+    // std::string tmp = std::filesystem::current_path().string();
+    std::string tmp = "/Users/rla/Dropbox/Research/Codes/plates-shells";
     inputPath = tmp+"/";
     outputPath = tmp+"/results/";
     std::cout << "cwd is " << inputPath << std::endl;

@@ -2,8 +2,8 @@
 cmake_minimum_required(VERSION 3.10)
 
 # use gcc 9.2 for c++ 17
-set(CMAKE_C_COMPILER "gcc-9")
-set(CMAKE_CXX_COMPILER "g++-9")
+# set(CMAKE_C_COMPILER "gcc-9")
+# set(CMAKE_CXX_COMPILER "g++-9")
 
 # project name
 project(plates_shells)
@@ -40,12 +40,12 @@ if(${CMAKE_SYSTEM_NAME} MATCHES Darwin)
     find_package(LAPACK REQUIRED)
     # Pardiso
     find_library(
-        PARADISO_LIB
+        PARDISO_LIB
         NAMES libpardiso600-MACOS-X86-64 pardiso600-MACOS-X86-64
         HINTS "${PROJECT_SOURCE_DIR}/lib"
         NO_DEFAULT_PATH
     )
-    message(STATUS "PARADISO_LIB: [${PARADISO_LIB}]")
+    message(STATUS "PARDISO_LIB: [${PARDISO_LIB}]")
     find_library(
         OMP_LIB
         NAMES libiomp5 iomp5
@@ -54,7 +54,7 @@ if(${CMAKE_SYSTEM_NAME} MATCHES Darwin)
     )
     message(STATUS "OMP_LIB: [${OMP_LIB}]")
     # link libraries
-    target_link_libraries(plates_shells ${PARADISO_LIB} ${LAPACK_LIBRARIE} ${OMP_LIB})
+    target_link_libraries(plates_shells ${PARDISO_LIB} ${LAPACK_LIBRARIE} ${OMP_LIB})
 
 # Linux Ubuntu
 elseif(${CMAKE_SYSTEM_NAME} MATCHES Linux)
@@ -63,25 +63,33 @@ elseif(${CMAKE_SYSTEM_NAME} MATCHES Linux)
     link_directories(
                     /usr/lib/x86_64-linux-gnu
                     /usr/lib/x86_64-linux-gnu/lapack
-                    /usr/lib/gcc/x86_64-linux-gnu/7.3.0)
+                    /usr/lib/gcc/x86_64-linux-gnu/7.4.0)
     # lapack
     find_package(LAPACK REQUIRED)
     # Pardiso
     find_library(
-        PARADISO_LIB
+        PARDISO_LIB
         NAMES libpardiso600-GNU720-X86-64 pardiso600-GNU720-X86-64
         HINTS "${PROJECT_SOURCE_DIR}/lib"
         NO_DEFAULT_PATH
     )
-    message(STATUS "PARADISO_LIB: [${PARADISO_LIB}]")
+    message(STATUS "PARDISO_LIB: [${PARDISO_LIB}]")
     # OpenMP
     find_package(OpenMP REQUIRED)
     if (OPENMP_FOUND)
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
     endif()
+    # gfortran
+    find_library(
+        FORTRAN_LIB
+        NAMES libgfortran gfortran
+        HINTS "/usr/lib/gcc/x86_64-linux-gnu/7.4.0"
+        NO_DEFAULT_PATH
+    )
+    message(STATUS "FORTRAN_LIB: [${FORTRAN_LIB}]")
     # POXIS thread
     find_package(Threads REQUIRED)
     set(pthread ${CMAKE_THREAD_LIBS_INIT})
 
-    target_link_libraries(plates_shells ${PARADISO_LIB} ${LAPACK_LIBRARIES} gfortran pthread)
+    target_link_libraries(plates_shells ${PARDISO_LIB} ${LAPACK_LIBRARIES} ${FORTRAN_LIB} pthread)
 endif()

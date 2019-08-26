@@ -11,15 +11,16 @@
 
 // -----------------------------------------------------------------------
 
-Stretching::Stretching(Edge* ptr, double E, double D) {
+Stretching::Stretching(Edge* ptr, double E, double T) {
     m_edge = ptr;
 
     m_ne0 = *(m_edge->get_node(2)->get_xyz()) - *(m_edge->get_node(1)->get_xyz());
     m_len = m_ne0.norm();
     m_ne0 = m_ne0 / m_len;
 
-    // FIXME: implement inextensible cloth, remove *100
-    m_ks = E * M_PI/4.0 * pow(D, 2) / m_len * 100;
+    // // FIXME: implement inextensible cloth, remove *100
+    // m_ks = E * M_PI/4.0 * pow(D, 2) / m_len * 100;
+    m_ks = E * T / pow(m_len, 2);
 }
 
 // -----------------------------------------------------------------------

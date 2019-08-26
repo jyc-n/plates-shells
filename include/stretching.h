@@ -6,7 +6,7 @@
 /*
  *      Stretch energy
  *
- *      E_s = 1/2 * k_s * l0^2 * (l/l0 - 1)^2
+ *      E_s = 1/2 * k_s * (l - l0)^2
  *
  *      l0: original length, regarded as constant
  *      l: length after deformation
@@ -19,7 +19,7 @@ class Stretching {
 public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-    Stretching(Edge* ptr, double E, double D);
+    Stretching(Edge* ptr, double E, double T);
 
     void locStretch(Eigen::VectorXd& loc_f, Eigen::MatrixXd& loc_j);
 

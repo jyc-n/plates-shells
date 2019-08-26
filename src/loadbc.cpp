@@ -38,7 +38,7 @@ void Boundary::initBC() {
     //* ----------------------------
     // gravity
     if (ENABLE_GRAVITY) {
-        configGravity(Z_DIR);
+        configGravity(X_DIR);
     }
 
     //* ----------------------------
