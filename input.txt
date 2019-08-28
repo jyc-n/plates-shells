@@ -24,11 +24,11 @@ E_modulus = 2e7            ! Young's modulus
 nu = 0.5                    ! Poisson's ratio
 rho = 1                  ! density
 thk = 0.1                  ! thickness
-vis = 0                     ! viscosity
+vis = 1                     ! viscosity
 gconst = 981               ! gravitational acceleration constant
 
 solver_op = 1               ! solver option 0-quasistatic, 1-dynamic
-outop = 0                   ! output option 0-no output, 1-write output
+outop = 1                   ! output option 0-no output, 1-write output
 out_freq = 10                ! write output every (#) steps; -1-only output last step, 1-every step
 info_style = 1              ! console output style 0-progress bar+log file, 1-print on console
 

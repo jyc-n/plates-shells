@@ -1,5 +1,6 @@
 #############################################
 import os
+import sys
 import subprocess
 import numpy as np
 import matplotlib as mpl
@@ -75,9 +76,10 @@ def plotShape(case_folder, coord, conn, nn, nel, iframe, frame_name):
     # plt.show()
     plt.title(frame_name)
     plt.savefig(case_folder+"frame{:0>5d}.png".format(iframe))
+    plt.close()
 
 # plot a given case
-def plotCase(icase, last_step_num):
+def plotCase(path, icase, last_step_num, step_size):
     nn = icase * icase
     nel = (icase-1)*2 * (icase-1) 
 
@@ -92,7 +94,6 @@ def plotCase(icase, last_step_num):
 
     readConn(case_folder, conn, nel)
 
-    step_size = 10
     iframe = 1
     for istep in range(step_size, last_step_num+1, step_size):
         frame_name = "{:0>5d}".format(istep)
@@ -100,18 +101,30 @@ def plotCase(icase, last_step_num):
         readCoord(case_folder, frame_file, coord, nn)
         plotShape(case_folder, coord, conn, nn, nel, iframe, frame_name)
         iframe = iframe+1
-    
+    print("all figures plotted")
+
     # create videos
-    subprocess.call(["ffmpeg", "-i", case_folder+"frame%05d.png", case_folder+"out.mp4"])
-    print("video generated")
+    # subprocess.call(["ffmpeg", "-i", case_folder+"frame%05d.png", case_folder+"out.mp4"])
+    # print("video generated")
 
 
 # main
 if __name__ == "__main__":
-    path = os.getcwd()+"/"
+    args = sys.argv
+    # if len(args) != 4:
+    #     sys.exit("Must give an argument!")
 
-    # nSide = np.arange(25, 75+1, 5, dtype=int)
-    nSide = [10]
-    last_step_num = 500
-    for icase in nSide:
-        plotCase(icase, last_step_num)
+    try:
+        # nSide = int(args[-3])
+        # last_step_num = int(args[-2])
+        # step_size = int(args[-1])
+        nSide = 10
+        last_step_num = 1830
+        step_size = 10
+
+        path = os.getcwd()+"/results/"
+        plotCase(path, nSide, last_step_num, step_size)
+
+    except Exception as err:
+        print(err.args[0])
+        sys.exit("Exception caught, existing...")

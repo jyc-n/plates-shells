@@ -6,40 +6,52 @@
 
 enum Opts {
     DEFAULT = 1,
-    NUMS = 3,
-    NUMS_DIMS = 5
+    OPTIONS = 4,
 };
 
 class Arguments {
 
 public:
-    Arguments(int t_argc);
-    void getArgs(int t_nl, int t_nw, double t_l=0.0, double t_w=0.0);
-    // TODO: implement -p for E,t, -r for refinement
-    int argc;
-    int num_len;
-    int num_wid;
-    double len;
-    double wid;
+    Arguments(int t_argc, char* argv[]);
+    
+    int type;                       // 0-default, 1-paramter, 2-refinement
+    std::string flag;               // -p for parameter, -r for refinement
+    std::string data1;              // -p for E, -r for #nodes on length
+    std::string data2;              // -p for t, -r for #nodes on width
     std::string inputPath;
     std::string outputPath;
 };
 
-inline Arguments::Arguments(int t_argc)
-    : argc(t_argc), num_len(0), num_wid(0), len(0.0), wid(0.0)
+inline Arguments::Arguments(int t_argc, char* argv[])
 {
+    if (t_argc == DEFAULT) {
+        type = 0;
+    }
+    else if (t_argc == OPTIONS) {
+        flag  = argv[1];
+        if (flag == "-p") {
+            type = 1;
+        }
+        else if(flag == "-r") {
+            type = 2;
+        }
+        else {
+            throw "wrong options!";
+        }
+        data1 = argv[2];
+        data2 = argv[3];
+    }
+    else {
+        throw "wrong number of arguments!";
+    }
+
     // std::string tmp = std::filesystem::current_path().string();
-    std::string tmp = "/Users/rla/Dropbox/Research/Codes/plates-shells";
+    // std::string tmp = "/Users/rla/Dropbox/Research/Codes/plates-shells";
+    std::string tmp = "/Users/chenjingyu/Dropbox/Research/Codes/plates-shells";
+    // std::string tmp = "/home/jingyuchen/code/plates-shells";
     inputPath = tmp+"/";
     outputPath = tmp+"/results/";
     std::cout << "cwd is " << inputPath << std::endl;
-}
-
-inline void Arguments::getArgs(int t_nl, int t_nw, double t_l, double t_w) {
-    num_len = t_nl;
-    num_wid = t_nw;
-    len = t_l;
-    wid = t_w;
 }
 
 #endif	// PLATES_SHELLS_ARGUMENTS_H

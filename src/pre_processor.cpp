@@ -35,18 +35,16 @@ PreProcessorImpl::PreProcessorImpl(Parameters* SimPar, Geometry* SimGeo) {
 void PreProcessorImpl::PreProcess(Arguments t_args) {
     // read input file
     readInput();
-    // specify number of nodes
-    if (t_args.argc == NUMS) {
+    // parameter test
+    if (t_args.type == 1) {
         // m_SimGeo->set_num_nodes_len(t_args.num_len+1);      //! only used when edge is clamped
-        m_SimGeo->set_num_nodes_len(t_args.num_len);
-        m_SimGeo->set_num_nodes_wid(t_args.num_wid);
+        m_SimPar->set_E_modulus( std::stod(t_args.data1) );
+        m_SimPar->set_thk( std::stod(t_args.data2) );
     }
-    // specify number of nodes and dimensions
-    else if (t_args.argc == NUMS_DIMS) {
-        m_SimGeo->set_num_nodes_len(t_args.num_len);
-        m_SimGeo->set_num_nodes_wid(t_args.num_wid);
-        m_SimGeo->set_rec_len(t_args.len);
-        m_SimGeo->set_rec_wid(t_args.wid);
+    // refinement test
+    else if (t_args.type == 2) {
+        m_SimGeo->set_num_nodes_len( std::stoi(t_args.data1) );
+        m_SimGeo->set_num_nodes_wid( std::stoi(t_args.data2) );
     }
     // m_SimPar->find_fullOutputPath(m_SimGeo->num_nodes_len()-1, m_SimGeo->num_nodes_wid()); // ! only -1 when clamped
     m_SimPar->find_fullOutputPath(m_SimGeo->num_nodes_len(), m_SimGeo->num_nodes_wid());
@@ -59,7 +57,7 @@ void PreProcessorImpl::PreProcess(Arguments t_args) {
     print_parameters();
 
     std::cout << "input file read, preprocessor starts" << std::endl;
-    buildNodes(t_args.argc);
+    buildNodes();
     std::cout << "seeding completed" << std::endl;
     buildMesh();
     std::cout << "meshing completed\nbuilding node, element, edge, hinge lists (this may take a while)" << std::endl;
@@ -159,7 +157,7 @@ void PreProcessorImpl::readGeoFile() {
 }
 
 // initialize coordinates (seeding)
-void PreProcessorImpl::buildNodes(int opt) {
+void PreProcessorImpl::buildNodes() {
     double dx1 = 0, dx2 = 0;
 
     // if (AR_FLAG) {

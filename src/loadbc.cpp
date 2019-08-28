@@ -38,7 +38,7 @@ void Boundary::initBC() {
     //* ----------------------------
     // gravity
     if (ENABLE_GRAVITY) {
-        configGravity(X_DIR);
+        configGravity(Z_DIR);
     }
 
     //* ----------------------------
@@ -100,21 +100,21 @@ void Boundary::initBC() {
     //* ----------------------------
 
     // roller support edge 1
-    Sets edge1(false);
-    edge1.setFixed(true, false, true);
-    for (int num = 1; num < m_SimGeo->nn(); num += m_SimGeo->num_nodes_len()) {
-        edge1.m_nodes.push_back(num);
-    }
-    findDirichletDofs(edge1);
+    // Sets edge1(false);
+    // edge1.setFixed(true, false, true);
+    // for (int num = 1; num < m_SimGeo->nn(); num += m_SimGeo->num_nodes_len()) {
+    //     edge1.m_nodes.push_back(num);
+    // }
+    // findDirichletDofs(edge1);
     
-    // pinned corner
-    m_dirichletDofs.push_back(1);
+    // // pinned corner
+    // m_dirichletDofs.push_back(1);
 
     //* ----------------------------
     //*      hanging 1 corner
     //* ----------------------------
-    // for (int i = 0; i < 3; i++)
-    //     m_dirichletDofs.push_back(i);
+    for (int i = 0; i < 3; i++)
+        m_dirichletDofs.push_back(i);
 
     //* ----------------------------
     //*      hanging 2 corners

@@ -19,7 +19,7 @@ private:
     // subroutines
     void readInput();
     void readGeoFile();
-    void buildNodes(int opt);
+    void buildNodes();
     void buildMesh();
     void buildNodeElementList();
     void buildEdgeHingeList();
