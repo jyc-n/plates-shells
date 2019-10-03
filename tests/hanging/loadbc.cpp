@@ -38,77 +38,8 @@ void Boundary::initBC() {
     //* ----------------------------
     // gravity
     if (ENABLE_GRAVITY) {
-        configGravity(Z_DIR);
+        configGravity(Z_DIR, false);
     }
-
-    //* ----------------------------
-    //*      cantilever plate
-    //* ----------------------------
-    //! Note: when using clamped bc, need to modify the number of nodes!
-    // clamped edge 1
-    // Sets edge1(false);
-    // edge1.setFixed(true, true, true);
-    // for (int num = 1; num < m_SimGeo->nn(); num += m_SimGeo->num_nodes_len()) {
-    //     edge1.m_nodes.push_back(num);
-    //     edge1.m_nodes.push_back(num+1);
-    // }
-    // findDirichletDofs(edge1);
-    //* ----------------------------
-
-    //* ----------------------------
-    //*   simply supported plate
-    //* ----------------------------
-    // pinned edge 1
-    // Sets edge1(false);
-    // edge1.setFixed(true, true, true);
-    // for (int num = 1; num < m_SimGeo->nn(); num += m_SimGeo->num_nodes_len()) {
-    //     edge1.m_nodes.push_back(num);
-    // }
-    // findDirichletDofs(edge1);
-
-    // pinned edge 3
-    // Sets edge3(false);
-    // edge3.setFixed(false, true, true);
-    // for (int num = m_SimGeo->num_nodes_len(); num <= m_SimGeo->nn(); num += m_SimGeo->num_nodes_len()) {
-    //     edge3.m_nodes.push_back(num);
-    // }
-    // findDirichletDofs(edge3);
-
-    // apply force on the entire plate
-    // Sets t_surf(true);
-    // double p = - double(1)/double(m_SimGeo->nn());
-    // t_surf.setForce(0, 0, p);
-    // for (int num = 1; num <= m_SimGeo->nn(); num++) {
-    //     t_surf.m_nodes.push_back(num);
-    // }
-    // configForce(t_surf);
-    //* ----------------------------
-
-    //* ---------------------------- 
-    //*      2-element bending
-    //* ----------------------------
-    // pinned 1,3,4
-    // Sets corners(false);
-    // corners.setFixed(true, true, true);
-    // corners.m_nodes.push_back(1);
-    // corners.m_nodes.push_back(3);
-    // corners.m_nodes.push_back(4);
-    // findDirichletDofs(corners);
-
-    //* ---------------------------- 
-    //*      uniaxial stretching
-    //* ----------------------------
-
-    // roller support edge 1
-    // Sets edge1(false);
-    // edge1.setFixed(true, false, true);
-    // for (int num = 1; num < m_SimGeo->nn(); num += m_SimGeo->num_nodes_len()) {
-    //     edge1.m_nodes.push_back(num);
-    // }
-    // findDirichletDofs(edge1);
-    
-    // // pinned corner
-    // m_dirichletDofs.push_back(1);
 
     //* ----------------------------
     //*      hanging 1 corner
@@ -152,9 +83,10 @@ void Boundary::configForce(const Sets& t_set) {
 }
 
 // enable gravity
-void Boundary::configGravity(const int dir) {
+void Boundary::configGravity(const int dir, bool sign) {
+    double sign_g = (sign) ? 1.0 : -1.0;
     for (int i = dir; i < m_SimGeo->nn() * m_SimGeo->nsd(); i+=3) {
-        m_fext(i) = - m_SimGeo->m_mass(i) * m_SimPar->gconst();
+        m_fext(i) = sign_g * m_SimGeo->m_mass(i) * m_SimPar->gconst();
     }
 }
 

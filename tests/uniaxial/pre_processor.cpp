@@ -37,7 +37,6 @@ void PreProcessorImpl::PreProcess(Arguments t_args) {
     readInput();
     // parameter test
     if (t_args.type == 1) {
-        // m_SimGeo->set_num_nodes_len(t_args.num_len+1);      //! only used when edge is clamped
         m_SimPar->set_E_modulus( std::stod(t_args.data1) );
         m_SimPar->set_thk( std::stod(t_args.data2) );
     }
@@ -46,8 +45,10 @@ void PreProcessorImpl::PreProcess(Arguments t_args) {
         m_SimGeo->set_num_nodes_len( std::stoi(t_args.data1) );
         m_SimGeo->set_num_nodes_wid( std::stoi(t_args.data2) );
     }
-    // m_SimPar->find_fullOutputPath(m_SimGeo->num_nodes_len()-1, m_SimGeo->num_nodes_wid()); // ! only -1 when clamped
-    m_SimPar->find_fullOutputPath(m_SimGeo->num_nodes_len(), m_SimGeo->num_nodes_wid());
+
+    m_SimPar->set_kstretch();
+    m_SimPar->set_kshear();
+    m_SimPar->set_kbend();
 
     m_SimGeo->set_nn();
     m_SimGeo->set_nel();
@@ -144,10 +145,6 @@ void PreProcessorImpl::readInput() {
                 m_SimPar->set_info_style((bool) std::stoi(value_var));   // console output style
         }
     }
-    m_SimPar->set_kstretch();
-    m_SimPar->set_kshear();
-    m_SimPar->set_kbend();
-
     input_file.close();
 }
 
@@ -160,20 +157,9 @@ void PreProcessorImpl::readGeoFile() {
 void PreProcessorImpl::buildNodes() {
     double dx1 = 0, dx2 = 0;
 
-    // if (AR_FLAG) {
-    //     dx1 = m_SimGeo->dx();
-    //     dx2 = m_SimGeo->dx();
-    // }
-    // else {
-    //     // increment along length/width
-    //     dx1 = m_SimGeo->rec_len() / (double) (m_SimGeo->num_nodes_len() - 1);
-    //     dx2 = m_SimGeo->rec_wid() / (double) (m_SimGeo->num_nodes_wid() - 1);
-    // }
     // increment along length/width
     dx1 = m_SimGeo->rec_len() / (double) (m_SimGeo->num_nodes_len() - 1);
     dx2 = m_SimGeo->rec_wid() / (double) (m_SimGeo->num_nodes_wid() - 1);
-    // ! only use the following for clamped case
-    // dx1 = dx2;
 
     // position of datum plane
     int datum_op = m_SimGeo->datum();
@@ -221,7 +207,6 @@ void PreProcessorImpl::buildNodes() {
             m_SimGeo->m_nodes[index][2] = z;
         }
     }
-    // m_SimGeo->translateNodes(0, -dx1); //! only used when clamped!
     assert(m_SimGeo->m_nodes.size() == m_SimGeo->nn());
 }
 

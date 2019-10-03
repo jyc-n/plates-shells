@@ -33,9 +33,6 @@ void Parameters::set_kshear()                               { ksh_ = E_modulus_ 
 void Parameters::set_kshear(const double var)               { ksh_ = var; }
 void Parameters::set_kbend()                                { kb_ = E_modulus_ * pow(thk_,3) / (24.0 * (1 - pow(nu_,2))); }
 void Parameters::set_kbend(const double var)                { kb_ = var; }
-void Parameters::find_fullOutputPath(int t_nlen, int t_nwid) {
-    m_outputPath = m_outputPath + std::to_string(t_nlen) + "_" + std::to_string(t_nwid) + "/";
-}
 
 // accessors
 std::string   Parameters::inputPath()  const    { return m_inputPath; }

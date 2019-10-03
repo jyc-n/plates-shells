@@ -53,7 +53,7 @@ public:
 
 private:
     void configForce(const Sets& t_set);
-    void configGravity(const int dir);
+    void configGravity(const int dir, bool sign);    // sign: True-positive, False-Negative
     void findDirichletDofs(const Sets& t_set);
 
     Parameters* m_SimPar;

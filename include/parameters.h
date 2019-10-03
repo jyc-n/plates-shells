@@ -31,7 +31,6 @@ public:
     void set_kshear(const double var);
     void set_kbend();
     void set_kbend(const double var);
-    void find_fullOutputPath(int t_nlen, int t_nwid);
 
     // accessor
     std::string   inputPath()  const;
