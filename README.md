@@ -29,13 +29,13 @@ Numerical differentiation (central difference) were used
 
 To use this solver, several **external libraries** are needed:
 
-1. [CMake]: https://cmake.org/download/
+1. [CMake](https://cmake.org/download/)
 
    Any version of CMake can be used. Latest version is preferred.
 
    Also, if the `g++/clang++` compiler is new enough to be compatible with `C++17`, automatic I/O path benefited from the `filesystem` library can be used. Modify the `arguments.h` to do this.
 
-2. [Eigen]: http://eigen.tuxfamily.org/index.php?title=Main_Page
+2. [Eigen](http://eigen.tuxfamily.org/index.php?title=Main_Page) 
 
    After downloading **Eigen**, unzip the file, rename the fold (for instance, Eigen), and move the entire folder anywhere you like. Create the soft link in your system include direction. 
 
@@ -47,6 +47,7 @@ To use this solver, several **external libraries** are needed:
 
    `ln -s /usr/local/Cellar/Eigen/3.3.7/include/eigen3/Eigen /usr/local/include/Eigen`
 
-3. [Pardiso]: https://www.pardiso-project.org
+3. [Pardiso](https://www.pardiso-project.org) 
 
     (refer to their website for set up instructions)
+
